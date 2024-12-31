@@ -1,0 +1,75 @@
+# Log level INFO / DEBUG / WARNING / ERROR / CRITICAL
+log_level: "INFO"
+
+# Base workspace directory, it's better to set it to an absolute path
+base_dir: "/Users/jason/.nanobrowser"
+
+# Whether to save chat history into the workspace/messages directory
+save_chat_history: true
+
+# Whether to log execution events
+log_events: true
+
+# Default max steps allowed for a single task
+max_steps: 100
+
+# Default max errors allowed for a single task
+max_errors: 20
+
+# Default max tool rounds allowed for a single task
+max_tool_rounds: 20
+
+# Browser configuration
+# Only needed if chrome_app_path can not be detected automatically
+#
+# browser:
+#   chrome_app_path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+#   cdp_port: 9222
+
+# Configurations for the agent planner and navigator
+# Note: 
+#     api_key is optional, can also be set via environment variables, example:
+#     export OPENAI_API_KEY=sk-...
+#     export ANTHROPIC_API_KEY=sk-...
+#
+# Agent planner configuration
+planner:
+  model: "gpt-4o"
+  model_provider: "openai"
+  api_key: "sk-..." # Optional
+  inference_config:
+    temperature: 0
+    top_p: 0.001
+
+# Agent navigator configuration
+navigator:
+  model: "gpt-4o"
+  model_provider: "openai"
+  api_key: "sk-..."
+  inference_config:
+    temperature: 0
+    top_p: 0.001
+
+# Agent planner configuration
+# planner:
+#   model: "claude-3-5-sonnet-20241022"
+#   model_provider: "anthropic"
+#   api_key: "sk-..." # Optional
+#   inference_config:
+#     temperature: 0.1
+#     top_p: 0.1
+
+# # Agent navigator configuration
+# navigator:
+#   model: "claude-3-5-sonnet-20241022"
+#   model_provider: "anthropic"
+#   api_key: "sk-..."
+#   inference_config:
+#     temperature: 0.1
+#     top_p: 0.1
+
+# WebSocket server configuration
+# Do not change this unless you know what you are doing
+server:
+  host: "127.0.0.1" 
+  port: 6768
