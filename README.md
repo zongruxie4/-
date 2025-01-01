@@ -9,15 +9,15 @@ The system architecture is visualized using a mermaid diagram, illustrating the 
 
 ```mermaid
 graph TB
-subgraph "Nano Browser Agent"
+subgraph "Nano Browser Agent Server"
 direction LR
 WS[WebSocket Server]
-subgraph "Multi-Agent components"
+subgraph "Multi-Agent Component"
 direction TB
-N[Navigator Agent]
-P[Planner Agent]
-E[Evaluator Agent]
-V[Validator Agent]
+N[Navigator]
+P[Planner]
+E[Evaluator]
+V[Validator]
 end
 end
 subgraph "Chrome Extension"
@@ -49,7 +49,7 @@ linkStyle 2,3,4,5 stroke-width:2
 - Manages bidirectional communication between the Chrome extension and the multi-agent system
 - Relays commands and status updates between components
 
-### Multi-Agent Components
+### Multi-Agent Component
 - **Planner Agent**: Breaks down web navigation tasks into manageable steps
 - **Navigator Agent**: Executes web navigation steps as planned
 - **Evaluator Agent**: Assesses the success of each navigation step and provides feedback for retries (TODO)
