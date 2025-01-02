@@ -42,6 +42,8 @@ class AgentContext():
     max_tool_rounds: int = DEFAULT_MAX_TOOL_ROUNDS
     # max errors allowed
     max_errors: int = DEFAULT_MAX_ERRORS
+    # stop task now as requested by user
+    stop_task_now: bool = False
 
 
 class Actors:

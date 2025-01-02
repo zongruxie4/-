@@ -106,6 +106,10 @@ class Executor:
             await self._browser_manager.close()
             self._browser_context = None
             self._browser_manager = None
+
+    def stop_task_now(self):
+        """Set a flag to stop the current task execution now"""
+        self._agent_context.stop_task_now = True
             
     async def run(self, task: str, task_id: str, max_steps: Optional[int] = 100, tab_id: Optional[str] = None):
         """
@@ -173,6 +177,12 @@ class Executor:
                     task_id=self._agent_context.task_id,
                     step=self._agent_context.step,
                 )
+
+                if self._agent_context.stop_task_now:
+                    event_data.details = "Task cancelled"
+                    await self._emit_event(ExecutionState.TASK_CANCEL, event_data)
+                    break
+
                 # check if the task has reached the maximum number of steps
                 if self._agent_context.step >= self._agent_context.max_steps:
                     event_data.details = f"Task failed with max steps reached: {self._agent_context.step}"
@@ -215,6 +225,7 @@ class Executor:
             # save chat history
             self._planner.save_chat_history()
             self._navigator.save_chat_history()
+            self._agent_context.stop_task_now = False
 
     async def _emit_event(self, state: ExecutionState, data: EventData):
         if self._agent_context:

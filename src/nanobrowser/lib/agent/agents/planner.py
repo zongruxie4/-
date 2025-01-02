@@ -72,7 +72,7 @@ class PlannerAgent(BaseAgent):
             self.message_history.add_message(user_message)
 
             retry = 0
-            while retry < 3:
+            while retry < 3 and not self.context.stop_task_now:
                 # sometimes LLM doesn't return the structured output, so we need to retry
                 structured_llm = self.chatLLM.with_structured_output(PlannerResult, include_raw=True)
                 response: dict[str, Any] = structured_llm.invoke(self.message_history.get_messages())
@@ -82,6 +82,13 @@ class PlannerAgent(BaseAgent):
                 if result is not None:
                     break
                 retry += 1
+
+            if self.context.stop_task_now:
+                return AgentOutput(
+                    intent=user_input,
+                    result=None,
+                    error="Task cancelled"
+                )
 
             result_str = result.model_dump_json(exclude_none=True)
             self.message_history.add_message(AIMessage(content=result_str))

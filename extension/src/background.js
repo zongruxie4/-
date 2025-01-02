@@ -86,19 +86,35 @@ function generateTaskId() {
 
 // Message handling from sidebar
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'SEND_MESSAGE' && webSocket) {
-    const taskMessage = {
-      kind: "create",
-      data: {
-        task_id: generateTaskId(),
-        intent: message.text,
-        args: { tab_id: message.tabId }
-      }
-    };
-    webSocket.send(JSON.stringify(taskMessage));
-    sendResponse({ success: true });
-  }
-  return true;
+    if (message.type === 'SEND_MESSAGE' && webSocket) {
+        const taskId = generateTaskId();
+        const taskMessage = {
+            kind: "create",
+            data: {
+                task_id: taskId,
+                intent: message.text,
+                args: { tab_id: message.tabId }
+            }
+        };
+        webSocket.send(JSON.stringify(taskMessage));
+        sendResponse({ success: true, taskId: taskId }); // Send back the taskId
+    } else if (message.type === 'CANCEL_TASK' && webSocket) {
+        if (message.taskId) {
+            console.log('Cancelling task:', message.taskId);
+            const cancelMessage = {
+                kind: "cancel",
+                data: {
+                    task_id: message.taskId
+                }
+            };
+            webSocket.send(JSON.stringify(cancelMessage));
+            sendResponse({ success: true });
+        } else {
+            console.warn('Attempted to cancel task without taskId');
+            sendResponse({ success: false });
+        }
+    }
+    return true;
 });
 
 // Initialize WebSocket connection

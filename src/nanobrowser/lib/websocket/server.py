@@ -125,7 +125,7 @@ class WebSocketServer:
 
     async def _handle_cancel_task(self, message_data: dict, websocket: WebSocketServerProtocol):
         """Handle cancel_task message"""
-        raise NotImplementedError("Cancel task is not implemented")
+        self._executor.stop_task_now()
 
     async def _send_task_state(self, websocket: WebSocketServerProtocol, event: Event):
         """Send task state update to client"""
