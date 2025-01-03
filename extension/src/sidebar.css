@@ -61,6 +61,20 @@ html, body {
     background: #0056b3;
 }
 
+#stop-button {
+    padding: 8px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    height: 4.5em;
+}
+
+#stop-button:hover {
+    background: #c82333;
+}
+
 .connection-status {
     padding: 6px;
     text-align: center;

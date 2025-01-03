@@ -1,19 +1,23 @@
 function setInputsEnabled(enabled) {
     const chatInput = document.getElementById('chat-input');
     const sendButton = document.getElementById('send-button');
+    const stopButton = document.getElementById('stop-button');
 
     chatInput.disabled = !enabled;
-    sendButton.disabled = !enabled;
     
     // Add visual styling for disabled state
     if (enabled) {
         chatInput.style.backgroundColor = '';
         chatInput.style.color = '';
-        sendButton.style.opacity = '';
+        // Show send button, hide stop button
+        sendButton.style.display = 'block';
+        stopButton.style.display = 'none';
     } else {
         chatInput.style.backgroundColor = '#f5f5f5';
         chatInput.style.color = '#999';
-        sendButton.style.opacity = '0.5';
+        // Show stop button, hide send button
+        sendButton.style.display = 'none';
+        stopButton.style.display = 'block';
     }
 }
 
@@ -45,8 +49,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window.messageHistory = messageHistory;
 
+    let currentTaskId = null; // Track current task ID
+
     // Handle sending messages
-    function handleSendMessage() {
+    async function handleSendMessage() {
         const text = chatInput.value.trim();
         if (!text) return;
 
@@ -70,12 +76,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 type: 'SEND_MESSAGE',
                 text,
                 tabId
+            }).then(response => {
+                if (response?.taskId) {
+                    currentTaskId = response.taskId; // Store the task ID
+                }
             }).catch(err => {
                 addMessage({
                     actor: 'system',
                     content: 'Failed to send message',
                     timestamp: new Date()
                 });
+                setInputsEnabled(true);
             });
         });
     }
@@ -113,6 +124,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Listen for input events
     chatInput.addEventListener('input', autoGrow);
+
+    // Add stop button handler
+    document.getElementById('stop-button').addEventListener('click', () => {
+        if (currentTaskId) {
+            // Send CANCEL message to service worker
+            chrome.runtime.sendMessage({
+                type: 'CANCEL_TASK',
+                taskId: currentTaskId
+            }).catch(err => {
+                addMessage({
+                    actor: 'system',
+                    content: 'Failed to cancel task',
+                    timestamp: new Date()
+                });
+            });
+            
+            currentTaskId = null;
+            setInputsEnabled(true);
+        }
+    });
+
+    // When task completes or errors, switch back to send button
+    function handleTaskComplete() {
+        currentTaskId = null;
+    }
 });
 
 // Helper function for generating fallback ID

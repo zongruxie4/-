@@ -83,7 +83,7 @@ class NavigatorAgent(BaseAgent):
             tool_calls = []
             final_message = ''
 
-            while allowed_tool_rounds > 0: 
+            while allowed_tool_rounds > 0 and not self.context.stop_task_now: 
                 llm_with_tools = self.chatLLM.bind_tools(tools_to_use)
                 ai_response = await llm_with_tools.ainvoke(self.message_history.get_messages())    
                 self.message_history.add_message(ai_response)
@@ -94,6 +94,9 @@ class NavigatorAgent(BaseAgent):
 
                     # execute tool calls and return tool messages back to the LLM
                     for tool_call in ai_response.tool_calls:
+                        if self.context.stop_task_now:
+                            break
+
                         tool_name = tool_call["name"].lower()
                         tool_args = tool_call["args"]
                         selected_tool = self.tools[tool_name]
@@ -133,6 +136,13 @@ class NavigatorAgent(BaseAgent):
                     break
 
                 allowed_tool_rounds -= 1
+
+            if self.context.stop_task_now:
+                return AgentOutput(
+                    intent=user_input,
+                    result=None,
+                    error="Task cancelled"
+                )
 
             if allowed_tool_rounds == 0:
                 # emit event
