@@ -15,6 +15,8 @@ class WebSocketMessageKind(Enum):
     hb: Application-level heartbeat
     ack: Heartbeat acknowledgment
     error: Error message
+    get_task: Request the current running task ID
+    current_task: Response with current task ID
     """
     HEARTBEAT = "hb"       # application heartbeat
     ACK = "ack"            # heartbeat acknowledgment
@@ -22,6 +24,8 @@ class WebSocketMessageKind(Enum):
     CANCEL = "cancel"      # cancel task
     TASK_STATE = "state"   # task state update
     ERROR = "error"        # error message
+    GET_CURRENT_TASK = "get_task"  # Get the current running task
+    CURRENT_TASK = "current_task"  # Response with current task
 
 class WebSocketMessage(BaseModel):
     kind: WebSocketMessageKind
@@ -60,4 +64,8 @@ class ErrorMessage(BaseModel):
     task_id: str
     message: str
     timestamp: str
+
+class CurrentTaskMessage(BaseModel):
+    """Message to respond with the current running task ID"""
+    task_id: Optional[str]
 

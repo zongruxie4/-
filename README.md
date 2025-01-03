@@ -84,6 +84,10 @@ To run the NanoBrowser Agent Server via script (MacOS), follow these steps:
    ```bash
    ./install.sh
    ```
+3. Run the NanoBrowser Agent Server:
+   ```bash
+   uv run nanobrowser
+   ```
 
 ### Run the NanoBrowser Agent Server Manually
 
