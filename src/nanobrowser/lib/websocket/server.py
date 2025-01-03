@@ -8,7 +8,7 @@ from websockets.server import WebSocketServerProtocol
 from ..agent.executor import Executor
 from ..agent.event.base import Event
 from .message import (
-    CreateTaskMessage, TaskStateMessage, WebSocketMessage, WebSocketMessageKind, ErrorMessage
+    CreateTaskMessage, TaskStateMessage, WebSocketMessage, WebSocketMessageKind, ErrorMessage, CurrentTaskMessage
 )
 from .task import TaskManager, Task
 from ..utils.path_manager import PathManager
@@ -77,6 +77,9 @@ class WebSocketServer:
                             data=message.data
                         )
                         await websocket.send(json.dumps(ack_message.model_dump(mode='json')))
+                    elif message.kind == WebSocketMessageKind.GET_CURRENT_TASK:
+                        logger.debug("Received get_current_task message")
+                        await self._handle_get_current_task(websocket)
                     else:
                         logger.error(f"Unknown message kind: {message.kind}")
 
@@ -147,6 +150,20 @@ class WebSocketServer:
         )
         await websocket.send(json.dumps(message.model_dump(mode='json')))
 
+    async def _handle_get_current_task(self, websocket: WebSocketServerProtocol):
+        """Handle get_current_task message"""
+        current_task = self._task_manager.current_task
+        task_id = current_task.id if current_task else ''
+
+        current_task_msg = CurrentTaskMessage(
+            task_id=task_id
+        )
+        
+        message = WebSocketMessage(
+            kind=WebSocketMessageKind.CURRENT_TASK,
+            data=current_task_msg.model_dump()
+        )
+        await websocket.send(json.dumps(message.model_dump(mode='json')))
 
 async def start_server(host: str, port: int, base_dir: Path, executor: Executor):
     server = WebSocketServer(base_dir, executor)

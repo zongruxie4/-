@@ -15,6 +15,12 @@ function connectWebSocket() {
   webSocket.onopen = () => {
     console.log('WebSocket connected');
     broadcastConnectionStatus(true);
+    // Request current task status upon connection
+    const getCurrentTaskMessage = {
+      kind: "get_task",
+      data: {}
+    };
+    webSocket.send(JSON.stringify(getCurrentTaskMessage));
     keepAlive();
   };
   
@@ -33,6 +39,12 @@ function connectWebSocket() {
         // Broadcast task progress to sidebar
         broadcastToSidebar({
           type: 'state',
+          data: message.data
+        });
+      } else if (kind === 'current_task') {
+        // Broadcast current task to sidebar
+        broadcastToSidebar({
+          type: 'current_task',
           data: message.data
         });
       } else if (kind === 'ack') {
@@ -113,6 +125,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             console.warn('Attempted to cancel task without taskId');
             sendResponse({ success: false });
         }
+    } else if (message.type === 'GET_CURRENT_TASK' && webSocket) {
+        const getCurrentTaskMessage = {
+            kind: "get_task",
+            data: {}
+        };
+        webSocket.send(JSON.stringify(getCurrentTaskMessage));
+        sendResponse({ success: true });
     }
     return true;
 });

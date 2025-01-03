@@ -1,9 +1,10 @@
-function setInputsEnabled(enabled) {
+function setInputsEnabled(enabled, show_stop_button=false) {
     const chatInput = document.getElementById('chat-input');
     const sendButton = document.getElementById('send-button');
     const stopButton = document.getElementById('stop-button');
 
     chatInput.disabled = !enabled;
+    sendButton.disabled = !enabled;
     
     // Add visual styling for disabled state
     if (enabled) {
@@ -16,8 +17,13 @@ function setInputsEnabled(enabled) {
         chatInput.style.backgroundColor = '#f5f5f5';
         chatInput.style.color = '#999';
         // Show stop button, hide send button
-        sendButton.style.display = 'none';
-        stopButton.style.display = 'block';
+        if (show_stop_button) {
+            sendButton.style.display = 'none';
+            stopButton.style.display = 'block';
+        } else {
+            sendButton.style.display = 'block';
+            stopButton.style.display = 'none';
+        }
     }
 }
 
@@ -56,8 +62,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const text = chatInput.value.trim();
         if (!text) return;
 
-        // Disable inputs when sending message
-        setInputsEnabled(false);
+        // Disable inputs and show stop button
+        setInputsEnabled(false, true);
 
         // Add user message to chat
         addMessage({
@@ -97,6 +103,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateConnectionStatus(message.data.isConnected);
         } else if (message.type === 'state') {
             handleTaskState(message.data);
+        } else if (message.type === 'current_task') {
+            // Handle current task message
+            if (message.data.task_id) {  // Will be false for "", null, undefined
+                currentTaskId = message.data.task_id;
+                // disable inputs and show stop button
+                setInputsEnabled(false, true);
+            } else {
+                currentTaskId = null;
+                // enable inputs
+                setInputsEnabled(true);
+            }
         }
     });
 
@@ -105,6 +122,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         connectionStatus.textContent = isConnected ? 'Connected' : 'Not Connected';
         connectionStatus.style.display = 'block';
         connectionStatus.className = `connection-status ${isConnected ? 'connected' : 'disconnected'}`;
+        if (!isConnected) {
+            // disable inputs and but keep send button visible
+            setInputsEnabled(false, false);
+        }
     }
 
     // Event listeners
@@ -149,6 +170,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     function handleTaskComplete() {
         currentTaskId = null;
     }
+
+    // Request current task status when sidebar opens
+    chrome.runtime.sendMessage({
+        type: 'GET_CURRENT_TASK'
+    }).catch(err => {
+        console.error('Failed to get current task status:', err);
+    });
 });
 
 // Helper function for generating fallback ID
