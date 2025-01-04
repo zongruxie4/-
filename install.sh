@@ -16,6 +16,13 @@ if ! command -v uv &> /dev/null; then
     echo -e "${YELLOW}uv not found. Installing...${NC}"
     # Install uv using the standalone installer
     curl -LsSf https://astral.sh/uv/install.sh | sh
+    
+    # Add uv to PATH
+    export PATH="$HOME/.local/bin:$PATH"
+    # Source the environment file
+    if [ -f "$HOME/.local/bin/env" ]; then
+        source "$HOME/.local/bin/env"
+    fi
 else
     echo -e "${GREEN}uv is already installed${NC}"
     # Optionally update uv
@@ -74,8 +81,13 @@ if [ ! -f "config.yaml" ] && [ -f "config_example.yaml" ]; then
 fi
 
 echo -e "\n${GREEN}Setup completed!${NC}"
-echo "To run the project:"
+echo "Before running the project:"
 echo "1. Edit config.yaml with your settings, fill in the LLM api keys"
 echo "2. Make sure you have a Google Chrome browser installed"
 echo "3. Make sure you have the chrome extension installed via the developer mode in chrome"
-echo "4. Run: uv run nanobrowser"
+echo "4. Either restart your shell or run:"
+echo "      • For bash/zsh/sh users:"
+echo "        source \$HOME/.local/bin/env"
+echo "      • For fish users:"
+echo "        source \$HOME/.local/bin/env.fish"
+echo "5. Run: uv run nanobrowser"
