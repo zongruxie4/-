@@ -111,6 +111,19 @@ class Executor:
         """Set a flag to stop the current task execution now"""
         self._agent_context.stop_task_now = True
             
+    async def _ensure_browser_is_connected(self):
+        # Sometimes, error "Target page, context or browser has been closed" is thrown when calling get_current_page_info()
+        # This happens when there's no activity on the browser for a while
+        try:
+           _info = await self._browser_context.get_current_page_info()
+        except Exception as e:
+            logger.error(f"Lost connection to browser: {str(e)}")
+            await self._browser_manager.reinitialize()
+        finally:
+            self._browser_context = await self._browser_manager.get_browser_context()
+            self._agent_context.browser_context = self._browser_context
+            
+
     async def run(self, task: str, task_id: str, max_steps: Optional[int] = 100, tab_id: Optional[str] = None):
         """
         Run a task
@@ -140,6 +153,7 @@ class Executor:
             self._current_task_id = task_id
         
         try:
+            await self._ensure_browser_is_connected()
             # Start task execution in background
             await self._execute_task(task, max_steps, tab_id)
         finally:

@@ -103,6 +103,24 @@ class PlaywrightManager:
 
             self.__async_initialize_done = True
 
+    async def reinitialize(self):
+        """
+        Reinitialize the browser and browser context, useful when the browser connection is lost.
+        """
+        async with self.__init_lock:
+
+            try:            
+                if self._playwright is not None:
+                    await self._playwright.stop()
+                    self._playwright = None
+            except Exception as e:
+                logger.warning(f"Failed to stop playwright: {str(e)}")
+
+            self.__async_initialize_done = False
+            self._browser = None
+            self._browser_context = None
+
+        await self.async_initialize()
 
     async def _connect_to_browser(self):
         """
@@ -214,14 +232,16 @@ class PlaywrightManager:
             raise e
 
 
-    async def get_browser_context(self):
+    async def get_browser_context(self, refresh: bool = False):
         """
         Returns the existing browser context, or creates a new one if it doesn't exist.
+        If refresh is True, the browser context will be refreshed.
         """
-        if self._browser_context is None:
+        if self._browser_context is None or refresh:
+            logger.debug("Creating new browser context")
             await self.create_browser_context()
         return self._browser_context
-
+    
 
     async def close(self):
         """
@@ -252,6 +272,5 @@ class PlaywrightManager:
             self._browser = None
             self._browser_context = None
             self._chrome_launcher = None
-            self._playwright = None
             self.__async_initialize_done = False
 
