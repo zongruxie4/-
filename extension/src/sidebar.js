@@ -339,7 +339,7 @@ function handleTaskState(data) {
 
     if (actor === 'manager') {
         if (state === 'task.start') {
-            content = 'Task received. We are working on it.';
+           skip = true;
         } else if (state === 'task.error') {
             content = `Task failed. \n\n ${content}`;
             setInputsEnabled(true);
@@ -348,6 +348,7 @@ function handleTaskState(data) {
             setInputsEnabled(true);
         } else if (state === 'task.ok') {
             setInputsEnabled(true);
+            skip = true;
         }
     } else if (actor === 'planner') {
         if (state === 'step.start') {
@@ -356,9 +357,9 @@ function handleTaskState(data) {
             // if plan is not empty, display the plan first
             if (eventData?.plan) {
                 if (eventData.step === 1) {
-                    plan = `I made a plan for this task: \n\n${eventData.plan}`;
+                    plan = `${eventData.plan}`;
                 } else {
-                    plan = `I updated the plan: \n\n${eventData.plan}`;
+                    plan = `Plan revised: \n\n${eventData.plan}`;
                 }
                 addMessage({
                     actor,
@@ -366,8 +367,10 @@ function handleTaskState(data) {
                     timestamp
                 }); 
             }
-            // skip to display the details: next step or final response
-            skip = true; 
+            // skip to display the details: next step, but display final response
+            if (!eventData?.final) {
+                skip = true; 
+            }
         } else if (state === 'step.error') {
             content = `Step failed. \n\n ${content}`;
         } else if (state === 'step.cancel') {
