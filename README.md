@@ -76,28 +76,19 @@ Here are some tasks you can accomplish with NanoBrowser using natural language:
 
 ## Roadmap
 
-Here are the planned improvements and features we're working on:
+Here are the key features we're working on:
 
-### Standalone Extension
-- Developing a standalone Chrome extension without backend server dependency
-- Simplifying installation and deployment process
-- Improving overall system performance and reliability
+1. **Standalone Extension**:
+   > "Simplify installation by making the Chrome extension work without a backend server"
 
-### Enhanced Tab Management
-- Supporting multi-tab operations
-- Adding tab context awareness and management
-- Implementing better tab state synchronization
+2. **Enhanced Tab Management**:
+   > "Support multiple tabs with context awareness and state synchronization"
 
-### Conversation Intelligence
-- Adding support for follow-up questions and continuous dialogue
-- Implementing context preservation between tasks
-- Implementing task and conversation history management
+3. **Conversation Intelligence**:
+   > "Enable natural follow-up questions and preserve context between tasks"
 
-### Advanced DOM Analysis
-- Improving recognition and interaction with complex DOM elements
-- Enhancing canvas element handling for applications like Google Docs
-- Optimizing DOM tree traversal and manipulation performance
-- Implementing better detection of interactive elements and dynamic content
+4. **Advanced DOM Analysis**:
+   > "Improve interaction with complex web elements like canvas and dynamic content"
 
 ---
 
