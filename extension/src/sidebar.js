@@ -62,7 +62,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         const text = chatInput.value.trim();
         if (!text) return;
 
-        // Disable inputs and show stop button
+        // Handle /clear command
+        if (text.toLowerCase() === '/clear') {
+            // Clear UI
+            const messagesContainer = document.getElementById('messages-container');
+            messagesContainer.innerHTML = '';
+            
+            // Clear storage
+            await messageHistory.clearHistory();
+            
+            // Clear input
+            chatInput.value = '';
+            return;
+        }
+
+        // Regular message handling continues...
         setInputsEnabled(false, true);
 
         // Add user message to chat
@@ -359,7 +373,7 @@ function handleTaskState(data) {
                 if (eventData.step === 1) {
                     plan = `${eventData.plan}`;
                 } else {
-                    plan = `Plan revised: \n\n${eventData.plan}`;
+                    plan = `${eventData.plan}`;
                 }
                 addMessage({
                     actor,
