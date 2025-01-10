@@ -1,5 +1,13 @@
 # NanoBrowser
 
+<div align="center">
+
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nanobrowser)
+[![Twitter](https://img.shields.io/badge/Twitter-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/nanographxyz)
+[![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/dKRbE6Ew)
+
+</div>
+
 Open source multi-agent browser automation tool with built-in Chrome extension. NanoBrowser makes it easy to perform complex browser tasks using natural language commands.
 
 ![Demo GIF](https://github.com/user-attachments/assets/94f6e4e6-290d-4b6a-b68e-8ebcf038ded5)
