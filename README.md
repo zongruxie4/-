@@ -1,4 +1,7 @@
-# NanoBrowser
+<h1 align="center">
+    <img src="https://github.com/user-attachments/assets/ec60b0c4-87ba-48f4-981a-c55ed0e8497b" height="100" width="375" alt="banner" /><br>
+</h1>
+
 
 <div align="center">
 
@@ -8,69 +11,66 @@
 
 </div>
 
-Open source multi-agent browser automation tool with built-in Chrome extension. NanoBrowser makes it easy to perform complex browser tasks using natural language commands.
+## 🌐 Nanobrowser
 
-![Demo GIF](https://github.com/user-attachments/assets/94f6e4e6-290d-4b6a-b68e-8ebcf038ded5)
+Nanobrowser is an open-source AI web automation tool that runs in your browser. A free alternative to OpenAI Operator with flexible LLM options and multi-agent system.
 
-## Features
+⬇️ Get [Nanobrowser](https://github.com/nanobrowser/nanobrowser/releases) for free
 
-- 🤖 Multi-agent system for complex web automation tasks
-- 🔌 Built-in Chrome extension with chat interface
-- 🧠 Natural language commands for browser control
-- 💬 Interactive chat sidebar for real-time interaction and status updates
+👏 Join the community in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/nanobrowser_ai)
 
-## Quick Start
+❤️ Loving Nanobrowser? Give us a star 🌟 and help spread the word!
 
-### Prerequisites
+<div align="center">
+<img src="https://github.com/user-attachments/assets/112c4385-7b03-4b81-a352-4f348093351b" width="600" alt="Nanobrowser Demo GIF" />
+<p><em>Nanobrowser's multi-agent system analyzing HuggingFace in real-time, with the Planner intelligently self-correcting when encountering obstacles and dynamically instructing the Navigator to adjust its approach—all running locally in your browser.</em></p>
+</div>
 
-1. **Chrome Browser**:
-- Chrome browser installed
-- Chrome Extension Management page (`chrome://extensions/`) with "Developer mode" enabled
+## 🔥Why Nanobrowser?
 
-2. **Python Environment**:
-- Python 3.10 or higher
+Looking for a powerful AI web agent without the $200/month price tag of OpenAI Operator? **Nanobrowser** , as a chrome extension, delivers premium web automation capabilities while keeping you in complete control:
 
-### Installation
+- **100% Free** - No subscription fees or hidden costs. Just install and use your own API keys, and you only pay what you use with your own API keys.
+- **Privacy-Focused** - Everything runs in your local browser. Your credentials stay with you, never shared with any cloud service.
+- **Flexible LLM Options** - Connect to your preferred LLM providers with the freedom to choose different models for different agents.
+- **Fully Open Source** - Complete transparency in how your browser is automated. No black boxes or hidden processes.
 
-1. **Install the Chrome Extension**:
-- Open Chrome and go to `chrome://extensions/`
-- Enable "Developer mode" (top right)
-- Click "Load unpacked" (top left)
-- Select the `nanobrowser/extension/src` directory
+> **Note:** We currently support OpenAI and Anthropic, with more LLM integrations coming soon!
 
-2. **Install the NanoBrowser Agent Server**:
-```bash
-# Navigate to nanobrowser directory
-cd nanobrowser
 
-# Run installation script
-./install.sh
-```
+## 📊 Key Features
 
-> Note: The installation script has only been tested on MacOS. For other platforms, please refer to [uv's official documentation](https://github.com/astral-sh/uv) to install uv and dependencies manually.
+- **Multi-agent System**: Specialized AI agents collaborate to accomplish complex web workflows
+- **Interactive Side Panel**: Intuitive chat interface with real-time status updates
+- **Task Automation**: Seamlessly automate repetitive web automation tasks across websites
+- **Follow-up Questions**: Ask contextual follow-up questions about completed tasks
+- **Conversation History**: Easily access and manage your AI agent interaction history
+- **Multiple LLM Support**: Connect your preferred LLM providers and assign different models to different agents
 
-3. **Configure API Keys**:
 
-Create a `.env` file in the nanobrowser directory and add your API key. The default LLM provider is OpenAI:
-```bash
-OPENAI_API_KEY=your_openai_key_here
-```
+## 🚀 Quick Start
 
-If you want to use Claude (Anthropic), you'll need to modify the provider in `config.yaml` and use:
-```bash
-ANTHROPIC_API_KEY=your_anthropic_key_here
-```
+1. **Download**
+    * Download the latest `nanobrowser.zip` file from the official Github [release page](https://github.com/nanobrowser/nanobrowser/releases).
 
-4. **Run NanoBrowser**:
-```bash
-uv run nanobrowser
-```
+2. **Install**:
+    * Unzip `nanobrowser.zip`.
+    * Open `chrome://extensions/` in Chrome
+    * Enable `Developer mode` (top right)
+    * Click `Load unpacked` (top left)
+    * Select the unzipped `nanobrowser` folder.
 
-## Example Tasks
+3. **Configure Agent Models**
+    *   Click the Nanobrowser icon in your toolbar to open the sidebar
+    *   Click the `Settings` icon (top right).
+    *   Add your LLM API keys.
+    *   Choose which model to use for different agents (Navigator, Planner, Validator)
 
-Here are some tasks you can accomplish with NanoBrowser using natural language:
+## 💡 See It In Action
 
-1. **News Extraction**:
+Here are some powerful tasks you can accomplish with just a sentence:
+
+1. **News Summary**:
    > "Go to TechCrunch and extract top 10 headlines from the last 24 hours"
 
 2. **GitHub Research**:
@@ -79,43 +79,72 @@ Here are some tasks you can accomplish with NanoBrowser using natural language:
 3. **Shopping Research**:
    > "Find a portable Bluetooth speaker on Amazon with a water-resistant design, under $50. It should have a minimum battery life of 10 hours"
 
-4. **Recipe Analysis**:
-   > "Find a recipe with over 100 reviews for Fried Fish on Allrecipes, list the Full Nutrition Label and tell me the amount of Iron per Serving"
 
-## Roadmap
+## 🧩 Architecture Overview
 
-Here are the key features we're working on:
+Nanobrowser uses a specialized multi-agent system powered by large language models to understand and execute complex web tasks:
 
-1. **Standalone Extension**:
-   > "Simplify installation by making the Chrome extension work without a backend server"
+- **Planner**: Develops and refines strategies to complete tasks
+- **Navigator**: Navigates websites and performs actions
+- **Validator**: Checks if tasks are completed successfully
 
-2. **Enhanced Tab Management**:
-   > "Support multiple tabs with context awareness and state synchronization"
 
-3. **Conversation Intelligence**:
-   > "Enable natural follow-up questions and preserve context between tasks"
 
-4. **Advanced DOM Analysis**:
-   > "Improve interaction with complex web elements like canvas and dynamic content"
+## 🛠️ Roadmap
 
----
+We're actively developing Nanobrowser with exciting features on the horizon, welcome to join us! 
 
-## Contributing
+- [ ] **Expand LLM Support**: Add integration with more large language model providers for AI agents
+- [ ] **Security Firewall**: Implement protective measures to ensure safe browsing operations
+- [ ] **Memory Optimization**: Reduce token usage while maintaining context awareness
+- [ ] **Session Replay**: Efficiently replay historical tasks with minimal token consumption
+- [ ] **Specialized Agents**: Develop purpose-built agents for complex domain-specific tasks
 
-Contributions are welcome! Feel free to:
-- Report bugs
-- Suggest new features
-- Submit pull requests
 
-## Acknowledgments
+## 🤝 Contributing
 
-Special thanks to these inspiring projects:
-- [python-cdp](https://github.com/HMaker/python-cdp)
-- [Agent-E](https://github.com/EmergenceAI/Agent-E)
-- [fuji-web](https://github.com/normal-computing/fuji-web)
+**We need your help to make Nanobrowser even better!**  Contributions of all kinds are welcome:
 
-## License
+*  **Share Prompts & Use Cases** 
+   * Join our [Discord server]([YOUR_DISCORD_INVITE_LINK])
+   * share how you're using Nanobrowser.  Help us build a library of useful prompts and real-world use cases.
+*  **Provide Feedback** 
+   * Try Nanobrowser and give us feedback on its performance or suggest improvements in our [Discord server](https://discord.gg/NN3ABHggMK).
+* **Contribute Code**
+   * Create an issue
+   * Fork the repository
+   * Open a pull request
+
+
+We believe in the power of open source and community collaboration.  Join us in building the future of web automation!
+
+
+## 💬 Community
+
+Join our growing community of developers and users:
+
+- [Discord](https://discord.gg/NN3ABHggMK) - Chat with team and community
+- [Twitter](https://x.com/nanobrowser_ai) - Follow for updates and announcements
+- [GitHub Discussions](https://github.com/nanobrowser/nanobrowser/discussions) - Share ideas and ask questions
+
+## 👏 Acknowledgments
+
+Nanobrowser builds on top of other awesome open-source projects:
+
+- [Browser Use](https://github.com/browser-use/browser-use)
+- [Puppeteer](https://github.com/EmergenceAI/Agent-E)
+- [Chrome Extension Boilerplate](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite)
+
+Huge thanks to their creators and contributors!
+
+
+## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-Made with ❤️ by the NanoBrowser Team
+Made with ❤️ by the Nanobrowser Team. 
+
+Like Nanobrowser? Give us a star 🌟 and join us in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/nanobrowser_ai)
+
+
+
