@@ -41,7 +41,7 @@ export const clickElementActionSchema: ActionSchema = {
   name: 'click_element',
   description: 'Click element',
   schema: z.object({
-    desc: z.string(),
+    desc: z.string().optional(), // some small LLM can not generate a description, so let it be optional (but it's still makred as required in json schema)
     index: z.number(),
     xpath: z.string().optional(),
   }),
@@ -51,7 +51,7 @@ export const inputTextActionSchema: ActionSchema = {
   name: 'input_text',
   description: 'Input text into an interactive input element',
   schema: z.object({
-    desc: z.string(),
+    desc: z.string().optional(),
     index: z.number(),
     text: z.string(),
     xpath: z.string().optional(),
@@ -98,7 +98,7 @@ export const scrollDownActionSchema: ActionSchema = {
   name: 'scroll_down',
   description: 'Scroll down the page by pixel amount - if no amount is specified, scroll down one page',
   schema: z.object({
-    desc: z.string(),
+    desc: z.string().optional(),
     amount: z.number().optional(),
   }),
 };
@@ -107,7 +107,7 @@ export const scrollUpActionSchema: ActionSchema = {
   name: 'scroll_up',
   description: 'Scroll up the page by pixel amount - if no amount is specified, scroll up one page',
   schema: z.object({
-    desc: z.string(),
+    desc: z.string().optional(),
     amount: z.number().optional(),
   }),
 };
@@ -117,7 +117,7 @@ export const sendKeysActionSchema: ActionSchema = {
   description:
     'Send strings of special keys like Backspace, Insert, PageDown, Delete, Enter. Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard press. Be aware of different operating systems and their shortcuts',
   schema: z.object({
-    desc: z.string(),
+    desc: z.string().optional(),
     keys: z.string(),
   }),
 };
@@ -126,7 +126,7 @@ export const scrollToTextActionSchema: ActionSchema = {
   name: 'scroll_to_text',
   description: 'If you dont find something which you want to interact with, scroll to it',
   schema: z.object({
-    desc: z.string(),
+    desc: z.string().optional(),
     text: z.string(),
   }),
 };
