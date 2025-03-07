@@ -291,6 +291,46 @@ export const ModelSettings = () => {
               />
             </div>
           </div>
+
+          <div className="border-t border-gray-200" />
+
+          {/* Gemini Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-700">Gemini</h3>
+              <Button
+                {...getButtonProps(LLMProviderEnum.Gemini)}
+                size="sm"
+                onClick={() =>
+                  apiKeys[LLMProviderEnum.Gemini]?.apiKey && !modifiedProviders.has(LLMProviderEnum.Gemini)
+                    ? handleDelete(LLMProviderEnum.Gemini)
+                    : handleSave(LLMProviderEnum.Gemini)
+                }
+              />
+            </div>
+            <div className="space-y-3">
+              <input
+                type="password"
+                placeholder="Gemini API key"
+                value={apiKeys[LLMProviderEnum.Gemini]?.apiKey || ''}
+                onChange={e => handleApiKeyChange(LLMProviderEnum.Gemini, e.target.value)}
+                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Custom Base URL (Optional)"
+                value={apiKeys[LLMProviderEnum.Gemini]?.baseUrl || ''}
+                onChange={e =>
+                  handleApiKeyChange(
+                    LLMProviderEnum.Gemini,
+                    apiKeys[LLMProviderEnum.Gemini]?.apiKey || '',
+                    e.target.value,
+                  )
+                }
+                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
