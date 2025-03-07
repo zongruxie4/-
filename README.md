@@ -95,10 +95,9 @@ If you prefer to build Nanobrowser yourself, follow these steps:
    * Follow the installation steps from the Quick Start section to load the extension into your browser
 
 6. **Development Mode** (optional):
-   * To run in development mode with hot reloading:
-     ```bash
-     pnpm dev
-     ```
+   ```bash
+   pnpm dev
+   ```
 
 ## 💡 See It In Action
 
