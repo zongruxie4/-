@@ -66,6 +66,40 @@ Looking for a powerful AI web agent without the $200/month price tag of OpenAI O
     *   Add your LLM API keys.
     *   Choose which model to use for different agents (Navigator, Planner, Validator)
 
+## 🛠️ Build from Source
+
+If you prefer to build Nanobrowser yourself, follow these steps:
+
+1. **Prerequisites**:
+   * [Node.js](https://nodejs.org/) (v22.12.0 or higher)
+   * [pnpm](https://pnpm.io/installation) (v9.15.1 or higher)
+
+2. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/nanobrowser/nanobrowser.git
+   cd nanobrowser
+   ```
+
+3. **Install Dependencies**:
+   ```bash
+   pnpm install
+   ```
+
+4. **Build the Extension**:
+   ```bash
+   pnpm build
+   ```
+
+5. **Load the Extension**:
+   * The built extension will be in the `dist` directory
+   * Follow the installation steps from the Quick Start section to load the extension into your browser
+
+6. **Development Mode** (optional):
+   * To run in development mode with hot reloading:
+     ```bash
+     pnpm dev
+     ```
+
 ## 💡 See It In Action
 
 Here are some powerful tasks you can accomplish with just a sentence:
