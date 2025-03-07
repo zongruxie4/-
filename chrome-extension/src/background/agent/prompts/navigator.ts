@@ -34,12 +34,12 @@ export class NavigatorPrompt extends BasePrompt {
 
    Common action sequences:
    - Form filling: [
-       {"input_text": {"index": 1, "text": "username"}},
-       {"input_text": {"index": 2, "text": "password"}},
-       {"click_element": {"index": 3}}
+       {"input_text": {"desc": "Fill title", "index": 1, "text": "example title"}},
+       {"input_text": {"desc": "Fill comment", "index": 2, "text": "example comment"}},
+       {"click_element": {"desc": "Click submit button", "index": 3}}
      ]
    - Navigation: [
-       {"open_tab": {}},
+       {"open_tab": {"url": "https://example.com"}},
        {"go_to_url": {"url": "https://example.com"}},
      ]
 

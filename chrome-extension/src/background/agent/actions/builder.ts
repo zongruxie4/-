@@ -156,7 +156,8 @@ export class ActionBuilder {
 
     // Element Interaction Actions
     const clickElement = new Action(async (input: z.infer<typeof clickElementActionSchema.schema>) => {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, input.desc);
+      const todo = input.desc || `Click element with index ${input.index}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
 
       const page = await this.context.browserContext.getCurrentPage();
       const state = await page.getState();
@@ -207,7 +208,8 @@ export class ActionBuilder {
     actions.push(clickElement);
 
     const inputText = new Action(async (input: z.infer<typeof inputTextActionSchema.schema>) => {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, input.desc);
+      const todo = input.desc || `Input text into index ${input.index}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
 
       const page = await this.context.browserContext.getCurrentPage();
       const state = await page.getState();
@@ -284,7 +286,8 @@ export class ActionBuilder {
     actions.push(cacheContent);
 
     const scrollDown = new Action(async (input: z.infer<typeof scrollDownActionSchema.schema>) => {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, input.desc);
+      const todo = input.desc || 'Scroll down the page';
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
 
       const page = await this.context.browserContext.getCurrentPage();
       await page.scrollDown(input.amount);
@@ -296,7 +299,8 @@ export class ActionBuilder {
     actions.push(scrollDown);
 
     const scrollUp = new Action(async (input: z.infer<typeof scrollUpActionSchema.schema>) => {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, input.desc);
+      const todo = input.desc || 'Scroll up the page';
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
 
       const page = await this.context.browserContext.getCurrentPage();
       await page.scrollUp(input.amount);
@@ -309,7 +313,8 @@ export class ActionBuilder {
 
     // Keyboard Actions
     const sendKeys = new Action(async (input: z.infer<typeof sendKeysActionSchema.schema>) => {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, input.desc);
+      const todo = input.desc || `Send keys: ${input.keys}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
 
       const page = await this.context.browserContext.getCurrentPage();
       await page.sendKeys(input.keys);
@@ -320,7 +325,8 @@ export class ActionBuilder {
     actions.push(sendKeys);
 
     const scrollToText = new Action(async (input: z.infer<typeof scrollToTextActionSchema.schema>) => {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, input.desc);
+      const todo = input.desc || `Scroll to text: ${input.text}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
 
       const page = await this.context.browserContext.getCurrentPage();
       try {
