@@ -75,8 +75,8 @@ export const ModelSettings = () => {
     setApiKeys(prev => ({
       ...prev,
       [provider]: {
-        apiKey,
-        baseUrl: baseUrl !== undefined ? baseUrl : prev[provider]?.baseUrl,
+        apiKey: apiKey.trim(),
+        baseUrl: baseUrl !== undefined ? baseUrl.trim() : prev[provider]?.baseUrl,
       },
     }));
   };
