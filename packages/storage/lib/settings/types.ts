@@ -13,12 +13,12 @@ export enum LLMProviderEnum {
 
 export const llmProviderModelNames = {
   [LLMProviderEnum.OpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini'],
-  [LLMProviderEnum.Anthropic]: ['claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
+  [LLMProviderEnum.Anthropic]: ['claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'],
   [LLMProviderEnum.Gemini]: [
     'gemini-2.0-flash',
     'gemini-2.0-flash-lite',
     'gemini-2.0-pro-exp-02-05',
-    'gemini-2.0-flash-thinking-exp-01-21',
+    // 'gemini-2.0-flash-thinking-exp-01-21', // TODO: not support function calling for now
   ],
 };
 

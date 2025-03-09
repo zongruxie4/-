@@ -209,6 +209,12 @@ importers:
         specifier: workspace:*
         version: link:../tsconfig
 
+  packages/schema-utils:
+    devDependencies:
+      '@extension/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+
   packages/shared:
     devDependencies:
       '@extension/storage':

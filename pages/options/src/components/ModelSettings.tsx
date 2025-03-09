@@ -276,19 +276,6 @@ export const ModelSettings = () => {
                 onChange={e => handleApiKeyChange(LLMProviderEnum.Anthropic, e.target.value)}
                 className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
               />
-              <input
-                type="text"
-                placeholder="Custom Base URL (Optional)"
-                value={apiKeys[LLMProviderEnum.Anthropic]?.baseUrl || ''}
-                onChange={e =>
-                  handleApiKeyChange(
-                    LLMProviderEnum.Anthropic,
-                    apiKeys[LLMProviderEnum.Anthropic]?.apiKey || '',
-                    e.target.value,
-                  )
-                }
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
             </div>
           </div>
 
@@ -314,19 +301,6 @@ export const ModelSettings = () => {
                 placeholder="Gemini API key"
                 value={apiKeys[LLMProviderEnum.Gemini]?.apiKey || ''}
                 onChange={e => handleApiKeyChange(LLMProviderEnum.Gemini, e.target.value)}
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Custom Base URL (Optional)"
-                value={apiKeys[LLMProviderEnum.Gemini]?.baseUrl || ''}
-                onChange={e =>
-                  handleApiKeyChange(
-                    LLMProviderEnum.Gemini,
-                    apiKeys[LLMProviderEnum.Gemini]?.apiKey || '',
-                    e.target.value,
-                  )
-                }
                 className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
               />
             </div>
