@@ -6,11 +6,11 @@ import type { Action } from '../actions/builder';
 import { buildDynamicActionSchema } from '../actions/builder';
 import { agentBrainSchema } from '../types';
 import { type BaseMessage, HumanMessage } from '@langchain/core/messages';
-import { jsonNavigatorOutputSchema } from '../actions/json_schema';
 import { Actors, ExecutionState } from '../event/types';
 import { isAuthenticationError } from '@src/background/utils';
 import { ChatModelAuthError } from './errors';
-
+import { jsonNavigatorOutputSchema } from '../actions/json_schema';
+import { geminiNavigatorOutputSchema } from '../actions/json_gemini';
 const logger = createLogger('NavigatorAgent');
 
 export class NavigatorActionRegistry {
@@ -63,14 +63,21 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
   async invoke(inputMessages: BaseMessage[]): Promise<this['ModelOutput']> {
     // Use structured output
     if (this.withStructuredOutput) {
+      // For Google Generative AI, we need to use the modelOutputSchema directly
+      // but make sure it doesn't have any 'default' properties that cause issues
+
+      const schema =
+        this.chatModelLibrary === 'ChatGoogleGenerativeAI' ? geminiNavigatorOutputSchema : jsonNavigatorOutputSchema;
+
       // TODO: don't know why zod can not generate the same schema. Use the json schema exported from browser-use as a workaround for now, need to fix it
-      const structuredLlm = this.chatLLM.withStructuredOutput(jsonNavigatorOutputSchema, {
+      const structuredLlm = this.chatLLM.withStructuredOutput(schema, {
         includeRaw: true,
       });
 
       const response = await structuredLlm.invoke(inputMessages, {
         ...this.callOptions,
       });
+
       if (response.parsed) {
         return response.parsed;
       }
@@ -218,11 +225,17 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
   private async doMultiAction(response: this['ModelOutput']): Promise<ActionResult[]> {
     const results: ActionResult[] = [];
     let errCount = 0;
+
+    logger.info('Actions', response.action);
     // sometimes response.action is a string, but not an array as expected, so we need to parse it as an array
     let actions: Record<string, unknown>[] = [];
     if (Array.isArray(response.action)) {
-      actions = response.action;
-    } else {
+      // if the item is null, skip it
+      actions = response.action.filter((item: unknown) => item !== null);
+      if (actions.length === 0) {
+        logger.warning('No valid actions found', response.action);
+      }
+    } else if (typeof response.action === 'string') {
       try {
         logger.warning('Unexpected action format', response.action);
         // try to parse the action as an JSON object
@@ -231,6 +244,9 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         logger.error('Invalid action format', response.action);
         throw new Error('Invalid action output format');
       }
+    } else {
+      // if the action is neither an array nor a string, it should be an object
+      actions = [response.action];
     }
 
     for (const action of actions) {

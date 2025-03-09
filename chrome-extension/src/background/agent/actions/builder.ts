@@ -36,19 +36,30 @@ export class InvalidInputError extends Error {
  */
 export class Action {
   constructor(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private readonly handler: (input: any) => Promise<ActionResult>,
     public readonly schema: ActionSchema,
   ) {}
 
   async call(input: unknown): Promise<ActionResult> {
     // Validate input before calling the handler
-    const result = this.schema.schema.safeParse(input);
-    if (!result.success) {
-      const errorMessage = result.error.message;
-      logger.error('Invalid input', errorMessage);
+    const schema = this.schema.schema;
+
+    // check if the schema is schema: z.object({}), if so, ignore the input
+    const isEmptySchema =
+      schema instanceof z.ZodObject &&
+      Object.keys((schema as z.ZodObject<Record<string, z.ZodTypeAny>>).shape || {}).length === 0;
+
+    if (isEmptySchema) {
+      return await this.handler({});
+    }
+
+    const parsedArgs = this.schema.schema.safeParse(input);
+    if (!parsedArgs.success) {
+      const errorMessage = parsedArgs.error.message;
       throw new InvalidInputError(errorMessage);
     }
-    return await this.handler(result.data);
+    return await this.handler(parsedArgs.data);
   }
 
   name() {
@@ -60,6 +71,7 @@ export class Action {
    * @returns {string} The prompt for the action
    */
   prompt() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const schemaShape = (this.schema.schema as z.ZodObject<any>).shape || {};
     const schemaProperties = Object.entries(schemaShape).map(([key, value]) => {
       const zodValue = value as z.ZodTypeAny;
@@ -77,13 +89,14 @@ export class Action {
 export function buildDynamicActionSchema(actions: Action[]): z.ZodType {
   let schema = z.object({});
   for (const action of actions) {
-    // create a schema for the action, it could be action.schema.schema or null, and default to null
-    const actionSchema = action.schema.schema.nullable().default(null);
+    // create a schema for the action, it could be action.schema.schema or null
+    // but don't use default: null as it causes issues with Google Generative AI
+    const actionSchema = action.schema.schema.nullable();
     schema = schema.extend({
       [action.name()]: actionSchema,
     });
   }
-  return schema.partial();
+  return schema.partial().nullable();
 }
 
 export class ActionBuilder {

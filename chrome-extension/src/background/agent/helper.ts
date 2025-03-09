@@ -1,6 +1,7 @@
 import { type ProviderConfig, LLMProviderEnum, AgentNameEnum } from '@extension/storage';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 
 // create a chat model based on the agent name, the model name and provider
@@ -59,6 +60,17 @@ export function createChatModel(
         };
       }
       return new ChatAnthropic(args);
+    }
+    case LLMProviderEnum.Gemini: {
+      temperature = 0.5;
+      topP = 0.8;
+      const args = {
+        model: modelName,
+        apiKey: providerConfig.apiKey,
+        temperature,
+        topP,
+      };
+      return new ChatGoogleGenerativeAI(args);
     }
     default: {
       throw new Error(`Provider ${providerName} not supported yet`);

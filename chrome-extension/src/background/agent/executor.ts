@@ -120,6 +120,7 @@ export class Executor {
 
       let done = false;
       let step = 0;
+      let validatorFailed = false;
 
       for (step = 0; step < allowedMaxSteps; step++) {
         context.stepInfo = {
@@ -133,7 +134,8 @@ export class Executor {
         }
 
         // Run planner if configured
-        if (this.planner && context.nSteps % context.options.planningInterval === 0) {
+        if (this.planner && (context.nSteps % context.options.planningInterval === 0 || validatorFailed)) {
+          validatorFailed = false;
           // The first planning step is special, we don't want to add the browser state message to memory
           if (this.tasks.length > 1 || step > 0) {
             await this.navigator.addStateMessageToMemory();
@@ -153,9 +155,10 @@ export class Executor {
             } else {
               // task is not complete, let's navigate
               this.validator.setPlan(null);
+              done = false;
             }
-            if (!planOutput.result.web_task) {
-              done = true;
+
+            if (!planOutput.result.web_task && planOutput.result.done) {
               break;
             }
           }
@@ -173,6 +176,7 @@ export class Executor {
             logger.info('✅ Task completed successfully');
             break;
           }
+          validatorFailed = true;
         }
       }
 

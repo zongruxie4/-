@@ -161,13 +161,13 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     ];
 
     const toolCallMessage = new AIMessage({
-      content: '',
+      content: 'tool call',
       tool_calls: toolCalls,
     });
     messageManager.addMessageWithTokens(toolCallMessage);
 
     const toolMessage = new ToolMessage({
-      content: '',
+      content: 'tool call response placeholder',
       tool_call_id: toolCallId,
     });
     messageManager.addMessageWithTokens(toolMessage);

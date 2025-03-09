@@ -81,7 +81,7 @@ export default class MessageManager {
     ];
 
     const exampleToolCall = new AIMessage({
-      content: '',
+      content: 'example tool call',
       tool_calls: toolCalls,
     });
     this.addMessageWithTokens(exampleToolCall);
