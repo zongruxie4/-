@@ -35,7 +35,7 @@ Looking for a powerful AI web agent without the $200/month price tag of OpenAI O
 - **Flexible LLM Options** - Connect to your preferred LLM providers with the freedom to choose different models for different agents.
 - **Fully Open Source** - Complete transparency in how your browser is automated. No black boxes or hidden processes.
 
-> **Note:** We currently support OpenAI and Anthropic, with more LLM integrations coming soon!
+> **Note:** We currently support OpenAI, Anthropic and Gemini, with more LLM integrations coming soon!
 
 
 ## 📊 Key Features
@@ -99,6 +99,30 @@ If you prefer to build Nanobrowser yourself, follow these steps:
    pnpm dev
    ```
 
+## 🤖 Choosing Your Models
+
+Nanobrowser allows you to configure different LLM models for each agent to balance performance and cost. Here are recommended configurations:
+
+### Better Performance
+- **Planner & Validator**: Claude 3.7 Sonnet
+  - Better reasoning and planning capabilities
+  - More reliable task validation
+- **Navigator**: Claude 3.5 Haiku
+  - Efficient for web navigation tasks
+  - Good balance of performance and cost
+
+### Cost-Effective Configuration
+- **Planner & Validator**: Claude Haiku or GPT-4o
+  - Reasonable performance at lower cost
+  - May require more iterations for complex tasks
+- **Navigator**: Gemini 2.0 Flash or GPT-4o-mini
+  - Lightweight and cost-efficient
+  - Suitable for basic navigation tasks
+
+> **Note**: The cost-effective configuration may produce less stable outputs and require more iterations for complex tasks.
+
+> **Tip**: Feel free to experiment with your own model configurations! Found a great combination? Share it with the community in our [Discord](https://discord.gg/NN3ABHggMK) to help others optimize their setup.
+
 ## 💡 See It In Action
 
 Here are some powerful tasks you can accomplish with just a sentence:
@@ -111,17 +135,6 @@ Here are some powerful tasks you can accomplish with just a sentence:
 
 3. **Shopping Research**:
    > "Find a portable Bluetooth speaker on Amazon with a water-resistant design, under $50. It should have a minimum battery life of 10 hours"
-
-
-## 🧩 Architecture Overview
-
-Nanobrowser uses a specialized multi-agent system powered by large language models to understand and execute complex web tasks:
-
-- **Planner**: Develops and refines strategies to complete tasks
-- **Navigator**: Navigates websites and performs actions
-- **Validator**: Checks if tasks are completed successfully
-
-
 
 ## 🛠️ Roadmap
 
