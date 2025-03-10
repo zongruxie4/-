@@ -43,7 +43,7 @@ export const clickElementActionSchema: ActionSchema = {
   schema: z.object({
     desc: z.string().optional(), // some small LLM can not generate a description, so let it be optional (but it's still makred as required in json schema)
     index: z.number(),
-    xpath: z.string().optional(),
+    xpath: z.string().optional().nullable(),
   }),
 };
 
@@ -54,7 +54,7 @@ export const inputTextActionSchema: ActionSchema = {
     desc: z.string().optional(),
     index: z.number(),
     text: z.string(),
-    xpath: z.string().optional(),
+    xpath: z.string().optional().nullable(),
   }),
 };
 
@@ -99,7 +99,7 @@ export const scrollDownActionSchema: ActionSchema = {
   description: 'Scroll down the page by pixel amount - if no amount is specified, scroll down one page',
   schema: z.object({
     desc: z.string().optional(),
-    amount: z.number().optional(),
+    amount: z.number().optional().nullable(),
   }),
 };
 
@@ -108,7 +108,7 @@ export const scrollUpActionSchema: ActionSchema = {
   description: 'Scroll up the page by pixel amount - if no amount is specified, scroll up one page',
   schema: z.object({
     desc: z.string().optional(),
-    amount: z.number().optional(),
+    amount: z.number().optional().nullable(),
   }),
 };
 
