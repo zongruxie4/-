@@ -49,6 +49,7 @@ export interface NavigatorResult {
 
 export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
   private actionRegistry: NavigatorActionRegistry;
+  private jsonSchema: Record<string, unknown>;
 
   constructor(
     actionRegistry: NavigatorActionRegistry,
@@ -58,19 +59,14 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     super(actionRegistry.setupModelOutputSchema(), options, { ...extraOptions, id: 'navigator' });
 
     this.actionRegistry = actionRegistry;
+
+    this.jsonSchema = this.modelName.startsWith('gemini') ? geminiNavigatorOutputSchema : jsonNavigatorOutputSchema;
   }
 
   async invoke(inputMessages: BaseMessage[]): Promise<this['ModelOutput']> {
     // Use structured output
     if (this.withStructuredOutput) {
-      // For Google Generative AI, we need to use the modelOutputSchema directly
-      // but make sure it doesn't have any 'default' properties that cause issues
-
-      const schema =
-        this.chatModelLibrary === 'ChatGoogleGenerativeAI' ? geminiNavigatorOutputSchema : jsonNavigatorOutputSchema;
-
-      // TODO: don't know why zod can not generate the same schema. Use the json schema exported from browser-use as a workaround for now, need to fix it
-      const structuredLlm = this.chatLLM.withStructuredOutput(schema, {
+      const structuredLlm = this.chatLLM.withStructuredOutput(this.jsonSchema, {
         includeRaw: true,
       });
 
@@ -271,7 +267,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('doAction error', errorMessage);
+        logger.error('doAction error', actionName, actionArgs, errorMessage);
         // unexpected error, emit event
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMessage);
         errCount++;

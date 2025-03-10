@@ -51,8 +51,9 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     this.chatLLM = options.chatLLM;
     this.prompt = options.prompt;
     this.context = options.context;
+    // TODO: fix this, the name is not correct in production environment
     this.chatModelLibrary = this.chatLLM.constructor.name;
-    this.modelName = this.setModelNames();
+    this.modelName = this.getModelName();
     this.withStructuredOutput = this.setWithStructuredOutput();
     // extra options
     this.id = extraOptions?.id || 'agent';
@@ -62,7 +63,10 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
   }
 
   // Set the model name
-  private setModelNames(): string {
+  private getModelName(): string {
+    if ('modelName' in this.chatLLM) {
+      return this.chatLLM.modelName as string;
+    }
     if ('model_name' in this.chatLLM) {
       return this.chatLLM.model_name as string;
     }
