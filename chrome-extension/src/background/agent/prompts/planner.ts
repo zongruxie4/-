@@ -8,7 +8,7 @@ export class PlannerPrompt extends BasePrompt {
     return new SystemMessage(`You are a helpful assistant.
 
 RESPONSIBILITIES:
-1. Judge whether the ultimate task is related to web browsing or not first and set the "web_task" field.
+1. Judge whether the ultimate task is related to web browsing or not and set the "web_task" field.
 2. If web_task is false, then just answer the task directly as a helpful assistant
   - Output the answer into "next_steps" field in the JSON object. 
   - Set "done" field to true
@@ -30,6 +30,7 @@ RESPONSIBILITIES:
     - Only suggest scrolling if the required content is confirmed to not be in the current view
     - Scrolling is your LAST resort unless you are explicitly required to do so by the task
     - NEVER suggest scrolling through the entire page, only scroll ONE PAGE at a time.
+4. Once web_task is set to either true or false, its value The value must never change from its first set state in the conversation.
 
 RESPONSE FORMAT: Your must always respond with a valid JSON object with the following fields:
 {
