@@ -192,8 +192,8 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
         // Find the JSON content between code blocks
         cleanedContent = cleanedContent.split('```')[1];
         // Remove language identifier if present (e.g., 'json\n')
-        if (cleanedContent.includes('\n')) {
-          cleanedContent = cleanedContent.split('\n', 2)[1];
+        if (cleanedContent.includes('json\n')) {
+          cleanedContent = cleanedContent.replace(/^json\s*/, '');
         }
       }
       // Parse the cleaned content
