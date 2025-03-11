@@ -12,7 +12,7 @@ export enum LLMProviderEnum {
 }
 
 export const llmProviderModelNames = {
-  [LLMProviderEnum.OpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini'],
+  [LLMProviderEnum.OpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini', 'deepseek-r1'],
   [LLMProviderEnum.Anthropic]: ['claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'],
   [LLMProviderEnum.Gemini]: [
     'gemini-2.0-flash',
