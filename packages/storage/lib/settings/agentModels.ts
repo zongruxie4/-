@@ -1,11 +1,11 @@
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
-import { type AgentNameEnum, type LLMProviderEnum, llmProviderModelNames } from './types';
+import { type AgentNameEnum, llmProviderModelNames } from './types';
 
 // Interface for a single model configuration
 export interface ModelConfig {
-  provider: LLMProviderEnum;
+  provider: string;
   modelName: string;
 }
 
@@ -37,8 +37,9 @@ function validateModelConfig(config: ModelConfig) {
     throw new Error('Provider and model name must be specified');
   }
 
-  const validModels = llmProviderModelNames[config.provider];
-  if (!validModels.includes(config.modelName)) {
+  // Check if the provider exists in our predefined providers
+  const validModels = llmProviderModelNames[config.provider as keyof typeof llmProviderModelNames];
+  if (!validModels || !validModels.includes(config.modelName)) {
     throw new Error(`Invalid model "${config.modelName}" for provider "${config.provider}"`);
   }
 }

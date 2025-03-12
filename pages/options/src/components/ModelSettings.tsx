@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@extension/ui';
-import {
-  llmProviderStore,
-  agentModelStore,
-  AgentNameEnum,
-  LLMProviderEnum,
-  llmProviderModelNames,
-} from '@extension/storage';
+import { llmProviderStore, agentModelStore, AgentNameEnum, llmProviderModelNames } from '@extension/storage';
+
+// Provider constants
+const OPENAI_PROVIDER = 'openai';
+const ANTHROPIC_PROVIDER = 'anthropic';
+const GEMINI_PROVIDER = 'gemini';
 
 export const ModelSettings = () => {
-  const [apiKeys, setApiKeys] = useState<Record<LLMProviderEnum, { apiKey: string; baseUrl?: string }>>(
-    {} as Record<LLMProviderEnum, { apiKey: string; baseUrl?: string }>,
+  const [apiKeys, setApiKeys] = useState<Record<string, { apiKey: string; baseUrl?: string }>>(
+    {} as Record<string, { apiKey: string; baseUrl?: string }>,
   );
-  const [modifiedProviders, setModifiedProviders] = useState<Set<LLMProviderEnum>>(new Set());
+  const [modifiedProviders, setModifiedProviders] = useState<Set<string>>(new Set());
   const [selectedModels, setSelectedModels] = useState<Record<AgentNameEnum, string>>({
     [AgentNameEnum.Navigator]: '',
     [AgentNameEnum.Planner]: '',
@@ -24,21 +23,25 @@ export const ModelSettings = () => {
       try {
         const providers = await llmProviderStore.getConfiguredProviders();
 
-        const keys: Record<LLMProviderEnum, { apiKey: string; baseUrl?: string }> = {} as Record<
-          LLMProviderEnum,
+        const keys: Record<string, { apiKey: string; baseUrl?: string }> = {} as Record<
+          string,
           { apiKey: string; baseUrl?: string }
         >;
 
         for (const provider of providers) {
           const config = await llmProviderStore.getProvider(provider);
+          console.log('config', config);
           if (config) {
-            keys[provider] = config;
+            keys[provider] = {
+              apiKey: config.apiKey,
+              baseUrl: config.baseUrl,
+            };
           }
         }
         setApiKeys(keys);
       } catch (error) {
         console.error('Error loading API keys:', error);
-        setApiKeys({} as Record<LLMProviderEnum, { apiKey: string; baseUrl?: string }>);
+        setApiKeys({} as Record<string, { apiKey: string; baseUrl?: string }>);
       }
     };
 
@@ -70,7 +73,7 @@ export const ModelSettings = () => {
     loadAgentModels();
   }, []);
 
-  const handleApiKeyChange = (provider: LLMProviderEnum, apiKey: string, baseUrl?: string) => {
+  const handleApiKeyChange = (provider: string, apiKey: string, baseUrl?: string) => {
     setModifiedProviders(prev => new Set(prev).add(provider));
     setApiKeys(prev => ({
       ...prev,
@@ -81,9 +84,14 @@ export const ModelSettings = () => {
     }));
   };
 
-  const handleSave = async (provider: LLMProviderEnum) => {
+  const handleSave = async (provider: string) => {
     try {
-      await llmProviderStore.setProvider(provider, apiKeys[provider]);
+      // The provider store will handle filling in the missing fields
+      await llmProviderStore.setProvider(provider, {
+        apiKey: apiKeys[provider].apiKey,
+        baseUrl: apiKeys[provider].baseUrl,
+      });
+
       setModifiedProviders(prev => {
         const next = new Set(prev);
         next.delete(provider);
@@ -94,7 +102,7 @@ export const ModelSettings = () => {
     }
   };
 
-  const handleDelete = async (provider: LLMProviderEnum) => {
+  const handleDelete = async (provider: string) => {
     try {
       await llmProviderStore.removeProvider(provider);
       setApiKeys(prev => {
@@ -107,7 +115,7 @@ export const ModelSettings = () => {
     }
   };
 
-  const getButtonProps = (provider: LLMProviderEnum) => {
+  const getButtonProps = (provider: string) => {
     const hasStoredKey = Boolean(apiKeys[provider]?.apiKey);
     const isModified = modifiedProviders.has(provider);
     const hasInput = Boolean(apiKeys[provider]?.apiKey?.trim());
@@ -129,11 +137,14 @@ export const ModelSettings = () => {
 
   const getAvailableModels = () => {
     const models: string[] = [];
-    Object.entries(apiKeys).forEach(([provider, config]) => {
+
+    for (const [provider, config] of Object.entries(apiKeys)) {
       if (config.apiKey) {
-        models.push(...(llmProviderModelNames[provider as LLMProviderEnum] || []));
+        const providerModels = llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
+        models.push(...providerModels);
       }
-    });
+    }
+
     return models.length ? models : [''];
   };
 
@@ -146,10 +157,10 @@ export const ModelSettings = () => {
     try {
       if (model) {
         // Determine provider from model name
-        let provider: LLMProviderEnum | undefined;
+        let provider: string | undefined;
         for (const [providerKey, models] of Object.entries(llmProviderModelNames)) {
           if (models.includes(model)) {
-            provider = providerKey as LLMProviderEnum;
+            provider = providerKey;
             break;
           }
         }
@@ -219,61 +230,59 @@ export const ModelSettings = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-700">OpenAI</h3>
               <Button
-                {...getButtonProps(LLMProviderEnum.OpenAI)}
-                size="sm"
+                variant={getButtonProps(OPENAI_PROVIDER).variant}
+                disabled={getButtonProps(OPENAI_PROVIDER).disabled}
                 onClick={() =>
-                  apiKeys[LLMProviderEnum.OpenAI]?.apiKey && !modifiedProviders.has(LLMProviderEnum.OpenAI)
-                    ? handleDelete(LLMProviderEnum.OpenAI)
-                    : handleSave(LLMProviderEnum.OpenAI)
-                }
-              />
+                  apiKeys[OPENAI_PROVIDER]?.apiKey && !modifiedProviders.has(OPENAI_PROVIDER)
+                    ? handleDelete(OPENAI_PROVIDER)
+                    : handleSave(OPENAI_PROVIDER)
+                }>
+                {getButtonProps(OPENAI_PROVIDER).children}
+              </Button>
             </div>
             <div className="space-y-3">
               <input
                 type="password"
                 placeholder="OpenAI API key"
-                value={apiKeys[LLMProviderEnum.OpenAI]?.apiKey || ''}
-                onChange={e => handleApiKeyChange(LLMProviderEnum.OpenAI, e.target.value)}
+                value={apiKeys[OPENAI_PROVIDER]?.apiKey || ''}
+                onChange={e => handleApiKeyChange(OPENAI_PROVIDER, e.target.value)}
                 className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
               />
               <input
                 type="text"
                 placeholder="Custom Base URL (Optional)"
-                value={apiKeys[LLMProviderEnum.OpenAI]?.baseUrl || ''}
+                value={apiKeys[OPENAI_PROVIDER]?.baseUrl || ''}
                 onChange={e =>
-                  handleApiKeyChange(
-                    LLMProviderEnum.OpenAI,
-                    apiKeys[LLMProviderEnum.OpenAI]?.apiKey || '',
-                    e.target.value,
-                  )
+                  handleApiKeyChange(OPENAI_PROVIDER, apiKeys[OPENAI_PROVIDER]?.apiKey || '', e.target.value)
                 }
                 className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
               />
             </div>
           </div>
 
-          <div className="border-t border-gray-200"></div>
+          <div className="border-t border-gray-200" />
 
           {/* Anthropic Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-700">Anthropic</h3>
               <Button
-                {...getButtonProps(LLMProviderEnum.Anthropic)}
-                size="sm"
+                variant={getButtonProps(ANTHROPIC_PROVIDER).variant}
+                disabled={getButtonProps(ANTHROPIC_PROVIDER).disabled}
                 onClick={() =>
-                  apiKeys[LLMProviderEnum.Anthropic]?.apiKey && !modifiedProviders.has(LLMProviderEnum.Anthropic)
-                    ? handleDelete(LLMProviderEnum.Anthropic)
-                    : handleSave(LLMProviderEnum.Anthropic)
-                }
-              />
+                  apiKeys[ANTHROPIC_PROVIDER]?.apiKey && !modifiedProviders.has(ANTHROPIC_PROVIDER)
+                    ? handleDelete(ANTHROPIC_PROVIDER)
+                    : handleSave(ANTHROPIC_PROVIDER)
+                }>
+                {getButtonProps(ANTHROPIC_PROVIDER).children}
+              </Button>
             </div>
             <div className="space-y-3">
               <input
                 type="password"
                 placeholder="Anthropic API key"
-                value={apiKeys[LLMProviderEnum.Anthropic]?.apiKey || ''}
-                onChange={e => handleApiKeyChange(LLMProviderEnum.Anthropic, e.target.value)}
+                value={apiKeys[ANTHROPIC_PROVIDER]?.apiKey || ''}
+                onChange={e => handleApiKeyChange(ANTHROPIC_PROVIDER, e.target.value)}
                 className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
               />
             </div>
@@ -286,21 +295,22 @@ export const ModelSettings = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-700">Gemini</h3>
               <Button
-                {...getButtonProps(LLMProviderEnum.Gemini)}
-                size="sm"
+                variant={getButtonProps(GEMINI_PROVIDER).variant}
+                disabled={getButtonProps(GEMINI_PROVIDER).disabled}
                 onClick={() =>
-                  apiKeys[LLMProviderEnum.Gemini]?.apiKey && !modifiedProviders.has(LLMProviderEnum.Gemini)
-                    ? handleDelete(LLMProviderEnum.Gemini)
-                    : handleSave(LLMProviderEnum.Gemini)
-                }
-              />
+                  apiKeys[GEMINI_PROVIDER]?.apiKey && !modifiedProviders.has(GEMINI_PROVIDER)
+                    ? handleDelete(GEMINI_PROVIDER)
+                    : handleSave(GEMINI_PROVIDER)
+                }>
+                {getButtonProps(GEMINI_PROVIDER).children}
+              </Button>
             </div>
             <div className="space-y-3">
               <input
                 type="password"
                 placeholder="Gemini API key"
-                value={apiKeys[LLMProviderEnum.Gemini]?.apiKey || ''}
-                onChange={e => handleApiKeyChange(LLMProviderEnum.Gemini, e.target.value)}
+                value={apiKeys[GEMINI_PROVIDER]?.apiKey || ''}
+                onChange={e => handleApiKeyChange(GEMINI_PROVIDER, e.target.value)}
                 className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
               />
             </div>
