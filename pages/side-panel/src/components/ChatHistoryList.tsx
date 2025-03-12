@@ -12,66 +12,61 @@ interface ChatHistoryListProps {
   onSessionSelect: (sessionId: string) => void;
   onSessionDelete: (sessionId: string) => void;
   visible: boolean;
+  isDarkMode?: boolean;
 }
 
-const ChatHistoryList: React.FC<ChatHistoryListProps> = ({ sessions, onSessionSelect, onSessionDelete, visible }) => {
+const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
+  sessions,
+  onSessionSelect,
+  onSessionDelete,
+  visible,
+  isDarkMode = false,
+}) => {
   if (!visible) return null;
 
   const formatDate = (timestamp: number) => {
-    const now = Date.now();
-    const deltaSeconds = Math.floor((now - timestamp) / 1000);
-
-    // Less than 1 minute
-    if (deltaSeconds < 60) {
-      return `${deltaSeconds} seconds ago`;
-    }
-
-    // Less than 1 hour
-    const deltaMinutes = Math.floor(deltaSeconds / 60);
-    if (deltaMinutes < 60) {
-      return `${deltaMinutes} ${deltaMinutes === 1 ? 'minute' : 'minutes'} ago`;
-    }
-
-    // Less than 24 hours
-    const deltaHours = Math.floor(deltaMinutes / 60);
-    if (deltaHours < 24) {
-      const remainingMinutes = deltaMinutes % 60;
-      const hourText = `${deltaHours} ${deltaHours === 1 ? 'hour' : 'hours'}`;
-      const minuteText =
-        remainingMinutes > 0 ? ` ${remainingMinutes} ${remainingMinutes === 1 ? 'minute' : 'minutes'}` : '';
-      return `${hourText}${minuteText} ago`;
-    }
-
-    // More than 24 hours - use standard date format
-    return new Date(timestamp).toLocaleString();
+    const date = new Date(timestamp);
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
-    <div className="h-full w-full overflow-y-auto p-4">
+    <div className="h-full overflow-y-auto p-4">
+      <h2 className={`mb-4 text-lg font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Chat History</h2>
       {sessions.length === 0 ? (
-        <div className="p-4 text-gray-500 text-center backdrop-blur-sm bg-white/30 rounded-lg">No chat history</div>
+        <div
+          className={`rounded-lg ${isDarkMode ? 'bg-slate-800 text-gray-400' : 'bg-white/30 text-gray-500'} p-4 text-center backdrop-blur-sm`}>
+          No chat history available
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {sessions.map(session => (
             <div
               key={session.id}
-              className="group backdrop-blur-sm bg-white/50 hover:bg-white/70 rounded-lg border border-sky-100 shadow-sm transition-all">
-              <div className="p-4 flex items-center">
-                <button
-                  type="button"
-                  className="flex-1 min-w-0 cursor-pointer text-left"
-                  onClick={() => onSessionSelect(session.id)}>
-                  <p className="text-sm font-medium text-gray-900 truncate">{session.title}</p>
-                  <p className="text-xs text-gray-500 mt-1">{formatDate(session.createdAt)}</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSessionDelete(session.id)}
-                  className="ml-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Delete chat session">
-                  <FaTrash size={14} />
-                </button>
-              </div>
+              className={`group relative rounded-lg ${
+                isDarkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white/50 hover:bg-white/70'
+              } p-3 transition-all backdrop-blur-sm`}>
+              <button onClick={() => onSessionSelect(session.id)} className="w-full text-left" type="button">
+                <h3 className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                  {session.title}
+                </h3>
+                <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {formatDate(session.createdAt)}
+                </p>
+              </button>
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  onSessionDelete(session.id);
+                }}
+                className={`absolute right-2 top-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 ${
+                  isDarkMode
+                    ? 'bg-slate-700 text-red-400 hover:bg-slate-600'
+                    : 'bg-white text-red-500 hover:bg-gray-100'
+                }`}
+                aria-label="Delete session"
+                type="button">
+                <FaTrash size={14} />
+              </button>
             </div>
           ))}
         </div>

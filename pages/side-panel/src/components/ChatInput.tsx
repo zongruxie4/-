@@ -6,9 +6,17 @@ interface ChatInputProps {
   disabled: boolean;
   showStopButton: boolean;
   setContent?: (setter: (text: string) => void) => void;
+  isDarkMode?: boolean;
 }
 
-export default function ChatInput({ onSendMessage, onStopTask, disabled, showStopButton, setContent }: ChatInputProps) {
+export default function ChatInput({
+  onSendMessage,
+  onStopTask,
+  disabled,
+  showStopButton,
+  setContent,
+  isDarkMode = false,
+}: ChatInputProps) {
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,7 +73,7 @@ export default function ChatInput({ onSendMessage, onStopTask, disabled, showSto
   return (
     <form
       onSubmit={handleSubmit}
-      className="border rounded-lg overflow-hidden hover:border-sky-400 focus-within:border-sky-400 transition-colors"
+      className={`overflow-hidden rounded-lg border transition-colors focus-within:border-sky-400 hover:border-sky-400 ${isDarkMode ? 'border-slate-700' : ''}`}
       aria-label="Chat input form">
       <div className="flex flex-col">
         <textarea
@@ -75,28 +83,37 @@ export default function ChatInput({ onSendMessage, onStopTask, disabled, showSto
           onKeyDown={handleKeyDown}
           disabled={disabled}
           rows={4}
-          className={`w-full p-3 resize-none border-none focus:outline-none ${
-            disabled ? 'bg-gray-100 text-gray-500' : 'bg-white'
+          className={`w-full resize-none border-none p-3 focus:outline-none ${
+            disabled
+              ? isDarkMode
+                ? 'bg-slate-800 text-gray-400'
+                : 'bg-gray-100 text-gray-500'
+              : isDarkMode
+                ? 'bg-slate-800 text-gray-200'
+                : 'bg-white'
           }`}
           placeholder="What can I help with?"
           aria-label="Message input"
         />
 
-        <div className={`flex items-center justify-between px-3 py-1.5 ${disabled ? 'bg-gray-100' : 'bg-white'}`}>
+        <div
+          className={`flex items-center justify-between px-3 py-1.5 ${
+            disabled ? (isDarkMode ? 'bg-slate-800' : 'bg-gray-100') : isDarkMode ? 'bg-slate-800' : 'bg-white'
+          }`}>
           <div className="flex gap-2 text-gray-500">{/* Icons can go here */}</div>
 
           {showStopButton ? (
             <button
               type="button"
               onClick={onStopTask}
-              className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
+              className="rounded-md bg-red-500 px-3 py-1 text-white transition-colors hover:bg-red-600">
               Stop
             </button>
           ) : (
             <button
               type="submit"
               disabled={disabled}
-              className="px-3 py-1 bg-[#19C2FF] text-white rounded-md hover:bg-[#0073DC] transition-colors disabled:opacity-50">
+              className={`rounded-md bg-[#19C2FF] px-3 py-1 text-white transition-colors hover:bg-[#0073DC] ${disabled ? 'opacity-50' : ''}`}>
               Send
             </button>
           )}
