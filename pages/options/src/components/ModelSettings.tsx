@@ -1,51 +1,66 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import type { KeyboardEvent } from 'react';
 import { Button } from '@extension/ui';
-import { llmProviderStore, agentModelStore, AgentNameEnum, llmProviderModelNames } from '@extension/storage';
-
-// Provider constants
-const OPENAI_PROVIDER = 'openai';
-const ANTHROPIC_PROVIDER = 'anthropic';
-const GEMINI_PROVIDER = 'gemini';
+import {
+  llmProviderStore,
+  agentModelStore,
+  AgentNameEnum,
+  llmProviderModelNames,
+  ProviderTypeEnum,
+  OPENAI_PROVIDER,
+  ANTHROPIC_PROVIDER,
+  GEMINI_PROVIDER,
+  OLLAMA_PROVIDER,
+} from '@extension/storage';
 
 export const ModelSettings = () => {
-  const [apiKeys, setApiKeys] = useState<Record<string, { apiKey: string; baseUrl?: string }>>(
-    {} as Record<string, { apiKey: string; baseUrl?: string }>,
-  );
+  const [providers, setProviders] = useState<
+    Record<
+      string,
+      {
+        apiKey: string;
+        baseUrl?: string;
+        name?: string;
+        modelNames?: string[];
+        type?: ProviderTypeEnum;
+        createdAt?: number;
+      }
+    >
+  >({});
   const [modifiedProviders, setModifiedProviders] = useState<Set<string>>(new Set());
+  const [providersFromStorage, setProvidersFromStorage] = useState<Set<string>>(new Set());
   const [selectedModels, setSelectedModels] = useState<Record<AgentNameEnum, string>>({
     [AgentNameEnum.Navigator]: '',
     [AgentNameEnum.Planner]: '',
     [AgentNameEnum.Validator]: '',
   });
+  const [newModelInputs, setNewModelInputs] = useState<Record<string, string>>({});
+  const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
+  const newlyAddedProviderRef = useRef<string | null>(null);
+  const [nameErrors, setNameErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const loadApiKeys = async () => {
+    const loadProviders = async () => {
       try {
-        const providers = await llmProviderStore.getConfiguredProviders();
+        const allProviders = await llmProviderStore.getAllProviders();
+        console.log('allProviders', allProviders);
 
-        const keys: Record<string, { apiKey: string; baseUrl?: string }> = {} as Record<
-          string,
-          { apiKey: string; baseUrl?: string }
-        >;
+        // Track which providers are from storage
+        const fromStorage = new Set(Object.keys(allProviders));
+        setProvidersFromStorage(fromStorage);
 
-        for (const provider of providers) {
-          const config = await llmProviderStore.getProvider(provider);
-          console.log('config', config);
-          if (config) {
-            keys[provider] = {
-              apiKey: config.apiKey,
-              baseUrl: config.baseUrl,
-            };
-          }
-        }
-        setApiKeys(keys);
+        // Only use providers from storage, don't add default ones
+        setProviders(allProviders);
       } catch (error) {
-        console.error('Error loading API keys:', error);
-        setApiKeys({} as Record<string, { apiKey: string; baseUrl?: string }>);
+        console.error('Error loading providers:', error);
+        // Set empty providers on error
+        setProviders({});
+        // No providers from storage on error
+        setProvidersFromStorage(new Set());
       }
     };
 
-    loadApiKeys();
+    loadProviders();
   }, []);
 
   // Load existing agent models on mount
@@ -73,24 +88,200 @@ export const ModelSettings = () => {
     loadAgentModels();
   }, []);
 
+  // Auto-focus the input field when a new provider is added
+  useEffect(() => {
+    // Only focus if we have a newly added provider reference
+    if (newlyAddedProviderRef.current && providers[newlyAddedProviderRef.current]) {
+      const providerId = newlyAddedProviderRef.current;
+      const config = providers[providerId];
+
+      // For custom providers, focus on the name input
+      if (config.type === ProviderTypeEnum.CustomOpenAI) {
+        const nameInput = document.getElementById(`${providerId}-name`);
+        if (nameInput) {
+          nameInput.focus();
+        }
+      } else {
+        // For default providers, focus on the API key input
+        const apiKeyInput = document.getElementById(`${providerId}-api-key`);
+        if (apiKeyInput) {
+          apiKeyInput.focus();
+        }
+      }
+
+      // Clear the ref after focusing
+      newlyAddedProviderRef.current = null;
+    }
+  }, [providers]);
+
+  // Add a click outside handler to close the dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isProviderSelectorOpen && !target.closest('.provider-selector-container')) {
+        setIsProviderSelectorOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProviderSelectorOpen]);
+
   const handleApiKeyChange = (provider: string, apiKey: string, baseUrl?: string) => {
     setModifiedProviders(prev => new Set(prev).add(provider));
-    setApiKeys(prev => ({
+    setProviders(prev => ({
       ...prev,
       [provider]: {
+        ...prev[provider],
         apiKey: apiKey.trim(),
         baseUrl: baseUrl !== undefined ? baseUrl.trim() : prev[provider]?.baseUrl,
       },
     }));
   };
 
+  const handleNameChange = (provider: string, name: string) => {
+    console.log('handleNameChange called with:', provider, name);
+
+    setModifiedProviders(prev => new Set(prev).add(provider));
+    setProviders(prev => {
+      const updated = {
+        ...prev,
+        [provider]: {
+          ...prev[provider],
+          name: name.trim(),
+        },
+      };
+      console.log('Updated providers state:', updated);
+      return updated;
+    });
+  };
+
+  const handleModelsChange = (provider: string, modelsString: string) => {
+    setNewModelInputs(prev => ({
+      ...prev,
+      [provider]: modelsString,
+    }));
+  };
+
+  const addModel = (provider: string, model: string) => {
+    if (!model.trim()) return;
+
+    setModifiedProviders(prev => new Set(prev).add(provider));
+    setProviders(prev => {
+      const providerData = prev[provider] || {};
+
+      // Get current models - either from provider config or default models
+      let currentModels = providerData.modelNames;
+      if (currentModels === undefined) {
+        currentModels = [...(llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [])];
+      }
+
+      // Don't add duplicates
+      if (currentModels.includes(model.trim())) return prev;
+
+      return {
+        ...prev,
+        [provider]: {
+          ...providerData,
+          modelNames: [...currentModels, model.trim()],
+        },
+      };
+    });
+
+    // Clear the input
+    setNewModelInputs(prev => ({
+      ...prev,
+      [provider]: '',
+    }));
+  };
+
+  const removeModel = (provider: string, modelToRemove: string) => {
+    setModifiedProviders(prev => new Set(prev).add(provider));
+
+    setProviders(prev => {
+      const providerData = prev[provider] || {};
+
+      // If modelNames doesn't exist in the provider data yet, we need to initialize it
+      // with the default models from llmProviderModelNames first
+      if (!providerData.modelNames) {
+        const defaultModels = llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
+        const filteredModels = defaultModels.filter(model => model !== modelToRemove);
+
+        return {
+          ...prev,
+          [provider]: {
+            ...providerData,
+            modelNames: filteredModels,
+          },
+        };
+      }
+
+      // If modelNames already exists, just filter out the model to remove
+      return {
+        ...prev,
+        [provider]: {
+          ...providerData,
+          modelNames: providerData.modelNames.filter(model => model !== modelToRemove),
+        },
+      };
+    });
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, provider: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const value = newModelInputs[provider] || '';
+      addModel(provider, value);
+    }
+  };
+
   const handleSave = async (provider: string) => {
     try {
+      // Check if name contains spaces for custom providers
+      if (providers[provider].type === ProviderTypeEnum.CustomOpenAI && providers[provider].name?.includes(' ')) {
+        setNameErrors(prev => ({
+          ...prev,
+          [provider]: 'Spaces are not allowed in provider names. Please use underscores or other characters instead.',
+        }));
+        return;
+      }
+
+      // Check if base URL is required but missing for custom_openai
+      if (
+        providers[provider].type === ProviderTypeEnum.CustomOpenAI &&
+        (!providers[provider].baseUrl || !providers[provider].baseUrl.trim())
+      ) {
+        alert('Base URL is required for custom OpenAI providers');
+        return;
+      }
+
+      // Ensure modelNames is provided
+      let modelNames = providers[provider].modelNames;
+      if (!modelNames) {
+        // Use default model names if not explicitly set
+        modelNames = [...(llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [])];
+      }
+
       // The provider store will handle filling in the missing fields
       await llmProviderStore.setProvider(provider, {
-        apiKey: apiKeys[provider].apiKey,
-        baseUrl: apiKeys[provider].baseUrl,
+        apiKey: providers[provider].apiKey,
+        baseUrl: providers[provider].baseUrl,
+        name: providers[provider].name,
+        modelNames: modelNames,
+        type: providers[provider].type,
       });
+
+      // Clear any name errors on successful save
+      setNameErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[provider];
+        return newErrors;
+      });
+
+      // Add to providersFromStorage since it's now saved
+      setProvidersFromStorage(prev => new Set(prev).add(provider));
 
       setModifiedProviders(prev => {
         const next = new Set(prev);
@@ -105,7 +296,15 @@ export const ModelSettings = () => {
   const handleDelete = async (provider: string) => {
     try {
       await llmProviderStore.removeProvider(provider);
-      setApiKeys(prev => {
+
+      // Remove from providersFromStorage
+      setProvidersFromStorage(prev => {
+        const next = new Set(prev);
+        next.delete(provider);
+        return next;
+      });
+
+      setProviders(prev => {
         const next = { ...prev };
         delete next[provider];
         return next;
@@ -116,9 +315,9 @@ export const ModelSettings = () => {
   };
 
   const getButtonProps = (provider: string) => {
-    const hasStoredKey = Boolean(apiKeys[provider]?.apiKey);
+    const hasStoredKey = Boolean(providers[provider]?.apiKey);
     const isModified = modifiedProviders.has(provider);
-    const hasInput = Boolean(apiKeys[provider]?.apiKey?.trim());
+    const hasInput = Boolean(providers[provider]?.apiKey?.trim());
 
     if (hasStoredKey && !isModified) {
       return {
@@ -135,13 +334,43 @@ export const ModelSettings = () => {
     };
   };
 
+  const handleCancelProvider = (providerId: string) => {
+    // Remove the provider from the state
+    setProviders(prev => {
+      const next = { ...prev };
+      delete next[providerId];
+      return next;
+    });
+
+    // Remove from modified providers
+    setModifiedProviders(prev => {
+      const next = new Set(prev);
+      next.delete(providerId);
+      return next;
+    });
+  };
+
   const getAvailableModels = () => {
     const models: string[] = [];
 
-    for (const [provider, config] of Object.entries(apiKeys)) {
+    // First add models from configured providers
+    for (const [provider, config] of Object.entries(providers)) {
       if (config.apiKey) {
-        const providerModels = llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
+        const providerModels =
+          config.modelNames || llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
         models.push(...providerModels);
+      }
+    }
+
+    // If no models are available, return default models for the "Add Provider" buttons
+    if (models.length === 0) {
+      // Include default models for the default providers
+      const defaultProviders = [OPENAI_PROVIDER, ANTHROPIC_PROVIDER, GEMINI_PROVIDER, OLLAMA_PROVIDER];
+      for (const provider of defaultProviders) {
+        if (!providersFromStorage.has(provider) && !modifiedProviders.has(provider)) {
+          const defaultModels = llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
+          models.push(...defaultModels);
+        }
       }
     }
 
@@ -158,13 +387,16 @@ export const ModelSettings = () => {
       if (model) {
         // Determine provider from model name
         let provider: string | undefined;
-        for (const [providerKey, models] of Object.entries(llmProviderModelNames)) {
-          if (models.includes(model)) {
+        for (const [providerKey, providerConfig] of Object.entries(providers)) {
+          const modelNames =
+            providerConfig.modelNames || llmProviderModelNames[providerKey as keyof typeof llmProviderModelNames] || [];
+          if (modelNames.includes(model)) {
             provider = providerKey;
             break;
           }
         }
 
+        console.log('handleModelChange', provider, model);
         if (provider) {
           await agentModelStore.setAgentModel(agentName, {
             provider,
@@ -219,101 +451,460 @@ export const ModelSettings = () => {
     }
   };
 
+  const getMaxCustomProviderNumber = () => {
+    let maxNumber = 0;
+    for (const providerId of Object.keys(providers)) {
+      if (providerId.startsWith('custom_openai_')) {
+        const match = providerId.match(/custom_openai_(\d+)/);
+        if (match) {
+          const number = Number.parseInt(match[1], 10);
+          maxNumber = Math.max(maxNumber, number);
+        }
+      }
+    }
+    return maxNumber;
+  };
+
+  const addCustomProvider = () => {
+    const nextNumber = getMaxCustomProviderNumber() + 1;
+    const providerId = `custom_openai_${nextNumber}`;
+
+    setProviders(prev => ({
+      ...prev,
+      [providerId]: {
+        apiKey: '',
+        name: `CustomProvider${nextNumber}`,
+        type: ProviderTypeEnum.CustomOpenAI,
+        baseUrl: '',
+        modelNames: [],
+        createdAt: Date.now(),
+      },
+    }));
+
+    setModifiedProviders(prev => new Set(prev).add(providerId));
+
+    // Set the newly added provider ref
+    newlyAddedProviderRef.current = providerId;
+
+    // Scroll to the newly added provider after render
+    setTimeout(() => {
+      const providerElement = document.getElementById(`provider-${providerId}`);
+      if (providerElement) {
+        providerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
+  const addDefaultProvider = (provider: string) => {
+    // Get the default provider configuration
+    let config: {
+      apiKey: string;
+      name: string;
+      type: ProviderTypeEnum;
+      modelNames: string[];
+      baseUrl?: string;
+      createdAt: number;
+    };
+
+    switch (provider) {
+      case OPENAI_PROVIDER:
+        config = {
+          apiKey: '',
+          name: 'OpenAI',
+          type: ProviderTypeEnum.OpenAI,
+          modelNames: [...(llmProviderModelNames[OPENAI_PROVIDER] || [])],
+          createdAt: Date.now(),
+        };
+        break;
+      case ANTHROPIC_PROVIDER:
+        config = {
+          apiKey: '',
+          name: 'Anthropic',
+          type: ProviderTypeEnum.Anthropic,
+          modelNames: [...(llmProviderModelNames[ANTHROPIC_PROVIDER] || [])],
+          createdAt: Date.now(),
+        };
+        break;
+      case GEMINI_PROVIDER:
+        config = {
+          apiKey: '',
+          name: 'Gemini',
+          type: ProviderTypeEnum.Gemini,
+          modelNames: [...(llmProviderModelNames[GEMINI_PROVIDER] || [])],
+          createdAt: Date.now(),
+        };
+        break;
+      case OLLAMA_PROVIDER:
+        config = {
+          apiKey: 'ollama',
+          name: 'Ollama',
+          type: ProviderTypeEnum.Ollama,
+          modelNames: [],
+          baseUrl: 'http://localhost:11434',
+          createdAt: Date.now(),
+        };
+        break;
+      default:
+        return;
+    }
+
+    // Add the provider to the state
+    setProviders(prev => ({
+      ...prev,
+      [provider]: config,
+    }));
+
+    // Mark as modified so it shows up in the UI
+    setModifiedProviders(prev => new Set(prev).add(provider));
+
+    // Set the newly added provider ref
+    newlyAddedProviderRef.current = provider;
+
+    // Scroll to the newly added provider after render
+    setTimeout(() => {
+      const providerElement = document.getElementById(`provider-${provider}`);
+      if (providerElement) {
+        providerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
+  // Sort providers to ensure newly added providers appear at the bottom
+  const getSortedProviders = () => {
+    // Filter providers to only include those from storage and newly added providers
+    const filteredProviders = Object.entries(providers).filter(([providerId]) => {
+      // Include if it's from storage
+      if (providersFromStorage.has(providerId)) {
+        return true;
+      }
+
+      // Include if it's a newly added provider (has been modified)
+      if (modifiedProviders.has(providerId)) {
+        return true;
+      }
+
+      // Exclude providers that aren't from storage and haven't been modified
+      return false;
+    });
+
+    // Sort the filtered providers
+    return filteredProviders.sort(([keyA, configA], [keyB, configB]) => {
+      // First, separate newly added providers from stored providers
+      const isNewA = !providersFromStorage.has(keyA) && modifiedProviders.has(keyA);
+      const isNewB = !providersFromStorage.has(keyB) && modifiedProviders.has(keyB);
+
+      // If one is new and one is stored, new ones go to the end
+      if (isNewA && !isNewB) return 1;
+      if (!isNewA && isNewB) return -1;
+
+      // If both are new or both are stored, sort by createdAt
+      if (configA.createdAt && configB.createdAt) {
+        return configA.createdAt - configB.createdAt; // Sort in ascending order (oldest first)
+      }
+
+      // If only one has createdAt, put the one without createdAt at the end
+      if (configA.createdAt) return -1;
+      if (configB.createdAt) return 1;
+
+      // If neither has createdAt, sort by type and then name
+      const isCustomA = configA.type === ProviderTypeEnum.CustomOpenAI;
+      const isCustomB = configB.type === ProviderTypeEnum.CustomOpenAI;
+
+      if (isCustomA && !isCustomB) {
+        return 1; // Custom providers come after non-custom
+      }
+
+      if (!isCustomA && isCustomB) {
+        return -1; // Non-custom providers come before custom
+      }
+
+      // Sort alphabetically by name within each group
+      return (configA.name || keyA).localeCompare(configB.name || keyB);
+    });
+  };
+
+  const handleProviderSelection = (providerType: string) => {
+    // Close the dropdown immediately
+    setIsProviderSelectorOpen(false);
+
+    if (providerType === 'custom') {
+      addCustomProvider();
+      return;
+    }
+
+    // Handle default providers
+    switch (providerType) {
+      case OPENAI_PROVIDER:
+      case ANTHROPIC_PROVIDER:
+      case GEMINI_PROVIDER:
+      case OLLAMA_PROVIDER:
+        addDefaultProvider(providerType);
+        break;
+      default:
+        console.error('Unknown provider type:', providerType);
+    }
+  };
+
   return (
     <section className="space-y-6">
-      {/* API Keys Section */}
+      {/* LLM Providers Section */}
       <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-100 text-left">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 text-left">API Keys</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 text-left">LLM Providers</h2>
         <div className="space-y-6">
-          {/* OpenAI Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">OpenAI</h3>
-              <Button
-                variant={getButtonProps(OPENAI_PROVIDER).variant}
-                disabled={getButtonProps(OPENAI_PROVIDER).disabled}
-                onClick={() =>
-                  apiKeys[OPENAI_PROVIDER]?.apiKey && !modifiedProviders.has(OPENAI_PROVIDER)
-                    ? handleDelete(OPENAI_PROVIDER)
-                    : handleSave(OPENAI_PROVIDER)
-                }>
-                {getButtonProps(OPENAI_PROVIDER).children}
-              </Button>
+          {getSortedProviders().length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p className="mb-4">No providers configured yet. Add a provider to get started.</p>
             </div>
-            <div className="space-y-3">
-              <input
-                type="password"
-                placeholder="OpenAI API key"
-                value={apiKeys[OPENAI_PROVIDER]?.apiKey || ''}
-                onChange={e => handleApiKeyChange(OPENAI_PROVIDER, e.target.value)}
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Custom Base URL (Optional)"
-                value={apiKeys[OPENAI_PROVIDER]?.baseUrl || ''}
-                onChange={e =>
-                  handleApiKeyChange(OPENAI_PROVIDER, apiKeys[OPENAI_PROVIDER]?.apiKey || '', e.target.value)
-                }
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-            </div>
-          </div>
+          ) : (
+            getSortedProviders().map(([providerId, providerConfig]) => (
+              <div
+                key={providerId}
+                id={`provider-${providerId}`}
+                className={`space-y-4 ${modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) ? 'bg-blue-50 p-4 rounded-lg border border-blue-100' : ''}`}>
+                <div className="flex items-center justify-between">
+                  {providerConfig.type === ProviderTypeEnum.CustomOpenAI ? (
+                    <button
+                      type="button"
+                      className="text-lg font-medium text-gray-700 flex items-center cursor-pointer bg-transparent border-0 p-0 text-left"
+                      onClick={() => {
+                        const nameInput = document.getElementById(`${providerId}-name`);
+                        if (nameInput) {
+                          nameInput.focus();
+                        }
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          const nameInput = document.getElementById(`${providerId}-name`);
+                          if (nameInput) {
+                            nameInput.focus();
+                          }
+                        }
+                      }}>
+                      {(() => {
+                        console.log('Provider header name:', providerId, providerConfig.name);
+                        return providerConfig.name || providerId;
+                      })()}
+                      <span className="ml-2 text-xs text-blue-500">(click to edit)</span>
+                    </button>
+                  ) : (
+                    <h3 className="text-lg font-medium text-gray-700">{providerConfig.name || providerId}</h3>
+                  )}
+                  <div className="flex space-x-2">
+                    {/* Show Cancel button for newly added providers */}
+                    {modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) && (
+                      <Button variant="secondary" onClick={() => handleCancelProvider(providerId)}>
+                        Cancel
+                      </Button>
+                    )}
+                    <Button
+                      variant={getButtonProps(providerId).variant}
+                      disabled={getButtonProps(providerId).disabled}
+                      onClick={() =>
+                        providers[providerId]?.apiKey && !modifiedProviders.has(providerId)
+                          ? handleDelete(providerId)
+                          : handleSave(providerId)
+                      }>
+                      {getButtonProps(providerId).children}
+                    </Button>
+                  </div>
+                </div>
 
-          <div className="border-t border-gray-200" />
+                {/* Show message for newly added providers */}
+                {modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) && (
+                  <div className="text-sm text-blue-600 mb-2">
+                    <p>This provider is newly added. Enter your API key and click Save to configure it.</p>
+                  </div>
+                )}
 
-          {/* Anthropic Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">Anthropic</h3>
-              <Button
-                variant={getButtonProps(ANTHROPIC_PROVIDER).variant}
-                disabled={getButtonProps(ANTHROPIC_PROVIDER).disabled}
-                onClick={() =>
-                  apiKeys[ANTHROPIC_PROVIDER]?.apiKey && !modifiedProviders.has(ANTHROPIC_PROVIDER)
-                    ? handleDelete(ANTHROPIC_PROVIDER)
-                    : handleSave(ANTHROPIC_PROVIDER)
-                }>
-                {getButtonProps(ANTHROPIC_PROVIDER).children}
-              </Button>
-            </div>
-            <div className="space-y-3">
-              <input
-                type="password"
-                placeholder="Anthropic API key"
-                value={apiKeys[ANTHROPIC_PROVIDER]?.apiKey || ''}
-                onChange={e => handleApiKeyChange(ANTHROPIC_PROVIDER, e.target.value)}
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-            </div>
-          </div>
+                <div className="space-y-3">
+                  {/* Name input (only for custom_openai) - moved to top for prominence */}
+                  {providerConfig.type === ProviderTypeEnum.CustomOpenAI && (
+                    <div className="flex flex-col">
+                      <div className="flex items-center">
+                        <label htmlFor={`${providerId}-name`} className="w-20 text-sm font-medium text-gray-700">
+                          Name
+                        </label>
+                        <input
+                          id={`${providerId}-name`}
+                          type="text"
+                          placeholder="Provider name"
+                          value={providerConfig.name || ''}
+                          onChange={e => {
+                            console.log('Name input changed:', e.target.value);
+                            handleNameChange(providerId, e.target.value);
+                          }}
+                          className={`flex-1 p-2 rounded-md bg-gray-50 border ${nameErrors[providerId] ? 'border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-200' : 'border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} outline-none`}
+                        />
+                      </div>
+                      {nameErrors[providerId] ? (
+                        <p className="text-xs text-red-500 ml-20 mt-1">{nameErrors[providerId]}</p>
+                      ) : (
+                        <p className="text-xs text-blue-500 ml-20 mt-1">
+                          Provider name (spaces are not allowed when saving)
+                        </p>
+                      )}
+                    </div>
+                  )}
 
-          <div className="border-t border-gray-200" />
+                  {/* API Key input with label */}
+                  <div className="flex items-center">
+                    <label htmlFor={`${providerId}-api-key`} className="w-20 text-sm font-medium text-gray-700">
+                      Key
+                    </label>
+                    <input
+                      id={`${providerId}-api-key`}
+                      type="password"
+                      placeholder={`${providerConfig.name || providerId} API key`}
+                      value={providerConfig.apiKey || ''}
+                      onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
+                      className="flex-1 p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
+                    />
+                  </div>
 
-          {/* Gemini Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">Gemini</h3>
-              <Button
-                variant={getButtonProps(GEMINI_PROVIDER).variant}
-                disabled={getButtonProps(GEMINI_PROVIDER).disabled}
-                onClick={() =>
-                  apiKeys[GEMINI_PROVIDER]?.apiKey && !modifiedProviders.has(GEMINI_PROVIDER)
-                    ? handleDelete(GEMINI_PROVIDER)
-                    : handleSave(GEMINI_PROVIDER)
-                }>
-                {getButtonProps(GEMINI_PROVIDER).children}
-              </Button>
-            </div>
-            <div className="space-y-3">
-              <input
-                type="password"
-                placeholder="Gemini API key"
-                value={apiKeys[GEMINI_PROVIDER]?.apiKey || ''}
-                onChange={e => handleApiKeyChange(GEMINI_PROVIDER, e.target.value)}
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-            </div>
+                  {/* Base URL input (for custom_openai and ollama) */}
+                  {(providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
+                    providerConfig.type === ProviderTypeEnum.Ollama) && (
+                    <div className="flex items-center">
+                      <label htmlFor={`${providerId}-base-url`} className="w-20 text-sm font-medium text-gray-700">
+                        Base URL{providerConfig.type === ProviderTypeEnum.CustomOpenAI ? '*' : ''}
+                      </label>
+                      <input
+                        id={`${providerId}-base-url`}
+                        type="text"
+                        placeholder={
+                          providerConfig.type === ProviderTypeEnum.CustomOpenAI
+                            ? 'Required for custom OpenAI providers'
+                            : 'Ollama base URL'
+                        }
+                        value={providerConfig.baseUrl || ''}
+                        onChange={e => handleApiKeyChange(providerId, providerConfig.apiKey || '', e.target.value)}
+                        className="flex-1 p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {/* Models input field with tags */}
+                  <div className="flex items-start">
+                    <label htmlFor={`${providerId}-models`} className="w-20 text-sm font-medium text-gray-700 pt-2">
+                      Models
+                    </label>
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-md min-h-[42px]">
+                        {/* Display existing models as tags */}
+                        {(() => {
+                          // Get models from provider config or default models
+                          const models =
+                            providerConfig.modelNames !== undefined
+                              ? providerConfig.modelNames
+                              : llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || [];
+
+                          return models.map(model => (
+                            <div
+                              key={model}
+                              className="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
+                              <span>{model}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeModel(providerId, model)}
+                                className="ml-1 text-blue-600 hover:text-blue-800 font-bold"
+                                aria-label={`Remove ${model}`}>
+                                ×
+                              </button>
+                            </div>
+                          ));
+                        })()}
+
+                        {/* Input for new models */}
+                        <input
+                          id={`${providerId}-models`}
+                          type="text"
+                          placeholder=""
+                          value={newModelInputs[providerId] || ''}
+                          onChange={e => handleModelsChange(providerId, e.target.value)}
+                          onKeyDown={e => handleKeyDown(e, providerId)}
+                          className="flex-1 min-w-[150px] outline-none bg-transparent border-none p-1"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Type and Press Enter or Space to add a model</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Add divider except for the last item */}
+                {Object.keys(providers).indexOf(providerId) < Object.keys(providers).length - 1 && (
+                  <div className="border-t border-gray-200 mt-4" />
+                )}
+              </div>
+            ))
+          )}
+
+          {/* Add Provider button and dropdown */}
+          <div className="pt-4 relative provider-selector-container">
+            <Button
+              variant="secondary"
+              onClick={() => setIsProviderSelectorOpen(prev => !prev)}
+              className="w-full flex items-center justify-center">
+              <span className="mr-2">+</span> Add Provider
+            </Button>
+
+            {isProviderSelectorOpen && (
+              <div className="absolute z-10 mt-2 w-full bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden">
+                <div className="py-1">
+                  {/* Check if all default providers are already added */}
+                  {(providersFromStorage.has(OPENAI_PROVIDER) || modifiedProviders.has(OPENAI_PROVIDER)) &&
+                    (providersFromStorage.has(ANTHROPIC_PROVIDER) || modifiedProviders.has(ANTHROPIC_PROVIDER)) &&
+                    (providersFromStorage.has(GEMINI_PROVIDER) || modifiedProviders.has(GEMINI_PROVIDER)) &&
+                    (providersFromStorage.has(OLLAMA_PROVIDER) || modifiedProviders.has(OLLAMA_PROVIDER)) && (
+                      <div className="px-4 py-2 text-sm text-gray-500">
+                        All default providers already added. You can still add a custom provider.
+                      </div>
+                    )}
+
+                  {!providersFromStorage.has(OPENAI_PROVIDER) && !modifiedProviders.has(OPENAI_PROVIDER) && (
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150 flex items-center"
+                      onClick={() => handleProviderSelection(OPENAI_PROVIDER)}>
+                      <span className="font-medium">OpenAI</span>
+                    </button>
+                  )}
+
+                  {!providersFromStorage.has(ANTHROPIC_PROVIDER) && !modifiedProviders.has(ANTHROPIC_PROVIDER) && (
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150 flex items-center"
+                      onClick={() => handleProviderSelection(ANTHROPIC_PROVIDER)}>
+                      <span className="font-medium">Anthropic</span>
+                    </button>
+                  )}
+
+                  {!providersFromStorage.has(GEMINI_PROVIDER) && !modifiedProviders.has(GEMINI_PROVIDER) && (
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150 flex items-center"
+                      onClick={() => handleProviderSelection(GEMINI_PROVIDER)}>
+                      <span className="font-medium">Gemini</span>
+                    </button>
+                  )}
+
+                  {!providersFromStorage.has(OLLAMA_PROVIDER) && !modifiedProviders.has(OLLAMA_PROVIDER) && (
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150 flex items-center"
+                      onClick={() => handleProviderSelection(OLLAMA_PROVIDER)}>
+                      <span className="font-medium">Ollama</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors duration-150 flex items-center"
+                    onClick={() => handleProviderSelection('custom')}>
+                    <span className="font-medium">Custom OpenAI-compatible</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

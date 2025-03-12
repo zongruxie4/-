@@ -1,7 +1,14 @@
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
-import { llmProviderModelNames, ProviderTypeEnum, OPENAI_PROVIDER, ANTHROPIC_PROVIDER, GEMINI_PROVIDER } from './types';
+import {
+  llmProviderModelNames,
+  ProviderTypeEnum,
+  OPENAI_PROVIDER,
+  ANTHROPIC_PROVIDER,
+  GEMINI_PROVIDER,
+  OLLAMA_PROVIDER,
+} from './types';
 
 // Interface for a single provider configuration
 export interface ProviderConfig {
@@ -10,6 +17,7 @@ export interface ProviderConfig {
   apiKey: string; // Must be provided, but may be empty for local models
   baseUrl?: string; // Optional base URL if provided
   modelNames?: string[]; // Chosen model names, if not provided use hardcoded names from llmProviderModelNames
+  createdAt?: number; // Timestamp in milliseconds when the provider was created
 }
 
 // Interface for storing multiple LLM provider configurations
@@ -44,6 +52,8 @@ function getProviderTypeFromName(provider: string): ProviderTypeEnum {
       return ProviderTypeEnum.Anthropic;
     case GEMINI_PROVIDER:
       return ProviderTypeEnum.Gemini;
+    case OLLAMA_PROVIDER:
+      return ProviderTypeEnum.Ollama;
     default:
       return ProviderTypeEnum.CustomOpenAI;
   }
@@ -58,6 +68,8 @@ function getDisplayNameFromProvider(provider: string): string {
       return 'Anthropic';
     case GEMINI_PROVIDER:
       return 'Gemini';
+    case OLLAMA_PROVIDER:
+      return 'Ollama';
     default:
       return provider; // Use the provider string as display name for custom providers
   }
@@ -84,6 +96,7 @@ export const llmProviderStore: LLMProviderStorage = {
       name: config.name || getDisplayNameFromProvider(provider),
       type: config.type || getProviderTypeFromName(provider),
       modelNames: config.modelNames,
+      createdAt: config.createdAt || Date.now(),
     };
 
     const current = (await storage.get()) || { providers: {} };
@@ -108,6 +121,9 @@ export const llmProviderStore: LLMProviderStorage = {
       }
       if (!config.modelNames) {
         config.modelNames = llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
+      }
+      if (!config.createdAt) {
+        config.createdAt = Date.now();
       }
     }
 

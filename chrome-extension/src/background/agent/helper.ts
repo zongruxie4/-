@@ -1,8 +1,9 @@
-import { type ProviderConfig, AgentNameEnum } from '@extension/storage';
+import { type ProviderConfig, AgentNameEnum, OLLAMA_PROVIDER } from '@extension/storage';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { ChatOllama } from '@langchain/ollama';
 
 // Provider constants
 const OPENAI_PROVIDER = 'openai';
@@ -20,6 +21,10 @@ export function createChatModel(
   const maxCompletionTokens = 5000;
   let temperature = 0;
   let topP = 0.001;
+
+  console.log('providerName', providerName);
+  console.log('providerConfig', providerConfig);
+
   switch (providerName) {
     case OPENAI_PROVIDER: {
       if (agentName === AgentNameEnum.Planner) {
@@ -85,8 +90,75 @@ export function createChatModel(
       };
       return new ChatGoogleGenerativeAI(args);
     }
+    case OLLAMA_PROVIDER: {
+      if (agentName === AgentNameEnum.Planner) {
+        temperature = 0.02;
+      }
+      const args: {
+        model: string;
+        apiKey?: string;
+        baseUrl: string;
+        modelKwargs?: { max_completion_tokens: number };
+        topP?: number;
+        temperature?: number;
+        maxTokens?: number;
+        options: {
+          num_ctx: number;
+        };
+      } = {
+        model: modelName,
+        apiKey: providerConfig.apiKey,
+        baseUrl: providerConfig.baseUrl ?? 'http://localhost:11434',
+        options: {
+          num_ctx: 128000,
+        },
+      };
+
+      // O series models have different parameters
+      if (modelName.startsWith('o')) {
+        args.modelKwargs = {
+          max_completion_tokens: maxCompletionTokens,
+        };
+      } else {
+        args.topP = topP;
+        args.temperature = temperature;
+        args.maxTokens = maxTokens;
+      }
+      return new ChatOllama(args);
+    }
     default: {
-      throw new Error(`Provider ${providerName} not supported yet`);
+      if (agentName === AgentNameEnum.Planner) {
+        temperature = 0.02;
+      }
+      const args: {
+        model: string;
+        apiKey: string;
+        configuration: Record<string, unknown>;
+        modelKwargs?: { max_completion_tokens: number };
+        topP?: number;
+        temperature?: number;
+        maxTokens?: number;
+      } = {
+        model: modelName,
+        apiKey: providerConfig.apiKey,
+        configuration: {},
+      };
+
+      args.configuration = {
+        baseURL: providerConfig.baseUrl,
+      };
+
+      // O series models have different parameters
+      if (modelName.startsWith('o')) {
+        args.modelKwargs = {
+          max_completion_tokens: maxCompletionTokens,
+        };
+      } else {
+        args.topP = topP;
+        args.temperature = temperature;
+        args.maxTokens = maxTokens;
+      }
+      return new ChatOpenAI(args);
     }
   }
 }
