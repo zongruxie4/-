@@ -152,7 +152,7 @@ We're actively developing Nanobrowser with exciting features on the horizon, wel
 **We need your help to make Nanobrowser even better!**  Contributions of all kinds are welcome:
 
 *  **Share Prompts & Use Cases** 
-   * Join our [Discord server]([YOUR_DISCORD_INVITE_LINK])
+   * Join our [Discord server](https://discord.gg/NN3ABHggMK).
    * share how you're using Nanobrowser.  Help us build a library of useful prompts and real-world use cases.
 *  **Provide Feedback** 
    * Try Nanobrowser and give us feedback on its performance or suggest improvements in our [Discord server](https://discord.gg/NN3ABHggMK).
