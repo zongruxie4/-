@@ -181,33 +181,18 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   if (!navigatorModel) {
     throw new Error('Please choose a model for the navigator in the settings first');
   }
-  const navigatorLLM = createChatModel(
-    AgentNameEnum.Navigator,
-    navigatorModel.provider,
-    providers[navigatorModel.provider],
-    navigatorModel.modelName,
-  );
+  const navigatorLLM = createChatModel(providers[navigatorModel.provider], navigatorModel);
 
   let plannerLLM = null;
   const plannerModel = agentModels[AgentNameEnum.Planner];
   if (plannerModel) {
-    plannerLLM = createChatModel(
-      AgentNameEnum.Planner,
-      plannerModel.provider,
-      providers[plannerModel.provider],
-      plannerModel.modelName,
-    );
+    plannerLLM = createChatModel(providers[plannerModel.provider], plannerModel);
   }
 
   let validatorLLM = null;
   const validatorModel = agentModels[AgentNameEnum.Validator];
   if (validatorModel) {
-    validatorLLM = createChatModel(
-      AgentNameEnum.Validator,
-      validatorModel.provider,
-      providers[validatorModel.provider],
-      validatorModel.modelName,
-    );
+    validatorLLM = createChatModel(providers[validatorModel.provider], validatorModel);
   }
 
   const generalSettings = await generalSettingsStore.getSettings();

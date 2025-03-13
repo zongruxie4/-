@@ -19,6 +19,7 @@ export enum ProviderTypeEnum {
   CustomOpenAI = 'custom_openai',
 }
 
+// Default model names for each built-in provider
 export const llmProviderModelNames = {
   [OPENAI_PROVIDER]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini'],
   [ANTHROPIC_PROVIDER]: ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
@@ -30,4 +31,64 @@ export const llmProviderModelNames = {
   ],
   [OLLAMA_PROVIDER]: [],
   // Custom OpenAI providers don't have predefined models as they are user-defined
+};
+
+// Default parameters for each agent per provider
+export const llmProviderParameters = {
+  [OPENAI_PROVIDER]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.01,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.01,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.01,
+      topP: 0.001,
+    },
+  },
+  [ANTHROPIC_PROVIDER]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.1,
+      topP: 0.1,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.1,
+      topP: 0.1,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.05,
+      topP: 0.1,
+    },
+  },
+  [GEMINI_PROVIDER]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.5,
+      topP: 0.8,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.5,
+      topP: 0.8,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.1,
+      topP: 0.8,
+    },
+  },
+  [OLLAMA_PROVIDER]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.02,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.01,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.01,
+      topP: 0.001,
+    },
+  },
 };
