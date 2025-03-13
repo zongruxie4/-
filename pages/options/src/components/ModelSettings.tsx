@@ -8,7 +8,11 @@ import {
   llmProviderModelNames,
 } from '@extension/storage';
 
-export const ModelSettings = () => {
+interface ModelSettingsProps {
+  isDarkMode?: boolean;
+}
+
+export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   const [apiKeys, setApiKeys] = useState<Record<LLMProviderEnum, { apiKey: string; baseUrl?: string }>>(
     {} as Record<LLMProviderEnum, { apiKey: string; baseUrl?: string }>,
   );
@@ -32,65 +36,67 @@ export const ModelSettings = () => {
         for (const provider of providers) {
           const config = await llmProviderStore.getProvider(provider);
           if (config) {
-            keys[provider] = config;
+            keys[provider] = {
+              apiKey: config.apiKey || '',
+              baseUrl: config.baseUrl,
+            };
           }
         }
+
         setApiKeys(keys);
       } catch (error) {
-        console.error('Error loading API keys:', error);
-        setApiKeys({} as Record<LLMProviderEnum, { apiKey: string; baseUrl?: string }>);
+        console.error('Failed to load API keys:', error);
       }
     };
 
-    loadApiKeys();
-  }, []);
-
-  // Load existing agent models on mount
-  useEffect(() => {
     const loadAgentModels = async () => {
       try {
         const models: Record<AgentNameEnum, string> = {
-          [AgentNameEnum.Planner]: '',
           [AgentNameEnum.Navigator]: '',
+          [AgentNameEnum.Planner]: '',
           [AgentNameEnum.Validator]: '',
         };
 
         for (const agent of Object.values(AgentNameEnum)) {
-          const config = await agentModelStore.getAgentModel(agent);
-          if (config) {
-            models[agent] = config.modelName;
+          const model = await agentModelStore.getAgentModel(agent);
+          if (model) {
+            models[agent] = model.modelName;
           }
         }
+
         setSelectedModels(models);
       } catch (error) {
-        console.error('Error loading agent models:', error);
+        console.error('Failed to load agent models:', error);
       }
     };
 
+    loadApiKeys();
     loadAgentModels();
   }, []);
 
   const handleApiKeyChange = (provider: LLMProviderEnum, apiKey: string, baseUrl?: string) => {
-    setModifiedProviders(prev => new Set(prev).add(provider));
     setApiKeys(prev => ({
       ...prev,
-      [provider]: {
-        apiKey: apiKey.trim(),
-        baseUrl: baseUrl !== undefined ? baseUrl.trim() : prev[provider]?.baseUrl,
-      },
+      [provider]: { apiKey, baseUrl },
     }));
+
+    setModifiedProviders(prev => {
+      const newSet = new Set(prev);
+      newSet.add(provider);
+      return newSet;
+    });
   };
 
   const handleSave = async (provider: LLMProviderEnum) => {
     try {
       await llmProviderStore.setProvider(provider, apiKeys[provider]);
       setModifiedProviders(prev => {
-        const next = new Set(prev);
-        next.delete(provider);
-        return next;
+        const newSet = new Set(prev);
+        newSet.delete(provider);
+        return newSet;
       });
     } catch (error) {
-      console.error('Error saving API key:', error);
+      console.error('Failed to save API key:', error);
     }
   };
 
@@ -98,99 +104,162 @@ export const ModelSettings = () => {
     try {
       await llmProviderStore.removeProvider(provider);
       setApiKeys(prev => {
-        const next = { ...prev };
-        delete next[provider];
-        return next;
+        const newKeys = { ...prev };
+        delete newKeys[provider];
+        return newKeys;
+      });
+      setModifiedProviders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(provider);
+        return newSet;
       });
     } catch (error) {
-      console.error('Error deleting API key:', error);
+      console.error('Failed to delete API key:', error);
     }
   };
 
   const getButtonProps = (provider: LLMProviderEnum) => {
-    const hasStoredKey = Boolean(apiKeys[provider]?.apiKey);
     const isModified = modifiedProviders.has(provider);
-    const hasInput = Boolean(apiKeys[provider]?.apiKey?.trim());
-
-    if (hasStoredKey && !isModified) {
-      return {
-        variant: 'danger' as const,
-        children: 'Delete',
-        disabled: false,
-      };
-    }
+    const hasApiKey = apiKeys[provider]?.apiKey;
 
     return {
-      variant: 'primary' as const,
-      children: 'Save',
-      disabled: !hasInput || !isModified,
+      saveButton: {
+        disabled: !isModified || !hasApiKey,
+        className: `rounded-md px-3 py-1 text-sm font-medium ${
+          !isModified || !hasApiKey
+            ? `${isDarkMode ? 'bg-slate-700 text-gray-400' : 'bg-gray-200 text-gray-500'}`
+            : `${isDarkMode ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-blue-500 text-white hover:bg-blue-600'}`
+        }`,
+      },
+      deleteButton: {
+        disabled: !hasApiKey,
+        className: `ml-2 rounded-md px-3 py-1 text-sm font-medium ${
+          !hasApiKey
+            ? `${isDarkMode ? 'bg-slate-700 text-gray-400' : 'bg-gray-200 text-gray-500'}`
+            : `${isDarkMode ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-red-500 text-white hover:bg-red-600'}`
+        }`,
+      },
     };
   };
 
   const getAvailableModels = () => {
     const models: string[] = [];
-    Object.entries(apiKeys).forEach(([provider, config]) => {
-      if (config.apiKey) {
-        models.push(...(llmProviderModelNames[provider as LLMProviderEnum] || []));
+    Object.values(LLMProviderEnum).forEach(provider => {
+      if (apiKeys[provider]?.apiKey) {
+        models.push(...(llmProviderModelNames[provider] || []));
       }
     });
-    return models.length ? models : [''];
+    return models;
   };
 
   const handleModelChange = async (agentName: AgentNameEnum, model: string) => {
-    setSelectedModels(prev => ({
-      ...prev,
-      [agentName]: model,
-    }));
-
     try {
-      if (model) {
-        // Determine provider from model name
-        let provider: LLMProviderEnum | undefined;
-        for (const [providerKey, models] of Object.entries(llmProviderModelNames)) {
-          if (models.includes(model)) {
-            provider = providerKey as LLMProviderEnum;
-            break;
-          }
+      // Determine provider from model name
+      let provider: LLMProviderEnum | undefined;
+      for (const [providerKey, models] of Object.entries(llmProviderModelNames)) {
+        if (models.includes(model)) {
+          provider = providerKey as LLMProviderEnum;
+          break;
         }
+      }
 
-        if (provider) {
-          await agentModelStore.setAgentModel(agentName, {
-            provider,
-            modelName: model,
-          });
-        }
-      } else {
-        // Reset storage if no model is selected
-        await agentModelStore.resetAgentModel(agentName);
+      if (provider) {
+        await agentModelStore.setAgentModel(agentName, {
+          provider,
+          modelName: model,
+        });
+        setSelectedModels(prev => ({
+          ...prev,
+          [agentName]: model,
+        }));
       }
     } catch (error) {
-      console.error('Error saving agent model:', error);
+      console.error(`Failed to set model for ${agentName}:`, error);
     }
   };
 
-  const renderModelSelect = (agentName: AgentNameEnum) => (
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="text-lg font-medium text-gray-700">{agentName.charAt(0).toUpperCase() + agentName.slice(1)}</h3>
-        <p className="text-sm font-normal text-gray-500">{getAgentDescription(agentName)}</p>
+  const renderApiKeyInput = (provider: LLMProviderEnum) => {
+    const buttonProps = getButtonProps(provider);
+    const needsBaseUrl = provider === LLMProviderEnum.OpenAI || provider === LLMProviderEnum.Anthropic;
+
+    return (
+      <div key={provider} className="mb-6">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className={`text-lg font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{provider}</h3>
+          <div>
+            <Button
+              onClick={() => handleSave(provider)}
+              disabled={buttonProps.saveButton.disabled}
+              className={buttonProps.saveButton.className}>
+              Save
+            </Button>
+            <Button
+              onClick={() => handleDelete(provider)}
+              disabled={buttonProps.deleteButton.disabled}
+              className={buttonProps.deleteButton.className}>
+              Delete
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div>
+            <label
+              htmlFor={`${provider}-api-key`}
+              className={`mb-1 block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              API Key
+            </label>
+            <input
+              id={`${provider}-api-key`}
+              type="password"
+              value={apiKeys[provider]?.apiKey || ''}
+              onChange={e => handleApiKeyChange(provider, e.target.value, apiKeys[provider]?.baseUrl)}
+              className={`w-full rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
+              placeholder={`Enter your ${provider} API key`}
+            />
+          </div>
+
+          {needsBaseUrl && (
+            <div>
+              <label
+                htmlFor={`${provider}-base-url`}
+                className={`mb-1 block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Base URL (Optional)
+              </label>
+              <input
+                id={`${provider}-base-url`}
+                type="text"
+                value={apiKeys[provider]?.baseUrl || ''}
+                onChange={e => handleApiKeyChange(provider, apiKeys[provider]?.apiKey || '', e.target.value)}
+                className={`w-full rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
+                placeholder={`Enter custom base URL for ${provider} (optional)`}
+              />
+            </div>
+          )}
+        </div>
       </div>
+    );
+  };
+
+  const renderModelSelect = (agentName: AgentNameEnum) => (
+    <div key={agentName} className="mb-6">
+      <div className="mb-2">
+        <h3 className={`text-lg font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{agentName}</h3>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{getAgentDescription(agentName)}</p>
+      </div>
+
       <select
-        className="w-64 px-3 py-2 border rounded-md"
-        disabled={getAvailableModels().length <= 1}
+        id={`${agentName}-model`}
         value={selectedModels[agentName] || ''}
-        onChange={e => handleModelChange(agentName, e.target.value)}>
-        <option key="default" value="">
-          Choose model
-        </option>
-        {getAvailableModels().map(
-          model =>
-            model && (
-              <option key={model} value={model}>
-                {model}
-              </option>
-            ),
-        )}
+        onChange={e => handleModelChange(agentName, e.target.value)}
+        className={`w-full rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
+        disabled={getAvailableModels().length === 0}>
+        <option value="">Select a model</option>
+        {getAvailableModels().map(model => (
+          <option key={model} value={model}>
+            {model}
+          </option>
+        ))}
       </select>
     </div>
   );
@@ -198,125 +267,47 @@ export const ModelSettings = () => {
   const getAgentDescription = (agentName: AgentNameEnum) => {
     switch (agentName) {
       case AgentNameEnum.Navigator:
-        return 'Navigates websites and performs actions';
+        return 'Handles browsing and interacting with web pages';
       case AgentNameEnum.Planner:
-        return 'Develops and refines strategies to complete tasks';
+        return 'Creates and updates the plan for completing tasks';
       case AgentNameEnum.Validator:
-        return 'Checks if tasks are completed successfully';
+        return 'Validates the results of actions and task completion';
       default:
         return '';
     }
   };
 
   return (
-    <section className="space-y-6">
-      {/* API Keys Section */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-100 text-left">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 text-left">API Keys</h2>
-        <div className="space-y-6">
-          {/* OpenAI Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">OpenAI</h3>
-              <Button
-                {...getButtonProps(LLMProviderEnum.OpenAI)}
-                size="sm"
-                onClick={() =>
-                  apiKeys[LLMProviderEnum.OpenAI]?.apiKey && !modifiedProviders.has(LLMProviderEnum.OpenAI)
-                    ? handleDelete(LLMProviderEnum.OpenAI)
-                    : handleSave(LLMProviderEnum.OpenAI)
-                }
-              />
-            </div>
-            <div className="space-y-3">
-              <input
-                type="password"
-                placeholder="OpenAI API key"
-                value={apiKeys[LLMProviderEnum.OpenAI]?.apiKey || ''}
-                onChange={e => handleApiKeyChange(LLMProviderEnum.OpenAI, e.target.value)}
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Custom Base URL (Optional)"
-                value={apiKeys[LLMProviderEnum.OpenAI]?.baseUrl || ''}
-                onChange={e =>
-                  handleApiKeyChange(
-                    LLMProviderEnum.OpenAI,
-                    apiKeys[LLMProviderEnum.OpenAI]?.apiKey || '',
-                    e.target.value,
-                  )
-                }
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-            </div>
-          </div>
+    <div className="space-y-8">
+      <div
+        className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-white'} p-6 text-left shadow-sm`}>
+        <h2 className={`mb-4 text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+          LLM Provider API Keys
+        </h2>
+        <p className={`mb-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Configure your API keys for the LLM providers you want to use. Your keys are stored locally and never sent to
+          our servers.
+        </p>
 
-          <div className="border-t border-gray-200"></div>
-
-          {/* Anthropic Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">Anthropic</h3>
-              <Button
-                {...getButtonProps(LLMProviderEnum.Anthropic)}
-                size="sm"
-                onClick={() =>
-                  apiKeys[LLMProviderEnum.Anthropic]?.apiKey && !modifiedProviders.has(LLMProviderEnum.Anthropic)
-                    ? handleDelete(LLMProviderEnum.Anthropic)
-                    : handleSave(LLMProviderEnum.Anthropic)
-                }
-              />
-            </div>
-            <div className="space-y-3">
-              <input
-                type="password"
-                placeholder="Anthropic API key"
-                value={apiKeys[LLMProviderEnum.Anthropic]?.apiKey || ''}
-                onChange={e => handleApiKeyChange(LLMProviderEnum.Anthropic, e.target.value)}
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="border-t border-gray-200" />
-
-          {/* Gemini Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">Gemini</h3>
-              <Button
-                {...getButtonProps(LLMProviderEnum.Gemini)}
-                size="sm"
-                onClick={() =>
-                  apiKeys[LLMProviderEnum.Gemini]?.apiKey && !modifiedProviders.has(LLMProviderEnum.Gemini)
-                    ? handleDelete(LLMProviderEnum.Gemini)
-                    : handleSave(LLMProviderEnum.Gemini)
-                }
-              />
-            </div>
-            <div className="space-y-3">
-              <input
-                type="password"
-                placeholder="Gemini API key"
-                value={apiKeys[LLMProviderEnum.Gemini]?.apiKey || ''}
-                onChange={e => handleApiKeyChange(LLMProviderEnum.Gemini, e.target.value)}
-                className="w-full p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-            </div>
-          </div>
-        </div>
+        {Object.values(LLMProviderEnum).map(provider => renderApiKeyInput(provider))}
       </div>
 
-      {/* Updated Agent Models Section */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-blue-100 text-left">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 text-left">Model Selection</h2>
-        <div className="space-y-4">
-          {[AgentNameEnum.Planner, AgentNameEnum.Navigator, AgentNameEnum.Validator].map(agentName => (
-            <div key={agentName}>{renderModelSelect(agentName)}</div>
-          ))}
-        </div>
+      <div
+        className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-white'} p-6 text-left shadow-sm`}>
+        <h2 className={`mb-4 text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Agent Models</h2>
+        <p className={`mb-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Select which models to use for each agent. You must configure at least one LLM provider above.
+        </p>
+
+        {getAvailableModels().length === 0 && (
+          <div
+            className={`mb-4 rounded-md ${isDarkMode ? 'bg-slate-700 text-gray-300' : 'bg-yellow-50 text-yellow-800'} p-3`}>
+            <p className="text-sm">Please configure at least one LLM provider API key to select models.</p>
+          </div>
+        )}
+
+        {Object.values(AgentNameEnum).map(agentName => renderModelSelect(agentName))}
       </div>
-    </section>
+    </div>
   );
 };
