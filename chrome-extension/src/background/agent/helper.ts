@@ -73,9 +73,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         topP?: number;
         temperature?: number;
         maxTokens?: number;
-        options: {
-          num_ctx: number;
-        };
+        numCtx: number;
       } = {
         model: modelConfig.modelName,
         apiKey: providerConfig.apiKey,
@@ -83,9 +81,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         topP,
         temperature,
         maxTokens,
-        options: {
-          num_ctx: 128000,
-        },
+        numCtx: 128000,
       };
       return new ChatOllama(args);
     }
