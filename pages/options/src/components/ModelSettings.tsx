@@ -252,6 +252,31 @@ export const ModelSettings = () => {
     }
   };
 
+  const getButtonProps = (provider: string) => {
+    const isInStorage = providersFromStorage.has(provider);
+    const isModified = modifiedProviders.has(provider);
+    const isCustom = providers[provider]?.type === ProviderTypeEnum.CustomOpenAI;
+
+    // For deletion, we only care if it's in storage and not modified
+    if (isInStorage && !isModified) {
+      return {
+        variant: 'danger' as const,
+        children: 'Delete',
+        disabled: false,
+      };
+    }
+
+    // For saving, we need to check if it has the required inputs
+    // Only custom providers can be saved without an API key
+    const hasInput = isCustom || Boolean(providers[provider]?.apiKey?.trim());
+
+    return {
+      variant: 'primary' as const,
+      children: 'Save',
+      disabled: !hasInput || !isModified,
+    };
+  };
+
   const handleSave = async (provider: string) => {
     try {
       // Check if name contains spaces for custom providers
@@ -272,6 +297,14 @@ export const ModelSettings = () => {
         return;
       }
 
+      // Check if API key is required but empty for built-in providers (except custom)
+      const isCustom = providers[provider].type === ProviderTypeEnum.CustomOpenAI;
+
+      if (!isCustom && (!providers[provider].apiKey || !providers[provider].apiKey.trim())) {
+        alert('API key is required for this provider');
+        return;
+      }
+
       // Ensure modelNames is provided
       let modelNames = providers[provider].modelNames;
       if (!modelNames) {
@@ -281,7 +314,7 @@ export const ModelSettings = () => {
 
       // The provider store will handle filling in the missing fields
       await llmProviderStore.setProvider(provider, {
-        apiKey: providers[provider].apiKey,
+        apiKey: providers[provider].apiKey || '',
         baseUrl: providers[provider].baseUrl,
         name: providers[provider].name,
         modelNames: modelNames,
@@ -311,6 +344,7 @@ export const ModelSettings = () => {
 
   const handleDelete = async (provider: string) => {
     try {
+      // Delete the provider from storage regardless of its API key value
       await llmProviderStore.removeProvider(provider);
 
       // Remove from providersFromStorage
@@ -320,34 +354,22 @@ export const ModelSettings = () => {
         return next;
       });
 
+      // Remove from providers state
       setProviders(prev => {
         const next = { ...prev };
         delete next[provider];
         return next;
       });
+
+      // Also remove from modifiedProviders if it's there
+      setModifiedProviders(prev => {
+        const next = new Set(prev);
+        next.delete(provider);
+        return next;
+      });
     } catch (error) {
-      console.error('Error deleting API key:', error);
+      console.error('Error deleting provider:', error);
     }
-  };
-
-  const getButtonProps = (provider: string) => {
-    const hasStoredKey = Boolean(providers[provider]?.apiKey);
-    const isModified = modifiedProviders.has(provider);
-    const hasInput = Boolean(providers[provider]?.apiKey?.trim());
-
-    if (hasStoredKey && !isModified) {
-      return {
-        variant: 'danger' as const,
-        children: 'Delete',
-        disabled: false,
-      };
-    }
-
-    return {
-      variant: 'primary' as const,
-      children: 'Save',
-      disabled: !hasInput || !isModified,
-    };
   };
 
   const handleCancelProvider = (providerId: string) => {
@@ -371,7 +393,12 @@ export const ModelSettings = () => {
 
     // Only get models from configured providers
     for (const [provider, config] of Object.entries(providers)) {
-      if (config.apiKey) {
+      const isCustom = config.type === ProviderTypeEnum.CustomOpenAI;
+
+      // Include provider if:
+      // 1. It has an API key, or
+      // 2. It's a custom provider that's already in storage
+      if (config.apiKey || (isCustom && providersFromStorage.has(provider))) {
         const providerModels =
           config.modelNames || llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
         models.push(
@@ -670,7 +697,7 @@ export const ModelSettings = () => {
         break;
       case OLLAMA_PROVIDER:
         config = {
-          apiKey: 'ollama',
+          apiKey: 'ollama', // Set default API key for Ollama
           name: 'Ollama',
           type: ProviderTypeEnum.Ollama,
           modelNames: [],
@@ -807,33 +834,7 @@ export const ModelSettings = () => {
                 id={`provider-${providerId}`}
                 className={`space-y-4 ${modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) ? 'bg-blue-50 p-4 rounded-lg border border-blue-100' : ''}`}>
                 <div className="flex items-center justify-between">
-                  {providerConfig.type === ProviderTypeEnum.CustomOpenAI ? (
-                    <button
-                      type="button"
-                      className="text-lg font-medium text-gray-700 flex items-center cursor-pointer bg-transparent border-0 p-0 text-left"
-                      onClick={() => {
-                        const nameInput = document.getElementById(`${providerId}-name`);
-                        if (nameInput) {
-                          nameInput.focus();
-                        }
-                      }}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          const nameInput = document.getElementById(`${providerId}-name`);
-                          if (nameInput) {
-                            nameInput.focus();
-                          }
-                        }
-                      }}>
-                      {(() => {
-                        console.log('Provider header name:', providerId, providerConfig.name);
-                        return providerConfig.name || providerId;
-                      })()}
-                      <span className="ml-2 text-xs text-blue-500">(click to edit)</span>
-                    </button>
-                  ) : (
-                    <h3 className="text-lg font-medium text-gray-700">{providerConfig.name || providerId}</h3>
-                  )}
+                  <h3 className="text-lg font-medium text-gray-700">{providerConfig.name || providerId}</h3>
                   <div className="flex space-x-2">
                     {/* Show Cancel button for newly added providers */}
                     {modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) && (
@@ -845,7 +846,7 @@ export const ModelSettings = () => {
                       variant={getButtonProps(providerId).variant}
                       disabled={getButtonProps(providerId).disabled}
                       onClick={() =>
-                        providers[providerId]?.apiKey && !modifiedProviders.has(providerId)
+                        providersFromStorage.has(providerId) && !modifiedProviders.has(providerId)
                           ? handleDelete(providerId)
                           : handleSave(providerId)
                       }>
@@ -894,12 +895,16 @@ export const ModelSettings = () => {
                   {/* API Key input with label */}
                   <div className="flex items-center">
                     <label htmlFor={`${providerId}-api-key`} className="w-20 text-sm font-medium text-gray-700">
-                      Key
+                      Key{providerConfig.type !== ProviderTypeEnum.CustomOpenAI ? '*' : ''}
                     </label>
                     <input
                       id={`${providerId}-api-key`}
                       type="password"
-                      placeholder={`${providerConfig.name || providerId} API key`}
+                      placeholder={
+                        providerConfig.type === ProviderTypeEnum.CustomOpenAI
+                          ? `${providerConfig.name || providerId} API key (optional)`
+                          : `${providerConfig.name || providerId} API key (required)`
+                      }
                       value={providerConfig.apiKey || ''}
                       onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
                       className="flex-1 p-2 rounded-md bg-gray-50 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 outline-none"

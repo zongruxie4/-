@@ -41,11 +41,11 @@ export const llmProviderParameters = {
       topP: 0.001,
     },
     [AgentNameEnum.Navigator]: {
-      temperature: 0.01,
+      temperature: 0,
       topP: 0.001,
     },
     [AgentNameEnum.Validator]: {
-      temperature: 0.01,
+      temperature: 0,
       topP: 0.001,
     },
   },
@@ -65,21 +65,21 @@ export const llmProviderParameters = {
   },
   [GEMINI_PROVIDER]: {
     [AgentNameEnum.Planner]: {
-      temperature: 0.5,
-      topP: 0.8,
+      temperature: 0.01,
+      topP: 0.1,
     },
     [AgentNameEnum.Navigator]: {
-      temperature: 0.5,
-      topP: 0.8,
+      temperature: 0.01,
+      topP: 0.1,
     },
     [AgentNameEnum.Validator]: {
       temperature: 0.1,
-      topP: 0.8,
+      topP: 0.1,
     },
   },
   [OLLAMA_PROVIDER]: {
     [AgentNameEnum.Planner]: {
-      temperature: 0.02,
+      temperature: 0,
       topP: 0.001,
     },
     [AgentNameEnum.Navigator]: {
@@ -87,7 +87,7 @@ export const llmProviderParameters = {
       topP: 0.001,
     },
     [AgentNameEnum.Validator]: {
-      temperature: 0.01,
+      temperature: 0,
       topP: 0.001,
     },
   },

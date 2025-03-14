@@ -12,8 +12,6 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
   const temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
   const topP = (modelConfig.parameters?.topP ?? 0.1) as number;
 
-  console.log('modelConfig', modelConfig);
-
   switch (providerConfig.type) {
     case ProviderTypeEnum.OpenAI: {
       const args: {
@@ -76,7 +74,8 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         numCtx: number;
       } = {
         model: modelConfig.modelName,
-        apiKey: providerConfig.apiKey,
+        // required but ignored by ollama
+        apiKey: providerConfig.apiKey === '' ? 'ollama' : providerConfig.apiKey,
         baseUrl: providerConfig.baseUrl ?? 'http://localhost:11434',
         topP,
         temperature,
@@ -86,16 +85,16 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
       return new ChatOllama(args);
     }
     default: {
+      // by default, we think it's a openai-compatible provider
       const args: {
         model: string;
-        apiKey: string;
+        apiKey?: string;
         configuration: Record<string, unknown>;
         topP?: number;
         temperature?: number;
         maxTokens?: number;
       } = {
         model: modelConfig.modelName,
-        apiKey: providerConfig.apiKey,
         configuration: {
           baseURL: providerConfig.baseUrl,
         },
@@ -103,6 +102,9 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         temperature,
         maxTokens,
       };
+      if (providerConfig.apiKey) {
+        args.apiKey = providerConfig.apiKey;
+      }
       return new ChatOpenAI(args);
     }
   }
