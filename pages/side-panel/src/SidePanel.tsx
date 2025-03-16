@@ -22,11 +22,25 @@ const SidePanel = () => {
   const [chatSessions, setChatSessions] = useState<Array<{ id: string; title: string; createdAt: number }>>([]);
   const [isFollowUpMode, setIsFollowUpMode] = useState(false);
   const [isHistoricalSession, setIsHistoricalSession] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const heartbeatIntervalRef = useRef<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const setInputTextRef = useRef<((text: string) => void) | null>(null);
+
+  // Check for dark mode preference
+  useEffect(() => {
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkMode(darkModeMediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsDarkMode(e.matches);
+    };
+
+    darkModeMediaQuery.addEventListener('change', handleChange);
+    return () => darkModeMediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   useEffect(() => {
     sessionIdRef.current = currentSessionId;
@@ -470,14 +484,15 @@ const SidePanel = () => {
 
   return (
     <div>
-      <div className="flex flex-col h-[100vh] bg-[url('/bg.jpg')] bg-cover bg-no-repeat overflow-hidden border border-[rgb(186,230,253)] rounded-2xl">
+      <div
+        className={`flex flex-col h-[100vh] ${isDarkMode ? 'bg-slate-900' : "bg-[url('/bg.jpg')] bg-cover bg-no-repeat"} overflow-hidden border ${isDarkMode ? 'border-sky-800' : 'border-[rgb(186,230,253)]'} rounded-2xl`}>
         <header className="header relative">
           <div className="header-logo">
             {showHistory ? (
               <button
                 type="button"
                 onClick={handleBackToChat}
-                className="text-sky-400 hover:text-sky-500 cursor-pointer"
+                className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
                 aria-label="Back to chat">
                 ← Back
               </button>
@@ -492,7 +507,7 @@ const SidePanel = () => {
                   type="button"
                   onClick={handleNewChat}
                   onKeyDown={e => e.key === 'Enter' && handleNewChat()}
-                  className="header-icon text-sky-400 hover:text-sky-500 cursor-pointer"
+                  className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
                   aria-label="New Chat"
                   tabIndex={0}>
                   <PiPlusBold size={20} />
@@ -501,7 +516,7 @@ const SidePanel = () => {
                   type="button"
                   onClick={handleLoadHistory}
                   onKeyDown={e => e.key === 'Enter' && handleLoadHistory()}
-                  className="header-icon text-sky-400 hover:text-sky-500 cursor-pointer"
+                  className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
                   aria-label="Load History"
                   tabIndex={0}>
                   <GrHistory size={20} />
@@ -512,14 +527,14 @@ const SidePanel = () => {
               href="https://discord.gg/NN3ABHggMK"
               target="_blank"
               rel="noopener noreferrer"
-              className="header-icon text-sky-400 hover:text-sky-500">
+              className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'}`}>
               <RxDiscordLogo size={20} />
             </a>
             <button
               type="button"
               onClick={() => chrome.runtime.openOptionsPage()}
               onKeyDown={e => e.key === 'Enter' && chrome.runtime.openOptionsPage()}
-              className="header-icon text-sky-400 hover:text-sky-500 cursor-pointer"
+              className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
               aria-label="Settings"
               tabIndex={0}>
               <FiSettings size={20} />
@@ -533,13 +548,15 @@ const SidePanel = () => {
               onSessionSelect={handleSessionSelect}
               onSessionDelete={handleSessionDelete}
               visible={true}
+              isDarkMode={isDarkMode}
             />
           </div>
         ) : (
           <>
             {messages.length === 0 && (
               <>
-                <div className="border-t border-sky-100 backdrop-blur-sm p-2 shadow-sm mb-2">
+                <div
+                  className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} backdrop-blur-sm p-2 shadow-sm mb-2`}>
                   <ChatInput
                     onSendMessage={handleSendMessage}
                     onStopTask={handleStopTask}
@@ -548,19 +565,26 @@ const SidePanel = () => {
                     setContent={setter => {
                       setInputTextRef.current = setter;
                     }}
+                    isDarkMode={isDarkMode}
                   />
                 </div>
                 <div>
-                  <TemplateList templates={defaultTemplates} onTemplateSelect={handleTemplateSelect} />
+                  <TemplateList
+                    templates={defaultTemplates}
+                    onTemplateSelect={handleTemplateSelect}
+                    isDarkMode={isDarkMode}
+                  />
                 </div>
               </>
             )}
-            <div className="flex-1 overflow-y-scroll overflow-x-hidden scrollbar-gutter-stable p-4 scroll-smooth">
-              <MessageList messages={messages} />
+            <div
+              className={`flex-1 overflow-y-scroll overflow-x-hidden scrollbar-gutter-stable p-4 scroll-smooth ${isDarkMode ? 'bg-slate-900 bg-opacity-80' : ''}`}>
+              <MessageList messages={messages} isDarkMode={isDarkMode} />
               <div ref={messagesEndRef} />
             </div>
             {messages.length > 0 && (
-              <div className="border-t border-sky-100 backdrop-blur-sm p-2 shadow-sm">
+              <div
+                className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} backdrop-blur-sm p-2 shadow-sm`}>
                 <ChatInput
                   onSendMessage={handleSendMessage}
                   onStopTask={handleStopTask}
@@ -569,6 +593,7 @@ const SidePanel = () => {
                   setContent={setter => {
                     setInputTextRef.current = setter;
                   }}
+                  isDarkMode={isDarkMode}
                 />
               </div>
             )}

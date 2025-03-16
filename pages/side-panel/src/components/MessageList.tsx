@@ -4,16 +4,18 @@ import { memo } from 'react';
 
 interface MessageListProps {
   messages: Message[];
+  isDarkMode?: boolean;
 }
 
-export default memo(function MessageList({ messages }: MessageListProps) {
+export default memo(function MessageList({ messages, isDarkMode = false }: MessageListProps) {
   return (
-    <div className="space-y-4 max-w-full">
+    <div className="max-w-full space-y-4">
       {messages.map((message, index) => (
         <MessageBlock
           key={`${message.actor}-${message.timestamp}-${index}`}
           message={message}
           isSameActor={index > 0 ? messages[index - 1].actor === message.actor : false}
+          isDarkMode={isDarkMode}
         />
       ))}
     </div>
@@ -23,9 +25,10 @@ export default memo(function MessageList({ messages }: MessageListProps) {
 interface MessageBlockProps {
   message: Message;
   isSameActor: boolean;
+  isDarkMode?: boolean;
 }
 
-function MessageBlock({ message, isSameActor }: MessageBlockProps) {
+function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlockProps) {
   if (!message.actor) {
     console.error('No actor found');
     return <div />;
@@ -35,32 +38,42 @@ function MessageBlock({ message, isSameActor }: MessageBlockProps) {
 
   return (
     <div
-      className={`flex gap-3 px-4 max-w-full ${
-        !isSameActor ? 'border-t border-sky-200/50 mt-4 pt-4 first:border-t-0 first:mt-0 first:pt-0' : ''
+      className={`flex max-w-full gap-3 px-4 ${
+        !isSameActor
+          ? `mt-4 border-t ${isDarkMode ? 'border-sky-800/50' : 'border-sky-200/50'} pt-4 first:mt-0 first:border-t-0 first:pt-0`
+          : ''
       }`}>
       {!isSameActor && (
         <div
-          className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full"
           style={{ backgroundColor: actor.iconBackground }}>
-          <img src={actor.icon} alt={actor.name} className="w-6 h-6" />
+          <img src={actor.icon} alt={actor.name} className="size-6" />
         </div>
       )}
       {isSameActor && <div className="w-8" />}
 
-      <div className="flex-1 min-w-0">
-        {!isSameActor && <div className="font-semibold text-sm text-gray-900 mb-1">{actor.name}</div>}
+      <div className="min-w-0 flex-1">
+        {!isSameActor && (
+          <div className={`mb-1 text-sm font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+            {actor.name}
+          </div>
+        )}
 
         <div className="space-y-0.5">
-          <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+          <div className={`whitespace-pre-wrap break-words text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
             {isProgress ? (
-              <div className="h-1 bg-gray-200 rounded overflow-hidden">
-                <div className="h-full bg-blue-500 animate-progress" />
+              <div className={`h-1 overflow-hidden rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                <div className="animate-progress h-full bg-blue-500" />
               </div>
             ) : (
               message.content
             )}
           </div>
-          {!isProgress && <div className="text-xs text-gray-300 text-right">{formatTimestamp(message.timestamp)}</div>}
+          {!isProgress && (
+            <div className={`text-right text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-300'}`}>
+              {formatTimestamp(message.timestamp)}
+            </div>
+          )}
         </div>
       </div>
     </div>
