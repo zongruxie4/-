@@ -2,6 +2,7 @@ import { type ProviderConfig, type ModelConfig, ProviderTypeEnum } from '@extens
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatXAI } from '@langchain/xai';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOllama } from '@langchain/ollama';
 
@@ -53,6 +54,9 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
   const temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
   const topP = (modelConfig.parameters?.topP ?? 0.1) as number;
 
+  console.log('providerConfig', providerConfig);
+  console.log('modelConfig', modelConfig);
+
   switch (modelConfig.provider) {
     case ProviderTypeEnum.OpenAI: {
       return createOpenAIChatModel(providerConfig, modelConfig);
@@ -66,11 +70,6 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         topP,
         clientOptions: {},
       };
-      if (providerConfig.baseUrl) {
-        args.clientOptions = {
-          baseURL: providerConfig.baseUrl,
-        };
-      }
       return new ChatAnthropic(args);
     }
     case ProviderTypeEnum.Gemini: {
@@ -81,6 +80,17 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         topP,
       };
       return new ChatGoogleGenerativeAI(args);
+    }
+    case ProviderTypeEnum.Grok: {
+      const args = {
+        model: modelConfig.modelName,
+        apiKey: providerConfig.apiKey,
+        temperature,
+        topP,
+        maxTokens,
+        configuration: {},
+      };
+      return new ChatXAI(args) as BaseChatModel;
     }
     case ProviderTypeEnum.Ollama: {
       const args: {

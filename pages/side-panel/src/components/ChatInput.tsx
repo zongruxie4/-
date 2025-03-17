@@ -82,7 +82,7 @@ export default function ChatInput({
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          rows={4}
+          rows={5}
           className={`w-full resize-none border-none p-2 focus:outline-none ${
             disabled
               ? isDarkMode

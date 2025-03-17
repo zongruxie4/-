@@ -1,7 +1,7 @@
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
-import { llmProviderModelNames, ProviderTypeEnum } from './types';
+import { type AgentNameEnum, llmProviderModelNames, llmProviderParameters, ProviderTypeEnum } from './types';
 
 // Interface for a single provider configuration
 export interface ProviderConfig {
@@ -39,11 +39,13 @@ const storage = createStorage<LLMKeyRecord>(
 );
 
 // Helper function to determine provider type from provider name
+// Make sure to update this function if you add a new provider type
 export function getProviderTypeByProviderId(providerId: string): ProviderTypeEnum {
   switch (providerId) {
     case ProviderTypeEnum.OpenAI:
     case ProviderTypeEnum.Anthropic:
     case ProviderTypeEnum.Gemini:
+    case ProviderTypeEnum.Grok:
     case ProviderTypeEnum.Ollama:
       return providerId;
     default:
@@ -52,6 +54,7 @@ export function getProviderTypeByProviderId(providerId: string): ProviderTypeEnu
 }
 
 // Helper function to get display name from provider id
+// Make sure to update this function if you add a new provider type
 export function getDefaultDisplayNameFromProviderId(providerId: string): string {
   switch (providerId) {
     case ProviderTypeEnum.OpenAI:
@@ -60,6 +63,8 @@ export function getDefaultDisplayNameFromProviderId(providerId: string): string 
       return 'Anthropic';
     case ProviderTypeEnum.Gemini:
       return 'Gemini';
+    case ProviderTypeEnum.Grok:
+      return 'Grok';
     case ProviderTypeEnum.Ollama:
       return 'Ollama';
     default:
@@ -68,32 +73,21 @@ export function getDefaultDisplayNameFromProviderId(providerId: string): string 
 }
 
 // Get default configuration for built-in providers
+// Make sure to update this function if you add a new provider type
 export function getDefaultProviderConfig(providerId: string): ProviderConfig {
   switch (providerId) {
     case ProviderTypeEnum.OpenAI:
-      return {
-        apiKey: '',
-        name: getDefaultDisplayNameFromProviderId(ProviderTypeEnum.OpenAI),
-        type: ProviderTypeEnum.OpenAI,
-        modelNames: [...(llmProviderModelNames[ProviderTypeEnum.OpenAI] || [])],
-        createdAt: Date.now(),
-      };
     case ProviderTypeEnum.Anthropic:
-      return {
-        apiKey: '',
-        name: getDefaultDisplayNameFromProviderId(ProviderTypeEnum.Anthropic),
-        type: ProviderTypeEnum.Anthropic,
-        modelNames: [...(llmProviderModelNames[ProviderTypeEnum.Anthropic] || [])],
-        createdAt: Date.now(),
-      };
     case ProviderTypeEnum.Gemini:
+    case ProviderTypeEnum.Grok:
       return {
         apiKey: '',
-        name: getDefaultDisplayNameFromProviderId(ProviderTypeEnum.Gemini),
-        type: ProviderTypeEnum.Gemini,
-        modelNames: [...(llmProviderModelNames[ProviderTypeEnum.Gemini] || [])],
+        name: getDefaultDisplayNameFromProviderId(providerId),
+        type: providerId,
+        modelNames: [...(llmProviderModelNames[providerId] || [])],
         createdAt: Date.now(),
       };
+
     case ProviderTypeEnum.Ollama:
       return {
         apiKey: 'ollama', // Set default API key for Ollama
@@ -113,6 +107,14 @@ export function getDefaultProviderConfig(providerId: string): ProviderConfig {
         createdAt: Date.now(),
       };
   }
+}
+
+export function getDefaultAgentModelParams(providerId: string, agentName: AgentNameEnum): Record<string, number> {
+  const newParameters = llmProviderParameters[providerId as keyof typeof llmProviderParameters]?.[agentName] || {
+    temperature: 0.1,
+    topP: 0.1,
+  };
+  return newParameters;
 }
 
 // Helper function to ensure backward compatibility for provider configs

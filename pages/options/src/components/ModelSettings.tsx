@@ -7,9 +7,9 @@ import {
   AgentNameEnum,
   llmProviderModelNames,
   ProviderTypeEnum,
-  llmProviderParameters,
   getDefaultDisplayNameFromProviderId,
   getDefaultProviderConfig,
+  getDefaultAgentModelParams,
 } from '@extension/storage';
 
 interface ModelSettingsProps {
@@ -443,10 +443,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     const [provider, model] = modelValue.split('>');
 
     // Set parameters based on provider type
-    const newParameters = llmProviderParameters[provider as keyof typeof llmProviderParameters]?.[agentName] || {
-      temperature: 0.1,
-      topP: 0.1,
-    };
+    const newParameters = getDefaultAgentModelParams(provider, agentName);
 
     setModelParameters(prev => ({
       ...prev,

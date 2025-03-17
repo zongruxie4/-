@@ -12,13 +12,14 @@ export enum ProviderTypeEnum {
   OpenAI = 'openai',
   Anthropic = 'anthropic',
   Gemini = 'gemini',
+  Grok = 'grok',
   Ollama = 'ollama',
   CustomOpenAI = 'custom_openai',
 }
 
 // Default supported models for each built-in provider
 export const llmProviderModelNames = {
-  [ProviderTypeEnum.OpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini'],
+  [ProviderTypeEnum.OpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o3-mini'],
   [ProviderTypeEnum.Anthropic]: ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
   [ProviderTypeEnum.Gemini]: [
     'gemini-2.0-flash',
@@ -26,6 +27,7 @@ export const llmProviderModelNames = {
     'gemini-2.0-pro-exp-02-05',
     // 'gemini-2.0-flash-thinking-exp-01-21', // TODO: not support function calling for now
   ],
+  [ProviderTypeEnum.Grok]: ['grok-2', 'grok-2-vision'],
   [ProviderTypeEnum.Ollama]: [],
   // Custom OpenAI providers don't have predefined models as they are user-defined
 };
@@ -72,6 +74,20 @@ export const llmProviderParameters = {
     [AgentNameEnum.Validator]: {
       temperature: 0.1,
       topP: 0.1,
+    },
+  },
+  [ProviderTypeEnum.Grok]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.7,
+      topP: 0.9,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.7,
+      topP: 0.9,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.7,
+      topP: 0.9,
     },
   },
   [ProviderTypeEnum.Ollama]: {

@@ -14,7 +14,7 @@ interface TemplateListProps {
 const TemplateList: React.FC<TemplateListProps> = ({ templates, onTemplateSelect, isDarkMode = false }) => {
   return (
     <div className="p-2">
-      <h3 className={`mb-3 text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Templates</h3>
+      <h3 className={`mb-3 text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Quick Start</h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {templates.map(template => (
           <button
