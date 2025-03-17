@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Button } from '@extension/ui';
 import {
@@ -46,6 +46,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
   const newlyAddedProviderRef = useRef<string | null>(null);
   const [nameErrors, setNameErrors] = useState<Record<string, string>>({});
+  // Create a non-async wrapper for use in render functions
+  const [availableModels, setAvailableModels] = useState<
+    Array<{ provider: string; providerName: string; model: string }>
+  >([]);
 
   useEffect(() => {
     const loadProviders = async () => {
@@ -146,6 +150,43 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     };
   }, [isProviderSelectorOpen]);
 
+  // Create a memoized version of getAvailableModels
+  const getAvailableModelsCallback = useCallback(async () => {
+    const models: Array<{ provider: string; providerName: string; model: string }> = [];
+
+    try {
+      // Load providers directly from storage
+      const storedProviders = await llmProviderStore.getAllProviders();
+
+      // Only use providers that are actually in storage
+      for (const [provider, config] of Object.entries(storedProviders)) {
+        const providerModels =
+          config.modelNames || llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
+        models.push(
+          ...providerModels.map(model => ({
+            provider,
+            providerName: config.name || provider,
+            model,
+          })),
+        );
+      }
+    } catch (error) {
+      console.error('Error loading providers for model selection:', error);
+    }
+
+    return models;
+  }, []);
+
+  // Update available models whenever providers change
+  useEffect(() => {
+    const updateAvailableModels = async () => {
+      const models = await getAvailableModelsCallback();
+      setAvailableModels(models);
+    };
+
+    updateAvailableModels();
+  }, [getAvailableModelsCallback]); // Only depends on the callback
+
   const handleApiKeyChange = (provider: string, apiKey: string, baseUrl?: string) => {
     setModifiedProviders(prev => new Set(prev).add(provider));
     setProviders(prev => ({
@@ -159,8 +200,6 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   };
 
   const handleNameChange = (provider: string, name: string) => {
-    console.log('handleNameChange called with:', provider, name);
-
     setModifiedProviders(prev => new Set(prev).add(provider));
     setProviders(prev => {
       const updated = {
@@ -170,7 +209,6 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           name: name.trim(),
         },
       };
-      console.log('Updated providers state:', updated);
       return updated;
     });
   };
@@ -341,6 +379,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         next.delete(provider);
         return next;
       });
+
+      // Refresh available models
+      const models = await getAvailableModelsCallback();
+      setAvailableModels(models);
     } catch (error) {
       console.error('Error saving API key:', error);
     }
@@ -371,6 +413,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         next.delete(provider);
         return next;
       });
+
+      // Refresh available models
+      const models = await getAvailableModelsCallback();
+      setAvailableModels(models);
     } catch (error) {
       console.error('Error deleting provider:', error);
     }
@@ -390,32 +436,6 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       next.delete(providerId);
       return next;
     });
-  };
-
-  const getAvailableModels = () => {
-    const models: Array<{ provider: string; providerName: string; model: string }> = [];
-
-    // Only get models from configured providers
-    for (const [provider, config] of Object.entries(providers)) {
-      const isCustom = config.type === ProviderTypeEnum.CustomOpenAI;
-
-      // Include provider if:
-      // 1. It has an API key, or
-      // 2. It's a custom provider that's already in storage
-      if (config.apiKey || (isCustom && providersFromStorage.has(provider))) {
-        const providerModels =
-          config.modelNames || llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
-        models.push(
-          ...providerModels.map(model => ({
-            provider,
-            providerName: config.name || provider,
-            model,
-          })),
-        );
-      }
-    }
-
-    return models;
   };
 
   const handleModelChange = async (agentName: AgentNameEnum, modelValue: string) => {
@@ -513,7 +533,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           <select
             id={`${agentName}-model`}
             className={`flex-1 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
-            disabled={getAvailableModels().length <= 1}
+            disabled={availableModels.length <= 1}
             value={
               selectedModels[agentName]
                 ? `${getProviderForModel(selectedModels[agentName])}>${selectedModels[agentName]}`
@@ -523,7 +543,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             <option key="default" value="">
               Choose model
             </option>
-            {getAvailableModels().map(({ provider, providerName, model }) => (
+            {availableModels.map(({ provider, providerName, model }) => (
               <option key={`${provider}>${model}`} value={`${provider}>${model}`}>
                 {`${providerName} > ${model}`}
               </option>
