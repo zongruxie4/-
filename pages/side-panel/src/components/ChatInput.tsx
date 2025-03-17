@@ -83,7 +83,7 @@ export default function ChatInput({
           onKeyDown={handleKeyDown}
           disabled={disabled}
           rows={4}
-          className={`w-full resize-none border-none p-3 focus:outline-none ${
+          className={`w-full resize-none border-none p-2 focus:outline-none ${
             disabled
               ? isDarkMode
                 ? 'bg-slate-800 text-gray-400'
@@ -97,7 +97,7 @@ export default function ChatInput({
         />
 
         <div
-          className={`flex items-center justify-between px-3 py-1.5 ${
+          className={`flex items-center justify-between px-2 py-1.5 ${
             disabled ? (isDarkMode ? 'bg-slate-800' : 'bg-gray-100') : isDarkMode ? 'bg-slate-800' : 'bg-white'
           }`}>
           <div className="flex gap-2 text-gray-500">{/* Icons can go here */}</div>

@@ -485,7 +485,7 @@ const SidePanel = () => {
   return (
     <div>
       <div
-        className={`flex flex-col h-[100vh] ${isDarkMode ? 'bg-slate-900' : "bg-[url('/bg.jpg')] bg-cover bg-no-repeat"} overflow-hidden border ${isDarkMode ? 'border-sky-800' : 'border-[rgb(186,230,253)]'} rounded-2xl`}>
+        className={`flex h-screen flex-col ${isDarkMode ? 'bg-slate-900' : "bg-[url('/bg.jpg')] bg-cover bg-no-repeat"} overflow-hidden border ${isDarkMode ? 'border-sky-800' : 'border-[rgb(186,230,253)]'} rounded-2xl`}>
         <header className="header relative">
           <div className="header-logo">
             {showHistory ? (
@@ -497,7 +497,7 @@ const SidePanel = () => {
                 ← Back
               </button>
             ) : (
-              <img src="/icon-128.png" alt="Extension Logo" className="h-6 w-6" />
+              <img src="/icon-128.png" alt="Extension Logo" className="size-6" />
             )}
           </div>
           <div className="header-icons">
@@ -556,7 +556,7 @@ const SidePanel = () => {
             {messages.length === 0 && (
               <>
                 <div
-                  className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} backdrop-blur-sm p-2 shadow-sm mb-2`}>
+                  className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} mb-2 p-2 shadow-sm backdrop-blur-sm`}>
                   <ChatInput
                     onSendMessage={handleSendMessage}
                     onStopTask={handleStopTask}
@@ -578,13 +578,13 @@ const SidePanel = () => {
               </>
             )}
             <div
-              className={`flex-1 overflow-y-scroll overflow-x-hidden scrollbar-gutter-stable p-4 scroll-smooth ${isDarkMode ? 'bg-slate-900 bg-opacity-80' : ''}`}>
+              className={`scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth p-2 ${isDarkMode ? 'bg-slate-900/80' : ''}`}>
               <MessageList messages={messages} isDarkMode={isDarkMode} />
               <div ref={messagesEndRef} />
             </div>
             {messages.length > 0 && (
               <div
-                className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} backdrop-blur-sm p-2 shadow-sm`}>
+                className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} p-2 shadow-sm backdrop-blur-sm`}>
                 <ChatInput
                   onSendMessage={handleSendMessage}
                   onStopTask={handleStopTask}
