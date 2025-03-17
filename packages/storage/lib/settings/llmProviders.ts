@@ -39,23 +39,20 @@ const storage = createStorage<LLMKeyRecord>(
 );
 
 // Helper function to determine provider type from provider name
-function getProviderTypeByProviderId(providerId: string): ProviderTypeEnum {
+export function getProviderTypeByProviderId(providerId: string): ProviderTypeEnum {
   switch (providerId) {
     case ProviderTypeEnum.OpenAI:
-      return ProviderTypeEnum.OpenAI;
     case ProviderTypeEnum.Anthropic:
-      return ProviderTypeEnum.Anthropic;
     case ProviderTypeEnum.Gemini:
-      return ProviderTypeEnum.Gemini;
     case ProviderTypeEnum.Ollama:
-      return ProviderTypeEnum.Ollama;
+      return providerId;
     default:
       return ProviderTypeEnum.CustomOpenAI;
   }
 }
 
 // Helper function to get display name from provider id
-function getDisplayNameFromProviderId(providerId: string): string {
+export function getDefaultDisplayNameFromProviderId(providerId: string): string {
   switch (providerId) {
     case ProviderTypeEnum.OpenAI:
       return 'OpenAI';
@@ -70,11 +67,59 @@ function getDisplayNameFromProviderId(providerId: string): string {
   }
 }
 
+// Get default configuration for built-in providers
+export function getDefaultProviderConfig(providerId: string): ProviderConfig {
+  switch (providerId) {
+    case ProviderTypeEnum.OpenAI:
+      return {
+        apiKey: '',
+        name: getDefaultDisplayNameFromProviderId(ProviderTypeEnum.OpenAI),
+        type: ProviderTypeEnum.OpenAI,
+        modelNames: [...(llmProviderModelNames[ProviderTypeEnum.OpenAI] || [])],
+        createdAt: Date.now(),
+      };
+    case ProviderTypeEnum.Anthropic:
+      return {
+        apiKey: '',
+        name: getDefaultDisplayNameFromProviderId(ProviderTypeEnum.Anthropic),
+        type: ProviderTypeEnum.Anthropic,
+        modelNames: [...(llmProviderModelNames[ProviderTypeEnum.Anthropic] || [])],
+        createdAt: Date.now(),
+      };
+    case ProviderTypeEnum.Gemini:
+      return {
+        apiKey: '',
+        name: getDefaultDisplayNameFromProviderId(ProviderTypeEnum.Gemini),
+        type: ProviderTypeEnum.Gemini,
+        modelNames: [...(llmProviderModelNames[ProviderTypeEnum.Gemini] || [])],
+        createdAt: Date.now(),
+      };
+    case ProviderTypeEnum.Ollama:
+      return {
+        apiKey: 'ollama', // Set default API key for Ollama
+        name: getDefaultDisplayNameFromProviderId(ProviderTypeEnum.Ollama),
+        type: ProviderTypeEnum.Ollama,
+        modelNames: [],
+        baseUrl: 'http://localhost:11434',
+        createdAt: Date.now(),
+      };
+    default:
+      return {
+        apiKey: '',
+        name: getDefaultDisplayNameFromProviderId(providerId),
+        type: ProviderTypeEnum.CustomOpenAI,
+        baseUrl: '',
+        modelNames: [],
+        createdAt: Date.now(),
+      };
+  }
+}
+
 // Helper function to ensure backward compatibility for provider configs
 function ensureBackwardCompatibility(providerId: string, config: ProviderConfig): ProviderConfig {
   const updatedConfig = { ...config };
   if (!updatedConfig.name) {
-    updatedConfig.name = getDisplayNameFromProviderId(providerId);
+    updatedConfig.name = getDefaultDisplayNameFromProviderId(providerId);
   }
   if (!updatedConfig.type) {
     updatedConfig.type = getProviderTypeByProviderId(providerId);
@@ -107,7 +152,7 @@ export const llmProviderStore: LLMProviderStorage = {
     // Ensure backward compatibility by filling in missing fields
     const completeConfig: ProviderConfig = {
       ...config,
-      name: config.name || getDisplayNameFromProviderId(providerId),
+      name: config.name || getDefaultDisplayNameFromProviderId(providerId),
       type: config.type || getProviderTypeByProviderId(providerId),
       modelNames: config.modelNames,
       createdAt: config.createdAt || Date.now(),

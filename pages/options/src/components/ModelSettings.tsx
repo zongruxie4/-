@@ -8,6 +8,8 @@ import {
   llmProviderModelNames,
   ProviderTypeEnum,
   llmProviderParameters,
+  getDefaultDisplayNameFromProviderId,
+  getDefaultProviderConfig,
 } from '@extension/storage';
 
 interface ModelSettingsProps {
@@ -677,58 +679,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     }, 100);
   };
 
-  const addDefaultProvider = (provider: string) => {
+  const addBuiltInProvider = (provider: string) => {
     // Get the default provider configuration
-    let config: {
-      apiKey: string;
-      name: string;
-      type: ProviderTypeEnum;
-      modelNames: string[];
-      baseUrl?: string;
-      createdAt: number;
-    };
-
-    switch (provider) {
-      case ProviderTypeEnum.OpenAI:
-        config = {
-          apiKey: '',
-          name: 'OpenAI',
-          type: ProviderTypeEnum.OpenAI,
-          modelNames: [...(llmProviderModelNames[ProviderTypeEnum.OpenAI] || [])],
-          createdAt: Date.now(),
-        };
-        break;
-      case ProviderTypeEnum.Anthropic:
-        config = {
-          apiKey: '',
-          name: 'Anthropic',
-          type: ProviderTypeEnum.Anthropic,
-          modelNames: [...(llmProviderModelNames[ProviderTypeEnum.Anthropic] || [])],
-          createdAt: Date.now(),
-        };
-        break;
-      case ProviderTypeEnum.Gemini:
-        config = {
-          apiKey: '',
-          name: 'Gemini',
-          type: ProviderTypeEnum.Gemini,
-          modelNames: [...(llmProviderModelNames[ProviderTypeEnum.Gemini] || [])],
-          createdAt: Date.now(),
-        };
-        break;
-      case ProviderTypeEnum.Ollama:
-        config = {
-          apiKey: 'ollama', // Set default API key for Ollama
-          name: 'Ollama',
-          type: ProviderTypeEnum.Ollama,
-          modelNames: [],
-          baseUrl: 'http://localhost:11434',
-          createdAt: Date.now(),
-        };
-        break;
-      default:
-        return;
-    }
+    const config = getDefaultProviderConfig(provider);
 
     // Add the provider to the state
     setProviders(prev => ({
@@ -809,22 +762,14 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     // Close the dropdown immediately
     setIsProviderSelectorOpen(false);
 
-    if (providerType === 'custom') {
+    // Handle custom provider
+    if (providerType === ProviderTypeEnum.CustomOpenAI) {
       addCustomProvider();
       return;
     }
 
-    // Handle default providers
-    switch (providerType) {
-      case ProviderTypeEnum.OpenAI:
-      case ProviderTypeEnum.Anthropic:
-      case ProviderTypeEnum.Gemini:
-      case ProviderTypeEnum.Ollama:
-        addDefaultProvider(providerType);
-        break;
-      default:
-        console.error('Unknown provider type:', providerType);
-    }
+    // Handle built-in supported providers
+    addBuiltInProvider(providerType);
   };
 
   const getProviderForModel = (modelName: string): string => {
@@ -1064,7 +1009,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           )}
 
           {/* Add Provider button and dropdown */}
-          <div className="provider-selector-container pt-4 relative">
+          <div className="provider-selector-container relative pt-4">
             <Button
               variant="secondary"
               onClick={() => setIsProviderSelectorOpen(prev => !prev)}
@@ -1084,77 +1029,30 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                     : 'border-blue-200 bg-white shadow-xl shadow-blue-100/50'
                 }`}>
                 <div className="py-1">
-                  {/* Check if all default providers are already added */}
-                  {(providersFromStorage.has(ProviderTypeEnum.OpenAI) ||
-                    modifiedProviders.has(ProviderTypeEnum.OpenAI)) &&
-                    (providersFromStorage.has(ProviderTypeEnum.Anthropic) ||
-                      modifiedProviders.has(ProviderTypeEnum.Anthropic)) &&
-                    (providersFromStorage.has(ProviderTypeEnum.Gemini) ||
-                      modifiedProviders.has(ProviderTypeEnum.Gemini)) &&
-                    (providersFromStorage.has(ProviderTypeEnum.Ollama) ||
-                      modifiedProviders.has(ProviderTypeEnum.Ollama)) && (
-                      <div
-                        className={`px-4 py-3 text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
-                        All default providers already added. You can still add a custom provider.
-                      </div>
-                    )}
-
-                  {!providersFromStorage.has(ProviderTypeEnum.OpenAI) &&
-                    !modifiedProviders.has(ProviderTypeEnum.OpenAI) && (
+                  {/* Map through provider types to create buttons */}
+                  {Object.values(ProviderTypeEnum)
+                    // Filter out CustomOpenAI and already added providers
+                    .filter(
+                      type =>
+                        type !== ProviderTypeEnum.CustomOpenAI &&
+                        !providersFromStorage.has(type) &&
+                        !modifiedProviders.has(type),
+                    )
+                    .map(type => (
                       <button
+                        key={type}
                         type="button"
                         className={`flex w-full items-center px-4 py-3 text-left text-sm ${
                           isDarkMode
                             ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
                             : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
                         } transition-colors duration-150`}
-                        onClick={() => handleProviderSelection(ProviderTypeEnum.OpenAI)}>
-                        <span className="font-medium">OpenAI</span>
+                        onClick={() => handleProviderSelection(type)}>
+                        <span className="font-medium">{getDefaultDisplayNameFromProviderId(type)}</span>
                       </button>
-                    )}
+                    ))}
 
-                  {!providersFromStorage.has(ProviderTypeEnum.Anthropic) &&
-                    !modifiedProviders.has(ProviderTypeEnum.Anthropic) && (
-                      <button
-                        type="button"
-                        className={`flex w-full items-center px-4 py-3 text-left text-sm ${
-                          isDarkMode
-                            ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
-                            : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
-                        } transition-colors duration-150`}
-                        onClick={() => handleProviderSelection(ProviderTypeEnum.Anthropic)}>
-                        <span className="font-medium">Anthropic</span>
-                      </button>
-                    )}
-
-                  {!providersFromStorage.has(ProviderTypeEnum.Gemini) &&
-                    !modifiedProviders.has(ProviderTypeEnum.Gemini) && (
-                      <button
-                        type="button"
-                        className={`flex w-full items-center px-4 py-3 text-left text-sm ${
-                          isDarkMode
-                            ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
-                            : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
-                        } transition-colors duration-150`}
-                        onClick={() => handleProviderSelection(ProviderTypeEnum.Gemini)}>
-                        <span className="font-medium">Gemini</span>
-                      </button>
-                    )}
-
-                  {!providersFromStorage.has(ProviderTypeEnum.Ollama) &&
-                    !modifiedProviders.has(ProviderTypeEnum.Ollama) && (
-                      <button
-                        type="button"
-                        className={`flex w-full items-center px-4 py-3 text-left text-sm ${
-                          isDarkMode
-                            ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
-                            : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
-                        } transition-colors duration-150`}
-                        onClick={() => handleProviderSelection(ProviderTypeEnum.Ollama)}>
-                        <span className="font-medium">Ollama</span>
-                      </button>
-                    )}
-
+                  {/* Custom provider button (always shown) */}
                   <button
                     type="button"
                     className={`flex w-full items-center px-4 py-3 text-left text-sm ${
@@ -1162,7 +1060,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
                         : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
                     } transition-colors duration-150`}
-                    onClick={() => handleProviderSelection('custom')}>
+                    onClick={() => handleProviderSelection(ProviderTypeEnum.CustomOpenAI)}>
                     <span className="font-medium">Custom OpenAI-compatible</span>
                   </button>
                 </div>
