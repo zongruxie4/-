@@ -532,7 +532,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           </label>
           <select
             id={`${agentName}-model`}
-            className={`flex-1 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
+            className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
             disabled={availableModels.length <= 1}
             value={
               selectedModels[agentName]
@@ -588,7 +588,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                     handleParameterChange(agentName, 'temperature', value);
                   }
                 }}
-                className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-2 py-1 text-sm`}
+                className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
                 aria-label={`${agentName} temperature number input`}
               />
             </div>
@@ -632,7 +632,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                     handleParameterChange(agentName, 'topP', value);
                   }
                 }}
-                className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-2 py-1 text-sm`}
+                className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
                 aria-label={`${agentName} top P number input`}
               />
             </div>
@@ -872,7 +872,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             console.log('Name input changed:', e.target.value);
                             handleNameChange(providerId, e.target.value);
                           }}
-                          className={`flex-1 rounded-md border p-2 ${
+                          className={`flex-1 rounded-md border p-2 text-sm ${
                             nameErrors[providerId]
                               ? isDarkMode
                                 ? 'border-red-700 bg-slate-700 text-gray-200 focus:border-red-600 focus:ring-2 focus:ring-red-900'
@@ -912,9 +912,20 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       }
                       value={providerConfig.apiKey || ''}
                       onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
-                      className={`flex-1 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
+                      className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
                     />
                   </div>
+
+                  {/* Display API key for newly added providers */}
+                  {modifiedProviders.has(providerId) &&
+                    !providersFromStorage.has(providerId) &&
+                    providerConfig.apiKey && (
+                      <div className="ml-20 mt-1">
+                        <p className={`font-mono text-sm ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                          {providerConfig.apiKey}
+                        </p>
+                      </div>
+                    )}
 
                   {/* Base URL input (for custom_openai and ollama) */}
                   {(providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
@@ -940,7 +951,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           }
                           value={providerConfig.baseUrl || ''}
                           onChange={e => handleApiKeyChange(providerId, providerConfig.apiKey || '', e.target.value)}
-                          className={`flex-1 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
+                          className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
                         />
                       </div>
                     </div>
@@ -988,7 +999,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           value={newModelInputs[providerId] || ''}
                           onChange={e => handleModelsChange(providerId, e.target.value)}
                           onKeyDown={e => handleKeyDown(e, providerId)}
-                          className={`min-w-[150px] flex-1 border-none ${isDarkMode ? 'bg-transparent text-gray-200' : 'bg-transparent text-gray-700'} p-1 outline-none`}
+                          className={`min-w-[150px] flex-1 border-none text-sm ${isDarkMode ? 'bg-transparent text-gray-200' : 'bg-transparent text-gray-700'} p-1 outline-none`}
                         />
                       </div>
                       <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -1038,7 +1049,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                   ? 'border-blue-700 bg-blue-600 text-white hover:bg-blue-500'
                   : 'border-blue-200 bg-blue-100 text-blue-800 hover:bg-blue-200'
               }`}>
-              <span className="mr-2">+</span> Add Provider
+              <span className="mr-2 text-sm">+</span> <span className="text-sm">Add New Provider</span>
             </Button>
 
             {isProviderSelectorOpen && (
