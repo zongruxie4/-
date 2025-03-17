@@ -35,7 +35,7 @@ Looking for a powerful AI web agent without the $200/month price tag of OpenAI O
 - **Flexible LLM Options** - Connect to your preferred LLM providers with the freedom to choose different models for different agents.
 - **Fully Open Source** - Complete transparency in how your browser is automated. No black boxes or hidden processes.
 
-> **Note:** We currently support OpenAI, Anthropic and Gemini, with more LLM integrations coming soon!
+> **Note:** We currently support OpenAI, Anthropic, Gemini, Ollama and custom OpenAI-Compatible providers, more providers will be supported.
 
 
 ## 📊 Key Features
@@ -65,6 +65,19 @@ Looking for a powerful AI web agent without the $200/month price tag of OpenAI O
     *   Click the `Settings` icon (top right).
     *   Add your LLM API keys.
     *   Choose which model to use for different agents (Navigator, Planner, Validator)
+
+## 🔄 Upgrading
+
+1. **Download**:
+    * Download the latest `nanobrowser.zip` file from the official Github [release page](https://github.com/nanobrowser/nanobrowser/releases).
+
+2. **Replace**:
+    * Unzip `nanobrowser.zip`.
+    * Replace your existing Nanobrowser files with the new ones.
+
+3. **Refresh**:
+    * Go to `chrome://extensions/` in Chrome.
+    * Click the refresh icon on the Nanobrowser card.
 
 ## 🛠️ Build from Source
 
@@ -119,6 +132,22 @@ Nanobrowser allows you to configure different LLM models for each agent to balan
   - Lightweight and cost-efficient
   - Suitable for basic navigation tasks
 
+### Local Models
+- **Setup Options**:
+  - Use Ollama or other custom OpenAI-compatible providers to run models locally
+  - Zero API costs and complete privacy with no data leaving your machine
+
+- **Recommended Models**:
+  - **Qwen 2.5 Coder 14B**
+  - **Mistral Small 24B**
+  - We welcome community experience sharing with other local models in our [Discord](https://discord.gg/NN3ABHggMK)
+
+- **Prompt Engineering**:
+  - Local models require more specific and cleaner prompts
+  - Avoid high-level, ambiguous commands
+  - Break complex tasks into clear, detailed steps
+  - Provide explicit context and constraints
+
 > **Note**: The cost-effective configuration may produce less stable outputs and require more iterations for complex tasks.
 
 > **Tip**: Feel free to experiment with your own model configurations! Found a great combination? Share it with the community in our [Discord](https://discord.gg/NN3ABHggMK) to help others optimize their setup.
@@ -157,9 +186,8 @@ We're actively developing Nanobrowser with exciting features on the horizon, wel
 *  **Provide Feedback** 
    * Try Nanobrowser and give us feedback on its performance or suggest improvements in our [Discord server](https://discord.gg/NN3ABHggMK).
 * **Contribute Code**
-   * Create an issue
-   * Fork the repository
-   * Open a pull request
+   * Check out our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute code to the project.
+   * Submit pull requests for bug fixes, features, or documentation improvements.
 
 
 We believe in the power of open source and community collaboration.  Join us in building the future of web automation!

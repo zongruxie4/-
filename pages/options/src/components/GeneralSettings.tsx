@@ -46,7 +46,7 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
               min={1}
               max={100}
               value={settings.maxSteps}
-              onChange={e => updateSetting('maxSteps', parseInt(e.target.value, 10))}
+              onChange={e => updateSetting('maxSteps', Number.parseInt(e.target.value, 10))}
               className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
             />
           </div>
@@ -69,7 +69,7 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
               min={1}
               max={100}
               value={settings.maxActionsPerStep}
-              onChange={e => updateSetting('maxActionsPerStep', parseInt(e.target.value, 10))}
+              onChange={e => updateSetting('maxActionsPerStep', Number.parseInt(e.target.value, 10))}
               className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
             />
           </div>
@@ -92,7 +92,7 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
               min={1}
               max={10}
               value={settings.maxFailures}
-              onChange={e => updateSetting('maxFailures', parseInt(e.target.value, 10))}
+              onChange={e => updateSetting('maxFailures', Number.parseInt(e.target.value, 10))}
               className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
             />
           </div>
@@ -163,7 +163,7 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
               min={1}
               max={20}
               value={settings.planningInterval}
-              onChange={e => updateSetting('planningInterval', parseInt(e.target.value, 10))}
+              onChange={e => updateSetting('planningInterval', Number.parseInt(e.target.value, 10))}
               className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
             />
           </div>

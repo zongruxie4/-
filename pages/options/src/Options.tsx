@@ -49,7 +49,7 @@ const Options = () => {
               <li key={item.id}>
                 <Button
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex w-full items-center space-x-2 rounded-lg px-4 py-2 text-left 
+                  className={`flex w-full items-center space-x-2 rounded-lg px-4 py-2 text-left text-base 
                     ${
                       activeTab !== item.id
                         ? `${isDarkMode ? 'bg-slate-700/70 text-gray-300 hover:text-white' : 'bg-[#0EA5E9]/15 font-medium text-gray-700 hover:text-white'} backdrop-blur-sm`

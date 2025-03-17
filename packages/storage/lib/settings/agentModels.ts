@@ -1,12 +1,15 @@
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
-import { type AgentNameEnum, type LLMProviderEnum, llmProviderModelNames } from './types';
+import type { AgentNameEnum } from './types';
+import { llmProviderParameters } from './types';
 
 // Interface for a single model configuration
 export interface ModelConfig {
-  provider: LLMProviderEnum;
+  // providerId, the key of the provider in the llmProviderStore, not the provider name
+  provider: string;
   modelName: string;
+  parameters?: Record<string, unknown>;
 }
 
 // Interface for storing multiple agent model configurations
@@ -36,27 +39,47 @@ function validateModelConfig(config: ModelConfig) {
   if (!config.provider || !config.modelName) {
     throw new Error('Provider and model name must be specified');
   }
+}
 
-  const validModels = llmProviderModelNames[config.provider];
-  if (!validModels.includes(config.modelName)) {
-    throw new Error(`Invalid model "${config.modelName}" for provider "${config.provider}"`);
-  }
+function getModelParameters(agent: AgentNameEnum, provider: string): Record<string, unknown> {
+  const providerParams = llmProviderParameters[provider as keyof typeof llmProviderParameters]?.[agent];
+  return providerParams ?? { temperature: 0.1, topP: 0.1 };
 }
 
 export const agentModelStore: AgentModelStorage = {
   ...storage,
   setAgentModel: async (agent: AgentNameEnum, config: ModelConfig) => {
     validateModelConfig(config);
+    // Merge default parameters with provided parameters
+    const defaultParams = getModelParameters(agent, config.provider);
+    const mergedConfig = {
+      ...config,
+      parameters: {
+        ...defaultParams,
+        ...config.parameters,
+      },
+    };
     await storage.set(current => ({
       agents: {
         ...current.agents,
-        [agent]: config,
+        [agent]: mergedConfig,
       },
     }));
   },
   getAgentModel: async (agent: AgentNameEnum) => {
     const data = await storage.get();
-    return data.agents[agent];
+    const config = data.agents[agent];
+    if (!config) return undefined;
+
+    // Merge default parameters with stored parameters
+    const defaultParams = getModelParameters(agent, config.provider);
+    return {
+      ...config,
+      parameters: {
+        ...defaultParams,
+        ...config.parameters,
+      },
+    };
   },
   resetAgentModel: async (agent: AgentNameEnum) => {
     await storage.set(current => {

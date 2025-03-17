@@ -1,43 +1,107 @@
+// Agent name, used to identify the agent in the settings
 export enum AgentNameEnum {
   Planner = 'planner',
   Navigator = 'navigator',
   Validator = 'validator',
 }
 
-// Enum for supported LLM providers
-export enum LLMProviderEnum {
+// Provider type, types before CustomOpenAI are built-in providers, CustomOpenAI is a custom provider
+// For built-in providers, we will create ChatModel instances with its respective LangChain ChatModel classes
+// For custom providers, we will create ChatModel instances with the ChatOpenAI class
+export enum ProviderTypeEnum {
   OpenAI = 'openai',
   Anthropic = 'anthropic',
   Gemini = 'gemini',
-  Groq = 'groq',
   Grok = 'grok',
+  Ollama = 'ollama',
+  CustomOpenAI = 'custom_openai',
 }
 
+// Default supported models for each built-in provider
 export const llmProviderModelNames = {
-  [LLMProviderEnum.OpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini', 'deepseek-r1'],
-  [LLMProviderEnum.Anthropic]: ['claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'],
-  [LLMProviderEnum.Gemini]: [
+  [ProviderTypeEnum.OpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o3-mini'],
+  [ProviderTypeEnum.Anthropic]: ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
+  [ProviderTypeEnum.Gemini]: [
     'gemini-2.0-flash',
     'gemini-2.0-flash-lite',
     'gemini-2.0-pro-exp-02-05',
     // 'gemini-2.0-flash-thinking-exp-01-21', // TODO: not support function calling for now
   ],
-  [LLMProviderEnum.Groq]: [
-    'llama-3.1-8b-instant',
-    'mixtral-8x7b-32768',
-    'llama2-70b-4096',
-    'llama-2-70b-4096',
-    'gemma-7b-it',
-  ],
-  [LLMProviderEnum.Grok]: ['grok-2', 'grok-2-vision'],
+  [ProviderTypeEnum.Grok]: ['grok-2', 'grok-2-vision'],
+  [ProviderTypeEnum.Ollama]: [],
+  // Custom OpenAI providers don't have predefined models as they are user-defined
 };
 
-/**
- * Creates a mapping of LLM model names to their corresponding providers.
- *
- * This function takes the llmProviderModelNames object and converts it into a new object
- * where each model name is mapped to its corresponding provider.
- */
-export const llmModelNamesToProvider = Object.fromEntries(
-  Object.entries(llmProviderModelNames).flatMap(([provider, models]) => models.map(model => [model, provider])),
-);
+// Default parameters for each agent per provider, for providers not specified, use OpenAI parameters
+export const llmProviderParameters = {
+  [ProviderTypeEnum.OpenAI]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.01,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0,
+      topP: 0.001,
+    },
+  },
+  [ProviderTypeEnum.Anthropic]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.1,
+      topP: 0.1,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.1,
+      topP: 0.1,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.05,
+      topP: 0.1,
+    },
+  },
+  [ProviderTypeEnum.Gemini]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.01,
+      topP: 0.1,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.01,
+      topP: 0.1,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.1,
+      topP: 0.1,
+    },
+  },
+  [ProviderTypeEnum.Grok]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.7,
+      topP: 0.9,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.7,
+      topP: 0.9,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.7,
+      topP: 0.9,
+    },
+  },
+  [ProviderTypeEnum.Ollama]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.01,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0,
+      topP: 0.001,
+    },
+  },
+};
