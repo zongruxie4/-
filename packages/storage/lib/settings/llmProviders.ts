@@ -1,14 +1,7 @@
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
-import {
-  llmProviderModelNames,
-  ProviderTypeEnum,
-  OPENAI_PROVIDER,
-  ANTHROPIC_PROVIDER,
-  GEMINI_PROVIDER,
-  OLLAMA_PROVIDER,
-} from './types';
+import { llmProviderModelNames, ProviderTypeEnum } from './types';
 
 // Interface for a single provider configuration
 export interface ProviderConfig {
@@ -21,19 +14,21 @@ export interface ProviderConfig {
 }
 
 // Interface for storing multiple LLM provider configurations
+// The key is the provider id, which is the same as the provider type for built-in providers, but is custom for custom providers
 export interface LLMKeyRecord {
   providers: Record<string, ProviderConfig>;
 }
 
 export type LLMProviderStorage = BaseStorage<LLMKeyRecord> & {
-  setProvider: (provider: string, config: ProviderConfig) => Promise<void>;
-  getProvider: (provider: string) => Promise<ProviderConfig | undefined>;
-  removeProvider: (provider: string) => Promise<void>;
-  hasProvider: (provider: string) => Promise<boolean>;
-  getConfiguredProviders: () => Promise<string[]>;
+  setProvider: (providerId: string, config: ProviderConfig) => Promise<void>;
+  getProvider: (providerId: string) => Promise<ProviderConfig | undefined>;
+  removeProvider: (providerId: string) => Promise<void>;
+  hasProvider: (providerId: string) => Promise<boolean>;
   getAllProviders: () => Promise<Record<string, ProviderConfig>>;
 };
 
+// Storage for LLM provider configurations
+// use "llm-api-keys" as the key for the storage, for backward compatibility
 const storage = createStorage<LLMKeyRecord>(
   'llm-api-keys',
   { providers: {} },
@@ -44,42 +39,61 @@ const storage = createStorage<LLMKeyRecord>(
 );
 
 // Helper function to determine provider type from provider name
-function getProviderTypeFromName(provider: string): ProviderTypeEnum {
-  switch (provider) {
-    case OPENAI_PROVIDER:
+function getProviderTypeByProviderId(providerId: string): ProviderTypeEnum {
+  switch (providerId) {
+    case ProviderTypeEnum.OpenAI:
       return ProviderTypeEnum.OpenAI;
-    case ANTHROPIC_PROVIDER:
+    case ProviderTypeEnum.Anthropic:
       return ProviderTypeEnum.Anthropic;
-    case GEMINI_PROVIDER:
+    case ProviderTypeEnum.Gemini:
       return ProviderTypeEnum.Gemini;
-    case OLLAMA_PROVIDER:
+    case ProviderTypeEnum.Ollama:
       return ProviderTypeEnum.Ollama;
     default:
       return ProviderTypeEnum.CustomOpenAI;
   }
 }
 
-// Helper function to get display name from provider name
-function getDisplayNameFromProvider(provider: string): string {
-  switch (provider) {
-    case OPENAI_PROVIDER:
+// Helper function to get display name from provider id
+function getDisplayNameFromProviderId(providerId: string): string {
+  switch (providerId) {
+    case ProviderTypeEnum.OpenAI:
       return 'OpenAI';
-    case ANTHROPIC_PROVIDER:
+    case ProviderTypeEnum.Anthropic:
       return 'Anthropic';
-    case GEMINI_PROVIDER:
+    case ProviderTypeEnum.Gemini:
       return 'Gemini';
-    case OLLAMA_PROVIDER:
+    case ProviderTypeEnum.Ollama:
       return 'Ollama';
     default:
-      return provider; // Use the provider string as display name for custom providers
+      return providerId; // Use the provider id as display name for custom providers by default
   }
+}
+
+// Helper function to ensure backward compatibility for provider configs
+function ensureBackwardCompatibility(providerId: string, config: ProviderConfig): ProviderConfig {
+  const updatedConfig = { ...config };
+  if (!updatedConfig.name) {
+    updatedConfig.name = getDisplayNameFromProviderId(providerId);
+  }
+  if (!updatedConfig.type) {
+    updatedConfig.type = getProviderTypeByProviderId(providerId);
+  }
+  if (!updatedConfig.modelNames) {
+    updatedConfig.modelNames = llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || [];
+  }
+  if (!updatedConfig.createdAt) {
+    // if createdAt is not set, set it to "03/04/2025" for backward compatibility
+    updatedConfig.createdAt = new Date('03/04/2025').getTime();
+  }
+  return updatedConfig;
 }
 
 export const llmProviderStore: LLMProviderStorage = {
   ...storage,
-  async setProvider(provider: string, config: ProviderConfig) {
-    if (!provider) {
-      throw new Error('Provider name cannot be empty');
+  async setProvider(providerId: string, config: ProviderConfig) {
+    if (!providerId) {
+      throw new Error('Provider id cannot be empty');
     }
 
     if (config.apiKey === undefined) {
@@ -93,8 +107,8 @@ export const llmProviderStore: LLMProviderStorage = {
     // Ensure backward compatibility by filling in missing fields
     const completeConfig: ProviderConfig = {
       ...config,
-      name: config.name || getDisplayNameFromProvider(provider),
-      type: config.type || getProviderTypeFromName(provider),
+      name: config.name || getDisplayNameFromProviderId(providerId),
+      type: config.type || getProviderTypeByProviderId(providerId),
       modelNames: config.modelNames,
       createdAt: config.createdAt || Date.now(),
     };
@@ -103,57 +117,35 @@ export const llmProviderStore: LLMProviderStorage = {
     await storage.set({
       providers: {
         ...current.providers,
-        [provider]: completeConfig,
+        [providerId]: completeConfig,
       },
     });
   },
-  async getProvider(provider: string) {
+  async getProvider(providerId: string) {
     const data = (await storage.get()) || { providers: {} };
-    const config = data.providers[provider];
-
-    // If we have a config but it's missing some fields, fill them in
-    if (config) {
-      if (!config.name) {
-        config.name = getDisplayNameFromProvider(provider);
-      }
-      if (!config.type) {
-        config.type = getProviderTypeFromName(provider);
-      }
-      if (!config.modelNames) {
-        config.modelNames = llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
-      }
-      if (!config.createdAt) {
-        config.createdAt = Date.now();
-      }
-    }
-
-    return config;
+    const config = data.providers[providerId];
+    return config ? ensureBackwardCompatibility(providerId, config) : undefined;
   },
-  async removeProvider(provider: string) {
+  async removeProvider(providerId: string) {
     const current = (await storage.get()) || { providers: {} };
     const newProviders = { ...current.providers };
-    delete newProviders[provider];
+    delete newProviders[providerId];
     await storage.set({ providers: newProviders });
   },
-  async hasProvider(provider: string) {
+  async hasProvider(providerId: string) {
     const data = (await storage.get()) || { providers: {} };
-    return provider in data.providers;
+    return providerId in data.providers;
   },
-  async getConfiguredProviders() {
-    console.log('Getting configured providers');
-    const data = await storage.get();
-    console.log('Raw storage data:', data); // Debug the entire data object
 
-    if (!data || !data.providers) {
-      console.log('No data found, returning empty array');
-      return [];
-    }
-
-    console.log('Configured providers:', data.providers);
-    return Object.keys(data.providers);
-  },
   async getAllProviders() {
     const data = await storage.get();
-    return data.providers;
+    const providers = { ...data.providers };
+
+    // Add backward compatibility for all providers
+    for (const [providerId, config] of Object.entries(providers)) {
+      providers[providerId] = ensureBackwardCompatibility(providerId, config);
+    }
+
+    return providers;
   },
 };

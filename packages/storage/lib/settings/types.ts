@@ -1,16 +1,13 @@
+// Agent name, used to identify the agent in the settings
 export enum AgentNameEnum {
   Planner = 'planner',
   Navigator = 'navigator',
   Validator = 'validator',
 }
 
-// String literal constants for supported LLM providers
-export const OPENAI_PROVIDER = 'openai';
-export const ANTHROPIC_PROVIDER = 'anthropic';
-export const GEMINI_PROVIDER = 'gemini';
-export const OLLAMA_PROVIDER = 'ollama';
-
-// Provider type for determining which LangChain ChatModel package to use
+// Provider type, types before CustomOpenAI are built-in providers, CustomOpenAI is a custom provider
+// For built-in providers, we will create ChatModel instances with its respective LangChain ChatModel classes
+// For custom providers, we will create ChatModel instances with the ChatOpenAI class
 export enum ProviderTypeEnum {
   OpenAI = 'openai',
   Anthropic = 'anthropic',
@@ -19,23 +16,23 @@ export enum ProviderTypeEnum {
   CustomOpenAI = 'custom_openai',
 }
 
-// Default model names for each built-in provider
+// Default supported models for each built-in provider
 export const llmProviderModelNames = {
-  [OPENAI_PROVIDER]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini'],
-  [ANTHROPIC_PROVIDER]: ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
-  [GEMINI_PROVIDER]: [
+  [ProviderTypeEnum.OpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini'],
+  [ProviderTypeEnum.Anthropic]: ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
+  [ProviderTypeEnum.Gemini]: [
     'gemini-2.0-flash',
     'gemini-2.0-flash-lite',
     'gemini-2.0-pro-exp-02-05',
     // 'gemini-2.0-flash-thinking-exp-01-21', // TODO: not support function calling for now
   ],
-  [OLLAMA_PROVIDER]: [],
+  [ProviderTypeEnum.Ollama]: [],
   // Custom OpenAI providers don't have predefined models as they are user-defined
 };
 
-// Default parameters for each agent per provider
+// Default parameters for each agent per provider, for providers not specified, use OpenAI parameters
 export const llmProviderParameters = {
-  [OPENAI_PROVIDER]: {
+  [ProviderTypeEnum.OpenAI]: {
     [AgentNameEnum.Planner]: {
       temperature: 0.01,
       topP: 0.001,
@@ -49,7 +46,7 @@ export const llmProviderParameters = {
       topP: 0.001,
     },
   },
-  [ANTHROPIC_PROVIDER]: {
+  [ProviderTypeEnum.Anthropic]: {
     [AgentNameEnum.Planner]: {
       temperature: 0.1,
       topP: 0.1,
@@ -63,7 +60,7 @@ export const llmProviderParameters = {
       topP: 0.1,
     },
   },
-  [GEMINI_PROVIDER]: {
+  [ProviderTypeEnum.Gemini]: {
     [AgentNameEnum.Planner]: {
       temperature: 0.01,
       topP: 0.1,
@@ -77,7 +74,7 @@ export const llmProviderParameters = {
       topP: 0.1,
     },
   },
-  [OLLAMA_PROVIDER]: {
+  [ProviderTypeEnum.Ollama]: {
     [AgentNameEnum.Planner]: {
       temperature: 0,
       topP: 0.001,

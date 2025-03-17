@@ -5,37 +5,57 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOllama } from '@langchain/ollama';
 
+const maxTokens = 1024 * 4;
+
+function isOpenAIOModel(modelName: string): boolean {
+  return modelName.startsWith('openai/o') || modelName.startsWith('o');
+}
+
+function createOpenAIChatModel(providerConfig: ProviderConfig, modelConfig: ModelConfig): BaseChatModel {
+  const args: {
+    model: string;
+    apiKey?: string;
+    configuration?: Record<string, unknown>;
+    modelKwargs?: { max_completion_tokens: number };
+    topP?: number;
+    temperature?: number;
+    maxTokens?: number;
+  } = {
+    model: modelConfig.modelName,
+    apiKey: providerConfig.apiKey,
+  };
+
+  if (providerConfig.baseUrl) {
+    args.configuration = {
+      baseURL: providerConfig.baseUrl,
+    };
+  }
+  // custom provider may have no api key
+  if (providerConfig.apiKey) {
+    args.apiKey = providerConfig.apiKey;
+  }
+
+  // O series models have different parameters
+  if (isOpenAIOModel(modelConfig.modelName)) {
+    args.modelKwargs = {
+      max_completion_tokens: maxTokens,
+    };
+  } else {
+    args.topP = (modelConfig.parameters?.topP ?? 0.1) as number;
+    args.temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
+    args.maxTokens = maxTokens;
+  }
+  return new ChatOpenAI(args);
+}
+
 // create a chat model based on the agent name, the model name and provider
 export function createChatModel(providerConfig: ProviderConfig, modelConfig: ModelConfig): BaseChatModel {
-  const maxTokens = 1024 * 4;
-  const maxCompletionTokens = 1024 * 4;
   const temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
   const topP = (modelConfig.parameters?.topP ?? 0.1) as number;
 
-  switch (providerConfig.type) {
+  switch (modelConfig.provider) {
     case ProviderTypeEnum.OpenAI: {
-      const args: {
-        model: string;
-        apiKey: string;
-        modelKwargs?: { max_completion_tokens: number };
-        topP?: number;
-        temperature?: number;
-        maxTokens?: number;
-      } = {
-        model: modelConfig.modelName,
-        apiKey: providerConfig.apiKey,
-      };
-      // O series models have different parameters
-      if (modelConfig.modelName.startsWith('o')) {
-        args.modelKwargs = {
-          max_completion_tokens: maxCompletionTokens,
-        };
-      } else {
-        args.topP = topP;
-        args.temperature = temperature;
-        args.maxTokens = maxTokens;
-      }
-      return new ChatOpenAI(args);
+      return createOpenAIChatModel(providerConfig, modelConfig);
     }
     case ProviderTypeEnum.Anthropic: {
       const args = {
@@ -86,26 +106,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
     }
     default: {
       // by default, we think it's a openai-compatible provider
-      const args: {
-        model: string;
-        apiKey?: string;
-        configuration: Record<string, unknown>;
-        topP?: number;
-        temperature?: number;
-        maxTokens?: number;
-      } = {
-        model: modelConfig.modelName,
-        configuration: {
-          baseURL: providerConfig.baseUrl,
-        },
-        topP,
-        temperature,
-        maxTokens,
-      };
-      if (providerConfig.apiKey) {
-        args.apiKey = providerConfig.apiKey;
-      }
-      return new ChatOpenAI(args);
+      return createOpenAIChatModel(providerConfig, modelConfig);
     }
   }
 }

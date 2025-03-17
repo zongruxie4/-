@@ -7,10 +7,6 @@ import {
   AgentNameEnum,
   llmProviderModelNames,
   ProviderTypeEnum,
-  OPENAI_PROVIDER,
-  ANTHROPIC_PROVIDER,
-  GEMINI_PROVIDER,
-  OLLAMA_PROVIDER,
   llmProviderParameters,
 } from '@extension/storage';
 
@@ -552,7 +548,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
               style={{
                 background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${(modelParameters[agentName].temperature / 2) * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${(modelParameters[agentName].temperature / 2) * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
               }}
-              className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} appearance-none h-1 rounded-full`}
+              className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
             />
             <div className="flex items-center space-x-2">
               <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -596,7 +592,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
               style={{
                 background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
               }}
-              className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} appearance-none h-1 rounded-full`}
+              className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
             />
             <div className="flex items-center space-x-2">
               <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -693,34 +689,34 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     };
 
     switch (provider) {
-      case OPENAI_PROVIDER:
+      case ProviderTypeEnum.OpenAI:
         config = {
           apiKey: '',
           name: 'OpenAI',
           type: ProviderTypeEnum.OpenAI,
-          modelNames: [...(llmProviderModelNames[OPENAI_PROVIDER] || [])],
+          modelNames: [...(llmProviderModelNames[ProviderTypeEnum.OpenAI] || [])],
           createdAt: Date.now(),
         };
         break;
-      case ANTHROPIC_PROVIDER:
+      case ProviderTypeEnum.Anthropic:
         config = {
           apiKey: '',
           name: 'Anthropic',
           type: ProviderTypeEnum.Anthropic,
-          modelNames: [...(llmProviderModelNames[ANTHROPIC_PROVIDER] || [])],
+          modelNames: [...(llmProviderModelNames[ProviderTypeEnum.Anthropic] || [])],
           createdAt: Date.now(),
         };
         break;
-      case GEMINI_PROVIDER:
+      case ProviderTypeEnum.Gemini:
         config = {
           apiKey: '',
           name: 'Gemini',
           type: ProviderTypeEnum.Gemini,
-          modelNames: [...(llmProviderModelNames[GEMINI_PROVIDER] || [])],
+          modelNames: [...(llmProviderModelNames[ProviderTypeEnum.Gemini] || [])],
           createdAt: Date.now(),
         };
         break;
-      case OLLAMA_PROVIDER:
+      case ProviderTypeEnum.Ollama:
         config = {
           apiKey: 'ollama', // Set default API key for Ollama
           name: 'Ollama',
@@ -820,10 +816,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
     // Handle default providers
     switch (providerType) {
-      case OPENAI_PROVIDER:
-      case ANTHROPIC_PROVIDER:
-      case GEMINI_PROVIDER:
-      case OLLAMA_PROVIDER:
+      case ProviderTypeEnum.OpenAI:
+      case ProviderTypeEnum.Anthropic:
+      case ProviderTypeEnum.Gemini:
+      case ProviderTypeEnum.Ollama:
         addDefaultProvider(providerType);
         break;
       default:
@@ -1068,14 +1064,14 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           )}
 
           {/* Add Provider button and dropdown */}
-          <div className="provider-selector-container relative pt-4">
+          <div className="provider-selector-container pt-4 relative">
             <Button
               variant="secondary"
               onClick={() => setIsProviderSelectorOpen(prev => !prev)}
               className={`flex w-full items-center justify-center font-medium ${
                 isDarkMode
-                  ? 'bg-blue-600 hover:bg-blue-500 border-blue-700 text-white'
-                  : 'bg-blue-100 hover:bg-blue-200 border-blue-200 text-blue-800'
+                  ? 'border-blue-700 bg-blue-600 text-white hover:bg-blue-500'
+                  : 'border-blue-200 bg-blue-100 text-blue-800 hover:bg-blue-200'
               }`}>
               <span className="mr-2">+</span> Add Provider
             </Button>
@@ -1089,67 +1085,75 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                 }`}>
                 <div className="py-1">
                   {/* Check if all default providers are already added */}
-                  {(providersFromStorage.has(OPENAI_PROVIDER) || modifiedProviders.has(OPENAI_PROVIDER)) &&
-                    (providersFromStorage.has(ANTHROPIC_PROVIDER) || modifiedProviders.has(ANTHROPIC_PROVIDER)) &&
-                    (providersFromStorage.has(GEMINI_PROVIDER) || modifiedProviders.has(GEMINI_PROVIDER)) &&
-                    (providersFromStorage.has(OLLAMA_PROVIDER) || modifiedProviders.has(OLLAMA_PROVIDER)) && (
+                  {(providersFromStorage.has(ProviderTypeEnum.OpenAI) ||
+                    modifiedProviders.has(ProviderTypeEnum.OpenAI)) &&
+                    (providersFromStorage.has(ProviderTypeEnum.Anthropic) ||
+                      modifiedProviders.has(ProviderTypeEnum.Anthropic)) &&
+                    (providersFromStorage.has(ProviderTypeEnum.Gemini) ||
+                      modifiedProviders.has(ProviderTypeEnum.Gemini)) &&
+                    (providersFromStorage.has(ProviderTypeEnum.Ollama) ||
+                      modifiedProviders.has(ProviderTypeEnum.Ollama)) && (
                       <div
                         className={`px-4 py-3 text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
                         All default providers already added. You can still add a custom provider.
                       </div>
                     )}
 
-                  {!providersFromStorage.has(OPENAI_PROVIDER) && !modifiedProviders.has(OPENAI_PROVIDER) && (
-                    <button
-                      type="button"
-                      className={`flex w-full items-center px-4 py-3 text-left text-sm ${
-                        isDarkMode
-                          ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
-                          : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
-                      } transition-colors duration-150`}
-                      onClick={() => handleProviderSelection(OPENAI_PROVIDER)}>
-                      <span className="font-medium">OpenAI</span>
-                    </button>
-                  )}
+                  {!providersFromStorage.has(ProviderTypeEnum.OpenAI) &&
+                    !modifiedProviders.has(ProviderTypeEnum.OpenAI) && (
+                      <button
+                        type="button"
+                        className={`flex w-full items-center px-4 py-3 text-left text-sm ${
+                          isDarkMode
+                            ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
+                            : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
+                        } transition-colors duration-150`}
+                        onClick={() => handleProviderSelection(ProviderTypeEnum.OpenAI)}>
+                        <span className="font-medium">OpenAI</span>
+                      </button>
+                    )}
 
-                  {!providersFromStorage.has(ANTHROPIC_PROVIDER) && !modifiedProviders.has(ANTHROPIC_PROVIDER) && (
-                    <button
-                      type="button"
-                      className={`flex w-full items-center px-4 py-3 text-left text-sm ${
-                        isDarkMode
-                          ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
-                          : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
-                      } transition-colors duration-150`}
-                      onClick={() => handleProviderSelection(ANTHROPIC_PROVIDER)}>
-                      <span className="font-medium">Anthropic</span>
-                    </button>
-                  )}
+                  {!providersFromStorage.has(ProviderTypeEnum.Anthropic) &&
+                    !modifiedProviders.has(ProviderTypeEnum.Anthropic) && (
+                      <button
+                        type="button"
+                        className={`flex w-full items-center px-4 py-3 text-left text-sm ${
+                          isDarkMode
+                            ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
+                            : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
+                        } transition-colors duration-150`}
+                        onClick={() => handleProviderSelection(ProviderTypeEnum.Anthropic)}>
+                        <span className="font-medium">Anthropic</span>
+                      </button>
+                    )}
 
-                  {!providersFromStorage.has(GEMINI_PROVIDER) && !modifiedProviders.has(GEMINI_PROVIDER) && (
-                    <button
-                      type="button"
-                      className={`flex w-full items-center px-4 py-3 text-left text-sm ${
-                        isDarkMode
-                          ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
-                          : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
-                      } transition-colors duration-150`}
-                      onClick={() => handleProviderSelection(GEMINI_PROVIDER)}>
-                      <span className="font-medium">Gemini</span>
-                    </button>
-                  )}
+                  {!providersFromStorage.has(ProviderTypeEnum.Gemini) &&
+                    !modifiedProviders.has(ProviderTypeEnum.Gemini) && (
+                      <button
+                        type="button"
+                        className={`flex w-full items-center px-4 py-3 text-left text-sm ${
+                          isDarkMode
+                            ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
+                            : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
+                        } transition-colors duration-150`}
+                        onClick={() => handleProviderSelection(ProviderTypeEnum.Gemini)}>
+                        <span className="font-medium">Gemini</span>
+                      </button>
+                    )}
 
-                  {!providersFromStorage.has(OLLAMA_PROVIDER) && !modifiedProviders.has(OLLAMA_PROVIDER) && (
-                    <button
-                      type="button"
-                      className={`flex w-full items-center px-4 py-3 text-left text-sm ${
-                        isDarkMode
-                          ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
-                          : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
-                      } transition-colors duration-150`}
-                      onClick={() => handleProviderSelection(OLLAMA_PROVIDER)}>
-                      <span className="font-medium">Ollama</span>
-                    </button>
-                  )}
+                  {!providersFromStorage.has(ProviderTypeEnum.Ollama) &&
+                    !modifiedProviders.has(ProviderTypeEnum.Ollama) && (
+                      <button
+                        type="button"
+                        className={`flex w-full items-center px-4 py-3 text-left text-sm ${
+                          isDarkMode
+                            ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
+                            : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
+                        } transition-colors duration-150`}
+                        onClick={() => handleProviderSelection(ProviderTypeEnum.Ollama)}>
+                        <span className="font-medium">Ollama</span>
+                      </button>
+                    )}
 
                   <button
                     type="button"
