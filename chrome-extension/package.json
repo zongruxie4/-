@@ -1,6 +1,6 @@
 {
   "name": "chrome-extension",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "chrome extension - core settings",
   "type": "module",
   "scripts": {
@@ -20,7 +20,7 @@
     "@extension/storage": "workspace:*",
     "@langchain/anthropic": "^0.3.12",
     "@langchain/core": "^0.3.37",
-    "@langchain/google-genai": "0.1.10",
+    "@langchain/google-genai": "0.1.11",
     "@langchain/ollama": "^0.2.0",
     "@langchain/openai": "^0.4.2",
     "@langchain/xai": "^0.0.2",
