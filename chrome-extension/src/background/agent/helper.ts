@@ -5,6 +5,7 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatXAI } from '@langchain/xai';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOllama } from '@langchain/ollama';
+import { ChatDeepSeek } from '@langchain/deepseek';
 
 const maxTokens = 1024 * 4;
 
@@ -54,9 +55,6 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
   const temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
   const topP = (modelConfig.parameters?.topP ?? 0.1) as number;
 
-  console.log('providerConfig', providerConfig);
-  console.log('modelConfig', modelConfig);
-
   switch (modelConfig.provider) {
     case ProviderTypeEnum.OpenAI: {
       return createOpenAIChatModel(providerConfig, modelConfig);
@@ -71,6 +69,15 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         clientOptions: {},
       };
       return new ChatAnthropic(args);
+    }
+    case ProviderTypeEnum.DeepSeek: {
+      const args = {
+        model: modelConfig.modelName,
+        apiKey: providerConfig.apiKey,
+        temperature,
+        topP,
+      };
+      return new ChatDeepSeek(args) as BaseChatModel;
     }
     case ProviderTypeEnum.Gemini: {
       const args = {

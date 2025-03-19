@@ -11,6 +11,7 @@ export enum AgentNameEnum {
 export enum ProviderTypeEnum {
   OpenAI = 'openai',
   Anthropic = 'anthropic',
+  DeepSeek = 'deepseek',
   Gemini = 'gemini',
   Grok = 'grok',
   Ollama = 'ollama',
@@ -21,6 +22,7 @@ export enum ProviderTypeEnum {
 export const llmProviderModelNames = {
   [ProviderTypeEnum.OpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o3-mini'],
   [ProviderTypeEnum.Anthropic]: ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
+  [ProviderTypeEnum.DeepSeek]: ['deepseek-chat', 'deepseek-reasoner'],
   [ProviderTypeEnum.Gemini]: [
     'gemini-2.0-flash',
     'gemini-2.0-flash-lite',
