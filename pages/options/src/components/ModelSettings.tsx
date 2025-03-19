@@ -335,7 +335,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         providers[provider].type === ProviderTypeEnum.CustomOpenAI &&
         (!providers[provider].baseUrl || !providers[provider].baseUrl.trim())
       ) {
-        alert('Base URL is required for custom OpenAI providers');
+        alert('Base URL is required for custom OpenAI-compatible API providers');
         return;
       }
 
@@ -943,7 +943,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           type="text"
                           placeholder={
                             providerConfig.type === ProviderTypeEnum.CustomOpenAI
-                              ? 'Required for custom OpenAI providers'
+                              ? 'Required for custom OpenAI-compatible API providers'
                               : 'Ollama base URL'
                           }
                           value={providerConfig.baseUrl || ''}
@@ -1089,7 +1089,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
                     } transition-colors duration-150`}
                     onClick={() => handleProviderSelection(ProviderTypeEnum.CustomOpenAI)}>
-                    <span className="font-medium">Custom OpenAI-compatible</span>
+                    <span className="font-medium">OpenAI-compatible API Provider</span>
                   </button>
                 </div>
               </div>
