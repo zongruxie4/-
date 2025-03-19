@@ -1,6 +1,6 @@
 export function getCurrentTimestampStr(): string {
   /**
-   * Get the current timestamp as a string in the format yyyy-MM-dd HH:mm:ss
+   * Get the current timestamp as a string in the format yyyy/MM/dd HH:mm:ss
    * using local timezone.
    *
    * @returns Formatted datetime string in local time
