@@ -33,11 +33,11 @@ export class DOMTextNode extends DOMBaseNode {
 }
 
 export class DOMElementNode extends DOMBaseNode {
+  tagName: string | null;
   /**
    * xpath: the xpath of the element from the last root node (shadow root or iframe OR document if no shadow root or iframe).
    * To properly reference the element we need to recursively switch the root node until we find the element (work you way up the tree with `.parent`)
    */
-  tagName: string | null;
   xpath: string | null;
   attributes: Record<string, string>;
   children: DOMBaseNode[];
