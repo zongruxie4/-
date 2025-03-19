@@ -61,6 +61,8 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     this.actionRegistry = actionRegistry;
 
     this.jsonSchema = this.modelName.startsWith('gemini') ? geminiNavigatorOutputSchema : jsonNavigatorOutputSchema;
+
+    // logger.info('Navigator zod schema', JSON.stringify(zodToJsonSchema(this.modelOutputSchema), null, 2));
   }
 
   async invoke(inputMessages: BaseMessage[]): Promise<this['ModelOutput']> {
@@ -68,36 +70,46 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     if (this.withStructuredOutput) {
       const structuredLlm = this.chatLLM.withStructuredOutput(this.jsonSchema, {
         includeRaw: true,
+        name: this.modelOutputToolName,
       });
 
-      const response = await structuredLlm.invoke(inputMessages, {
-        ...this.callOptions,
-      });
+      let response = undefined;
+      try {
+        response = await structuredLlm.invoke(inputMessages, {
+          ...this.callOptions,
+        });
 
-      if (response.parsed) {
-        return response.parsed;
+        if (response.parsed) {
+          return response.parsed;
+        }
+      } catch (error) {
+        const errorMessage = `Failed to invoke ${this.modelName} with structured output: ${error}`;
+        throw new Error(errorMessage);
+      }
+
+      // Use type assertion to access the properties
+      const rawResponse = response.raw as BaseMessage & {
+        tool_calls?: Array<{
+          args: {
+            currentState: typeof agentBrainSchema._type;
+            action: z.infer<ReturnType<typeof buildDynamicActionSchema>>;
+          };
+        }>;
+      };
+
+      // sometimes LLM returns an empty content, but with one or more tool calls, so we need to check the tool calls
+      if (rawResponse.tool_calls && rawResponse.tool_calls.length > 0) {
+        logger.info('Navigator structuredLlm tool call with empty content', rawResponse.tool_calls);
+        // only use the first tool call
+        const toolCall = rawResponse.tool_calls[0];
+        return {
+          current_state: toolCall.args.currentState,
+          action: [...toolCall.args.action],
+        };
       }
       throw new Error('Could not parse response');
     }
-
-    // Without structured output support, need to extract JSON from model output manually
-    const response = await this.chatLLM.invoke(inputMessages, {
-      ...this.callOptions,
-    });
-    if (typeof response.content === 'string') {
-      response.content = this.removeThinkTags(response.content);
-      try {
-        const extractedJson = this.extractJsonFromModelOutput(response.content);
-        const parsed = this.validateModelOutput(extractedJson);
-        if (parsed) {
-          return parsed;
-        }
-      } catch (error) {
-        logger.error('Could not parse response', response);
-        throw new Error('Could not parse response');
-      }
-    }
-    throw new Error('Could not parse response');
+    throw new Error('Navigator needs to work with LLM that supports tool calling');
   }
 
   async execute(): Promise<AgentOutput<NavigatorResult>> {

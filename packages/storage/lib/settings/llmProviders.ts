@@ -44,6 +44,7 @@ export function getProviderTypeByProviderId(providerId: string): ProviderTypeEnu
   switch (providerId) {
     case ProviderTypeEnum.OpenAI:
     case ProviderTypeEnum.Anthropic:
+    case ProviderTypeEnum.DeepSeek:
     case ProviderTypeEnum.Gemini:
     case ProviderTypeEnum.Grok:
     case ProviderTypeEnum.Ollama:
@@ -61,6 +62,8 @@ export function getDefaultDisplayNameFromProviderId(providerId: string): string 
       return 'OpenAI';
     case ProviderTypeEnum.Anthropic:
       return 'Anthropic';
+    case ProviderTypeEnum.DeepSeek:
+      return 'DeepSeek';
     case ProviderTypeEnum.Gemini:
       return 'Gemini';
     case ProviderTypeEnum.Grok:
@@ -78,6 +81,7 @@ export function getDefaultProviderConfig(providerId: string): ProviderConfig {
   switch (providerId) {
     case ProviderTypeEnum.OpenAI:
     case ProviderTypeEnum.Anthropic:
+    case ProviderTypeEnum.DeepSeek:
     case ProviderTypeEnum.Gemini:
     case ProviderTypeEnum.Grok:
       return {

@@ -325,80 +325,80 @@ export default class MessageManager {
       `Added message with ${finalMsg.metadata.inputTokens} tokens - total tokens now: ${this.history.totalTokens}/${this.maxInputTokens} - total messages: ${this.history.messages.length}`,
     );
   }
+}
 
-  /**
-   * Converts messages for non-function-calling models
-   * @param inputMessages - The BaseMessage objects to convert
-   * @returns The converted BaseMessage objects
-   */
-  public convertMessagesForNonFunctionCallingModels(inputMessages: BaseMessage[]): BaseMessage[] {
-    return inputMessages.map(message => {
-      if (message instanceof HumanMessage || message instanceof SystemMessage) {
-        return message;
-      }
-      if (message instanceof ToolMessage) {
-        return new HumanMessage({
-          content: `Tool Response: ${message.content}`,
-        });
-      }
-      if (message instanceof AIMessage) {
-        // if it's an AIMessage with tool_calls, convert it to a normal AIMessage
-        if ('tool_calls' in message && message.tool_calls) {
-          const toolCallsStr = message.tool_calls
-            .map(tc => {
-              if (
-                'function' in tc &&
-                typeof tc.function === 'object' &&
-                tc.function &&
-                'name' in tc.function &&
-                'arguments' in tc.function
-              ) {
-                // For Groq, we need to format function calls differently
-                return `Function: ${tc.function.name}\nArguments: ${JSON.stringify(tc.function.arguments)}`;
-              }
-              return `Tool Call: ${JSON.stringify(tc)}`;
-            })
-            .join('\n');
-          return new AIMessage({ content: toolCallsStr });
-        }
-        return message;
-      }
-      throw new Error(`Unknown message type: ${message.constructor.name}`);
-    });
-  }
-
-  /**
-   * Some models like deepseek-reasoner dont allow multiple human messages in a row. This function merges them into one."
-   * @param messages - The BaseMessage objects to merge
-   * @param classToMerge - The class of the messages to merge
-   * @returns The merged BaseMessage objects
-   */
-  public mergeSuccessiveMessages(messages: BaseMessage[], classToMerge: typeof BaseMessage): BaseMessage[] {
-    const mergedMessages: BaseMessage[] = [];
-    let streak = 0;
-
-    for (const message of messages) {
-      if (message instanceof classToMerge) {
-        streak += 1;
-        if (streak > 1) {
-          const lastMessage = mergedMessages[mergedMessages.length - 1];
-          if (Array.isArray(message.content)) {
-            const firstContent = message.content[0];
-            if ('text' in firstContent) {
-              lastMessage.content += firstContent.text;
+/**
+ * Converts messages for non-function-calling models
+ * @param inputMessages - The BaseMessage objects to convert
+ * @returns The converted BaseMessage objects
+ */
+export function convertMessagesForNonFunctionCallingModels(inputMessages: BaseMessage[]): BaseMessage[] {
+  return inputMessages.map(message => {
+    if (message instanceof HumanMessage || message instanceof SystemMessage) {
+      return message;
+    }
+    if (message instanceof ToolMessage) {
+      return new HumanMessage({
+        content: `Tool Response: ${message.content}`,
+      });
+    }
+    if (message instanceof AIMessage) {
+      // if it's an AIMessage with tool_calls, convert it to a normal AIMessage
+      if ('tool_calls' in message && message.tool_calls) {
+        const toolCallsStr = message.tool_calls
+          .map(tc => {
+            if (
+              'function' in tc &&
+              typeof tc.function === 'object' &&
+              tc.function &&
+              'name' in tc.function &&
+              'arguments' in tc.function
+            ) {
+              // For Groq, we need to format function calls differently
+              return `Function: ${tc.function.name}\nArguments: ${JSON.stringify(tc.function.arguments)}`;
             }
-          } else {
-            lastMessage.content += message.content;
+            return `Tool Call: ${JSON.stringify(tc)}`;
+          })
+          .join('\n');
+        return new AIMessage({ content: toolCallsStr });
+      }
+      return message;
+    }
+    throw new Error(`Unknown message type: ${message.constructor.name}`);
+  });
+}
+
+/**
+ * Some models like deepseek-reasoner dont allow multiple human messages in a row. This function merges them into one."
+ * @param messages - The BaseMessage objects to merge
+ * @param classToMerge - The class of the messages to merge
+ * @returns The merged BaseMessage objects
+ */
+export function mergeSuccessiveMessages(messages: BaseMessage[], classToMerge: typeof BaseMessage): BaseMessage[] {
+  const mergedMessages: BaseMessage[] = [];
+  let streak = 0;
+
+  for (const message of messages) {
+    if (message instanceof classToMerge) {
+      streak += 1;
+      if (streak > 1) {
+        const lastMessage = mergedMessages[mergedMessages.length - 1];
+        if (Array.isArray(message.content)) {
+          const firstContent = message.content[0];
+          if ('text' in firstContent) {
+            lastMessage.content += firstContent.text;
           }
         } else {
-          mergedMessages.push(message);
+          lastMessage.content += message.content;
         }
       } else {
         mergedMessages.push(message);
-        streak = 0;
       }
+    } else {
+      mergedMessages.push(message);
+      streak = 0;
     }
-
-    return mergedMessages;
   }
+
+  return mergedMessages;
 }
