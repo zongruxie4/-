@@ -91,12 +91,12 @@ export function buildDynamicActionSchema(actions: Action[]): z.ZodType {
   for (const action of actions) {
     // create a schema for the action, it could be action.schema.schema or null
     // but don't use default: null as it causes issues with Google Generative AI
-    const actionSchema = action.schema.schema.nullable();
+    const actionSchema = action.schema.schema.nullable().describe(action.schema.description);
     schema = schema.extend({
       [action.name()]: actionSchema,
     });
   }
-  return schema.partial().nullable();
+  return schema.partial();
 }
 
 export class ActionBuilder {
