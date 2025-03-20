@@ -5,6 +5,7 @@ import { Executor } from './agent/executor';
 import { createLogger } from './log';
 import { ExecutionState } from './agent/event/types';
 import { createChatModel } from './agent/helper';
+import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 
 const logger = createLogger('background');
 
@@ -183,13 +184,13 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   }
   const navigatorLLM = createChatModel(providers[navigatorModel.provider], navigatorModel);
 
-  let plannerLLM = null;
+  let plannerLLM: BaseChatModel | null = null;
   const plannerModel = agentModels[AgentNameEnum.Planner];
   if (plannerModel) {
     plannerLLM = createChatModel(providers[plannerModel.provider], plannerModel);
   }
 
-  let validatorLLM = null;
+  let validatorLLM: BaseChatModel | null = null;
   const validatorModel = agentModels[AgentNameEnum.Validator];
   if (validatorModel) {
     validatorLLM = createChatModel(providers[validatorModel.provider], validatorModel);
