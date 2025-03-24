@@ -5,8 +5,15 @@ import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { GeneralSettings } from './components/GeneralSettings';
 import { ModelSettings } from './components/ModelSettings';
 
+const TABS = [
+  { id: 'general', icon: '⚙️', label: 'General' },
+  { id: 'models', icon: '📊', label: 'Models' },
+] as const;
+
+type TabTypes = (typeof TABS)[number]['id'];
+
 const Options = () => {
-  const [activeTab, setActiveTab] = useState('models');
+  const [activeTab, setActiveTab] = useState<TabTypes>('models');
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Check for dark mode preference
@@ -42,10 +49,7 @@ const Options = () => {
         <div className="p-4">
           <h1 className={`mb-6 text-xl font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Settings</h1>
           <ul className="space-y-2">
-            {[
-              { id: 'general', icon: '⚙️', label: 'General' },
-              { id: 'models', icon: '📊', label: 'Models' },
-            ].map(item => (
+            {TABS.map(item => (
               <li key={item.id}>
                 <Button
                   onClick={() => setActiveTab(item.id)}
