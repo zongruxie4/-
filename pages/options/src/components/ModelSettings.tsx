@@ -530,7 +530,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           <select
             id={`${agentName}-model`}
             className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
-            disabled={availableModels.length <= 1}
+            disabled={availableModels.length === 0}
             value={
               selectedModels[agentName]
                 ? `${getProviderForModel(selectedModels[agentName])}>${selectedModels[agentName]}`
