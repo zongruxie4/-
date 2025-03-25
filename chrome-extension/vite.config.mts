@@ -19,6 +19,15 @@ export default defineConfig({
     conditions: ['browser', 'module', 'import', 'default'],
     mainFields: ['browser', 'module', 'main']
   },
+  server: {
+    // Restrict CORS to only allow localhost
+    cors: {
+      origin: ['http://localhost:5173', 'http://localhost:3000'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      credentials: true
+    },
+    host: 'localhost',
+  },
   plugins: [
     libAssetsPlugin({
       outputPath: outDir,
