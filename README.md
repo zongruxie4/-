@@ -50,10 +50,12 @@ Looking for a powerful AI web agent without the $200/month price tag of OpenAI O
 
 ## 🚀 Quick Start
 
-1. **Install from Chrome Web Store**:
+1. **Install from Chrome Web Store** (Stable Version):
    * Visit the [Nanobrowser Chrome Web Store page](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal)
    * Click "Add to Chrome" button
    * Confirm the installation when prompted
+
+> **Important Note**: For latest features, install from ["Manually Install Latest Version"](#-manually-install-latest-version) below, as Chrome Web Store version may be delayed due to review process.
 
 2. **Configure Agent Models**:
    * Click the Nanobrowser icon in your toolbar to open the sidebar
@@ -61,9 +63,9 @@ Looking for a powerful AI web agent without the $200/month price tag of OpenAI O
    * Add your LLM API keys
    * Choose which model to use for different agents (Navigator, Planner, Validator)
 
-## 🔧 Manually Install
+## 🔧 Manually Install Latest Version
 
-If you prefer to manually install the development version from GitHub:
+To get the most recent version with all the latest features:
 
 1. **Download**
     * Download the latest `nanobrowser.zip` file from the official Github [release page](https://github.com/nanobrowser/nanobrowser/releases).
