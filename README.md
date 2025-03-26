@@ -15,7 +15,7 @@
 
 Nanobrowser is an open-source AI web automation tool that runs in your browser. A free alternative to OpenAI Operator with flexible LLM options and multi-agent system.
 
-⬇️ Get [Nanobrowser](https://github.com/nanobrowser/nanobrowser/releases) for free
+⬇️ Get [Nanobrowser from Chrome Web Store](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal) for free
 
 👏 Join the community in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/nanobrowser_ai)
 
@@ -50,6 +50,23 @@ Looking for a powerful AI web agent without the $200/month price tag of OpenAI O
 
 ## 🚀 Quick Start
 
+1. **Install from Chrome Web Store** (Stable Version):
+   * Visit the [Nanobrowser Chrome Web Store page](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal)
+   * Click "Add to Chrome" button
+   * Confirm the installation when prompted
+
+> **Important Note**: For latest features, install from ["Manually Install Latest Version"](#-manually-install-latest-version) below, as Chrome Web Store version may be delayed due to review process.
+
+2. **Configure Agent Models**:
+   * Click the Nanobrowser icon in your toolbar to open the sidebar
+   * Click the `Settings` icon (top right)
+   * Add your LLM API keys
+   * Choose which model to use for different agents (Navigator, Planner, Validator)
+
+## 🔧 Manually Install Latest Version
+
+To get the most recent version with all the latest features:
+
 1. **Download**
     * Download the latest `nanobrowser.zip` file from the official Github [release page](https://github.com/nanobrowser/nanobrowser/releases).
 
@@ -61,23 +78,15 @@ Looking for a powerful AI web agent without the $200/month price tag of OpenAI O
     * Select the unzipped `nanobrowser` folder.
 
 3. **Configure Agent Models**
-    *   Click the Nanobrowser icon in your toolbar to open the sidebar
-    *   Click the `Settings` icon (top right).
-    *   Add your LLM API keys.
-    *   Choose which model to use for different agents (Navigator, Planner, Validator)
+    * Click the Nanobrowser icon in your toolbar to open the sidebar
+    * Click the `Settings` icon (top right).
+    * Add your LLM API keys.
+    * Choose which model to use for different agents (Navigator, Planner, Validator)
 
-## 🔄 Upgrading
-
-1. **Download**:
-    * Download the latest `nanobrowser.zip` file from the official Github [release page](https://github.com/nanobrowser/nanobrowser/releases).
-
-2. **Replace**:
-    * Unzip `nanobrowser.zip`.
-    * Replace your existing Nanobrowser files with the new ones.
-
-3. **Refresh**:
-    * Go to `chrome://extensions/` in Chrome.
-    * Click the refresh icon on the Nanobrowser card.
+4. **Upgrading**:
+    * Download the latest `nanobrowser.zip` file from the release page.
+    * Unzip and replace your existing Nanobrowser files with the new ones.
+    * Go to `chrome://extensions/` in Chrome and click the refresh icon on the Nanobrowser card.
 
 ## 🛠️ Build from Source
 
@@ -105,7 +114,7 @@ If you prefer to build Nanobrowser yourself, follow these steps:
 
 5. **Load the Extension**:
    * The built extension will be in the `dist` directory
-   * Follow the installation steps from the Quick Start section to load the extension into your browser
+   * Follow the installation steps from the Manually Install section to load the extension into your browser
 
 6. **Development Mode** (optional):
    ```bash
