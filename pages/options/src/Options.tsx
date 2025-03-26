@@ -5,12 +5,12 @@ import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { GeneralSettings } from './components/GeneralSettings';
 import { ModelSettings } from './components/ModelSettings';
 
-const TABS = [
+type TabTypes = 'general' | 'models';
+
+const TABS: { id: TabTypes; icon: string; label: string }[] = [
   { id: 'general', icon: '⚙️', label: 'General' },
   { id: 'models', icon: '📊', label: 'Models' },
-] as const;
-
-type TabTypes = (typeof TABS)[number]['id'];
+];
 
 const Options = () => {
   const [activeTab, setActiveTab] = useState<TabTypes>('models');
