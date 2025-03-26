@@ -39,6 +39,8 @@ export class Action {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private readonly handler: (input: any) => Promise<ActionResult>,
     public readonly schema: ActionSchema,
+    // Whether this action has an index argument
+    public readonly hasIndex: boolean = false,
   ) {}
 
   async call(input: unknown): Promise<ActionResult> {
@@ -83,6 +85,21 @@ export class Action {
 
     return `${this.schema.description}:\n${schemaStr}`;
   }
+
+  /**
+   * Get the index argument from the input if this action has an index
+   * @param input The input to extract the index from
+   * @returns The index value if found, null otherwise
+   */
+  getIndexArg(input: unknown): number | null {
+    if (!this.hasIndex) {
+      return null;
+    }
+    if (input && typeof input === 'object' && 'index' in input) {
+      return (input as { index: number }).index;
+    }
+    return null;
+  }
 }
 
 // TODO: can not make every action optional, don't know why
@@ -122,14 +139,14 @@ export class ActionBuilder {
     actions.push(done);
 
     const searchGoogle = new Action(async (input: { query: string }) => {
+      const context = this.context;
       const msg = `Searching for "${input.query}" in Google`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, msg);
+      context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, msg);
 
-      const page = await this.context.browserContext.getCurrentPage();
-      await page.navigateTo(`https://www.google.com/search?q=${input.query}`);
+      await context.browserContext.navigateTo(`https://www.google.com/search?q=${input.query}`);
 
       const msg2 = `Searched for "${input.query}" in Google`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg2);
+      context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg2);
       return new ActionResult({
         extractedContent: msg2,
         includeInMemory: true,
@@ -168,75 +185,83 @@ export class ActionBuilder {
     actions.push(goBack);
 
     // Element Interaction Actions
-    const clickElement = new Action(async (input: z.infer<typeof clickElementActionSchema.schema>) => {
-      const todo = input.desc || `Click element with index ${input.index}`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+    const clickElement = new Action(
+      async (input: z.infer<typeof clickElementActionSchema.schema>) => {
+        const todo = input.desc || `Click element with index ${input.index}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
 
-      const page = await this.context.browserContext.getCurrentPage();
-      const state = await page.getState();
+        const page = await this.context.browserContext.getCurrentPage();
+        const state = await page.getState();
 
-      const elementNode = state?.selectorMap.get(input.index);
-      if (!elementNode) {
-        throw new Error(`Element with index ${input.index} does not exist - retry or use alternative actions`);
-      }
-
-      // Check if element is a file uploader
-      if (await page.isFileUploader(elementNode)) {
-        const msg = `Index ${input.index} - has an element which opens file upload dialog. To upload files please use a specific function to upload files`;
-        logger.info(msg);
-        return new ActionResult({
-          extractedContent: msg,
-          includeInMemory: true,
-        });
-      }
-
-      try {
-        const initialTabIds = await this.context.browserContext.getAllTabIds();
-        await page.clickElementNode(this.context.options.useVision, elementNode);
-        let msg = `Clicked button with index ${input.index}: ${elementNode.getAllTextTillNextClickableElement(2)}`;
-        logger.info(msg);
-
-        // TODO: could be optimized by chrome extension tab api
-        const currentTabIds = await this.context.browserContext.getAllTabIds();
-        if (currentTabIds.size > initialTabIds.size) {
-          const newTabMsg = 'New tab opened - switching to it';
-          msg += ` - ${newTabMsg}`;
-          logger.info(newTabMsg);
-          // find the tab id that is not in the initial tab ids
-          const newTabId = Array.from(currentTabIds).find(id => !initialTabIds.has(id));
-          if (newTabId) {
-            await this.context.browserContext.switchTab(newTabId);
-          }
+        const elementNode = state?.selectorMap.get(input.index);
+        if (!elementNode) {
+          throw new Error(`Element with index ${input.index} does not exist - retry or use alternative actions`);
         }
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-        return new ActionResult({ extractedContent: msg, includeInMemory: true });
-      } catch (error) {
-        const msg = `Element no longer available with index ${input.index} - most likely the page changed`;
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, msg);
-        return new ActionResult({
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }, clickElementActionSchema);
+
+        // Check if element is a file uploader
+        if (await page.isFileUploader(elementNode)) {
+          const msg = `Index ${input.index} - has an element which opens file upload dialog. To upload files please use a specific function to upload files`;
+          logger.info(msg);
+          return new ActionResult({
+            extractedContent: msg,
+            includeInMemory: true,
+          });
+        }
+
+        try {
+          const initialTabIds = await this.context.browserContext.getAllTabIds();
+          await page.clickElementNode(this.context.options.useVision, elementNode);
+          let msg = `Clicked button with index ${input.index}: ${elementNode.getAllTextTillNextClickableElement(2)}`;
+          logger.info(msg);
+
+          // TODO: could be optimized by chrome extension tab api
+          const currentTabIds = await this.context.browserContext.getAllTabIds();
+          if (currentTabIds.size > initialTabIds.size) {
+            const newTabMsg = 'New tab opened - switching to it';
+            msg += ` - ${newTabMsg}`;
+            logger.info(newTabMsg);
+            // find the tab id that is not in the initial tab ids
+            const newTabId = Array.from(currentTabIds).find(id => !initialTabIds.has(id));
+            if (newTabId) {
+              await this.context.browserContext.switchTab(newTabId);
+            }
+          }
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+          return new ActionResult({ extractedContent: msg, includeInMemory: true });
+        } catch (error) {
+          const msg = `Element no longer available with index ${input.index} - most likely the page changed`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, msg);
+          return new ActionResult({
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      },
+      clickElementActionSchema,
+      true,
+    );
     actions.push(clickElement);
 
-    const inputText = new Action(async (input: z.infer<typeof inputTextActionSchema.schema>) => {
-      const todo = input.desc || `Input text into index ${input.index}`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+    const inputText = new Action(
+      async (input: z.infer<typeof inputTextActionSchema.schema>) => {
+        const todo = input.desc || `Input text into index ${input.index}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
 
-      const page = await this.context.browserContext.getCurrentPage();
-      const state = await page.getState();
+        const page = await this.context.browserContext.getCurrentPage();
+        const state = await page.getState();
 
-      const elementNode = state?.selectorMap.get(input.index);
-      if (!elementNode) {
-        throw new Error(`Element with index ${input.index} does not exist - retry or use alternative actions`);
-      }
+        const elementNode = state?.selectorMap.get(input.index);
+        if (!elementNode) {
+          throw new Error(`Element with index ${input.index} does not exist - retry or use alternative actions`);
+        }
 
-      await page.inputTextElementNode(this.context.options.useVision, elementNode, input.text);
-      const msg = `Input ${input.text} into index ${input.index}`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-      return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, inputTextActionSchema);
+        await page.inputTextElementNode(this.context.options.useVision, elementNode, input.text);
+        const msg = `Input ${input.text} into index ${input.index}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      },
+      inputTextActionSchema,
+      true,
+    );
     actions.push(inputText);
 
     // Tab Management Actions

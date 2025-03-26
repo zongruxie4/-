@@ -1,4 +1,6 @@
-import type { ViewportInfo, CoordinateSet } from './history/views';
+import type { ViewportInfo, CoordinateSet } from './history/view';
+import type { HashedDomElement } from './history/view';
+import { HistoryTreeProcessor } from './history/service';
 
 export abstract class DOMBaseNode {
   isVisible: boolean;
@@ -76,6 +78,64 @@ export class DOMElementNode extends DOMBaseNode {
     this.viewportCoordinates = params.viewportCoordinates;
     this.pageCoordinates = params.pageCoordinates;
     this.viewportInfo = params.viewportInfo;
+  }
+
+  // Cache for the hash value
+  private _hashedValue?: HashedDomElement;
+  private _hashPromise?: Promise<HashedDomElement>;
+
+  /**
+   * Returns a hashed representation of this DOM element
+   * Async equivalent of the Python @cached_property hash method
+   *
+   * @returns {Promise<HashedDomElement>} A promise that resolves to the hashed DOM element
+   * @throws {Error} If the hashing operation fails
+   */
+  async hash(): Promise<HashedDomElement> {
+    // If we already have the value, return it immediately
+    if (this._hashedValue) {
+      return this._hashedValue;
+    }
+
+    // If a calculation is in progress, reuse that promise
+    if (!this._hashPromise) {
+      this._hashPromise = HistoryTreeProcessor.hashDomElement(this)
+        .then(result => {
+          this._hashedValue = result;
+          this._hashPromise = undefined; // Clean up
+          return result;
+        })
+        .catch(error => {
+          // Clear the promise reference to allow retry on next call
+          this._hashPromise = undefined;
+
+          // Log the error for debugging
+          console.error('Error computing DOM element hash:', error);
+
+          // Create a more descriptive error
+          const enhancedError = new Error(
+            `Failed to hash DOM element (${this.tagName || 'unknown'}): ${error.message}`,
+          );
+
+          // Preserve the original stack trace if possible
+          if (error.stack) {
+            enhancedError.stack = error.stack;
+          }
+
+          // Rethrow to propagate to caller
+          throw enhancedError;
+        });
+    }
+
+    return this._hashPromise;
+  }
+
+  /**
+   * Clears the cached hash value, forcing recalculation on next hash() call
+   */
+  clearHashCache(): void {
+    this._hashedValue = undefined;
+    this._hashPromise = undefined;
   }
 
   getAllTextTillNextClickableElement(maxDepth = -1): string {
@@ -368,4 +428,11 @@ export function domElementNodeToDict(elementTree: DOMBaseNode): any {
   }
 
   return nodeToDict(elementTree);
+}
+
+export async function calcBranchPathHashSet(state: DOMState): Promise<Set<string>> {
+  const pathHashes = new Set(
+    await Promise.all(Array.from(state.selectorMap.values()).map(async value => (await value.hash()).branchPathHash)),
+  );
+  return pathHashes;
 }

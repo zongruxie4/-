@@ -11,6 +11,7 @@ import { isAuthenticationError } from '@src/background/utils';
 import { ChatModelAuthError } from './errors';
 import { jsonNavigatorOutputSchema } from '../actions/json_schema';
 import { geminiNavigatorOutputSchema } from '../actions/json_gemini';
+import { calcBranchPathHashSet } from '@src/background/dom/views';
 const logger = createLogger('NavigatorAgent');
 
 export class NavigatorActionRegistry {
@@ -257,7 +258,13 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       actions = [response.action];
     }
 
-    for (const action of actions) {
+    const browserContext = this.context.browserContext;
+    const browserState = await browserContext.getState();
+    const cachedPathHashes = await calcBranchPathHashSet(browserState);
+
+    await browserContext.removeHighlight();
+
+    for (const [i, action] of actions.entries()) {
       const actionName = Object.keys(action)[0];
       const actionArgs = action[actionName];
       try {
@@ -266,9 +273,32 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
           return results;
         }
 
-        const result = await this.actionRegistry.getAction(actionName)?.call(actionArgs);
+        const actionInstance = this.actionRegistry.getAction(actionName);
+        if (actionInstance === undefined) {
+          throw new Error(`Action ${actionName} not exists`);
+        }
+
+        const indexArg = actionInstance.getIndexArg(actionArgs);
+        if (i > 0 && indexArg !== null) {
+          const newState = await browserContext.getState();
+          const newPathHashes = await calcBranchPathHashSet(newState);
+          // next action requires index but there are new elements on the page
+          if (!newPathHashes.isSubsetOf(cachedPathHashes)) {
+            const msg = `Something new appeared after action ${i} / ${actions.length}`;
+            logger.info(msg);
+            results.push(
+              new ActionResult({
+                extractedContent: msg,
+                includeInMemory: true,
+              }),
+            );
+            break;
+          }
+        }
+
+        const result = await actionInstance.call(actionArgs);
         if (result === undefined) {
-          throw new Error(`Action ${actionName} not exists or returned undefined`);
+          throw new Error(`Action ${actionName} returned undefined`);
         }
         results.push(result);
         // check if the task is paused or stopped
