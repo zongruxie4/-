@@ -15,6 +15,8 @@ import {
   sendKeysActionSchema,
   scrollToTextActionSchema,
   cacheContentActionSchema,
+  selectDropdownOptionActionSchema,
+  getDropdownOptionsActionSchema,
 } from './schemas';
 import { z } from 'zod';
 import { createLogger } from '@src/background/log';
@@ -382,6 +384,138 @@ export class ActionBuilder {
     }, scrollToTextActionSchema);
     actions.push(scrollToText);
 
+    // Get all options from a native dropdown
+    const getDropdownOptions = new Action(
+      async (input: z.infer<typeof getDropdownOptionsActionSchema.schema>) => {
+        const todo = `Getting options from dropdown with index ${input.index}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+
+        const page = await this.context.browserContext.getCurrentPage();
+        const state = await page.getState();
+
+        const elementNode = state?.selectorMap.get(input.index);
+        if (!elementNode) {
+          const errorMsg = `Element with index ${input.index} does not exist - retry or use alternative actions`;
+          logger.error(errorMsg);
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({
+            error: errorMsg,
+            includeInMemory: true,
+          });
+        }
+
+        try {
+          // Use the existing getDropdownOptions method
+          const options = await page.getDropdownOptions(input.index);
+
+          if (options && options.length > 0) {
+            // Format options for display
+            const formattedOptions: string[] = options.map(opt => {
+              // Encoding ensures AI uses the exact string in select_dropdown_option
+              const encodedText = JSON.stringify(opt.text);
+              return `${opt.index}: text=${encodedText}`;
+            });
+
+            let msg = formattedOptions.join('\n');
+            msg += '\nUse the exact text string in select_dropdown_option';
+            logger.info(msg);
+            this.context.emitEvent(
+              Actors.NAVIGATOR,
+              ExecutionState.ACT_OK,
+              `Got ${options.length} options from dropdown`,
+            );
+            return new ActionResult({
+              extractedContent: msg,
+              includeInMemory: true,
+            });
+          }
+
+          // This code should not be reached as getDropdownOptions throws an error when no options found
+          // But keeping as fallback
+          const msg = 'No options found in dropdown';
+          logger.info(msg);
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+          return new ActionResult({
+            extractedContent: msg,
+            includeInMemory: true,
+          });
+        } catch (error) {
+          const errorMsg = `Failed to get dropdown options: ${error instanceof Error ? error.message : String(error)}`;
+          logger.error(errorMsg);
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({
+            error: errorMsg,
+            includeInMemory: true,
+          });
+        }
+      },
+      getDropdownOptionsActionSchema,
+      true,
+    );
+    actions.push(getDropdownOptions);
+
+    // Select dropdown option for interactive element index by the text of the option you want to select'
+    const selectDropdownOption = new Action(
+      async (input: z.infer<typeof selectDropdownOptionActionSchema.schema>) => {
+        const todo = `Select option "${input.text}" from dropdown with index ${input.index}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+
+        const page = await this.context.browserContext.getCurrentPage();
+        const state = await page.getState();
+
+        const elementNode = state?.selectorMap.get(input.index);
+        if (!elementNode) {
+          const errorMsg = `Element with index ${input.index} does not exist - retry or use alternative actions`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({
+            error: errorMsg,
+            includeInMemory: true,
+          });
+        }
+
+        // Validate that we're working with a select element
+        if (!elementNode.tagName || elementNode.tagName.toLowerCase() !== 'select') {
+          const errorMsg = `Cannot select option: Element with index ${input.index} is a ${elementNode.tagName || 'unknown'}, not a SELECT`;
+          logger.error(errorMsg);
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({
+            error: errorMsg,
+            includeInMemory: true,
+          });
+        }
+
+        logger.debug(`Attempting to select '${input.text}' using xpath: ${elementNode.xpath}`);
+        logger.debug(`Element attributes: ${JSON.stringify(elementNode.attributes)}`);
+        logger.debug(`Element tag: ${elementNode.tagName}`);
+
+        try {
+          const result = await page.selectDropdownOption(input.index, input.text);
+          const msg = `Selected option "${input.text}" from dropdown with index ${input.index}`;
+          logger.info(msg);
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+          return new ActionResult({
+            extractedContent: result,
+            includeInMemory: true,
+          });
+        } catch (error) {
+          const errorMsg = `Failed to select option: ${error instanceof Error ? error.message : String(error)}`;
+          logger.error(errorMsg);
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({
+            error: errorMsg,
+            includeInMemory: true,
+          });
+        }
+      },
+      selectDropdownOptionActionSchema,
+      true,
+    );
+    actions.push(selectDropdownOption);
+
     return actions;
   }
+
+  // Get all options from a native dropdown
+
+  // Select dropdown option for interactive element index by the text of the option you want to select'
 }
