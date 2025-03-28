@@ -8,6 +8,7 @@ export interface AgentOptions {
   maxSteps: number;
   maxActionsPerStep: number;
   maxFailures: number;
+  maxValidatorFailures: number;
   retryDelay: number;
   maxInputTokens: number;
   maxErrorLength: number;
@@ -22,6 +23,7 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
   maxSteps: 100,
   maxActionsPerStep: 10,
   maxFailures: 3,
+  maxValidatorFailures: 3,
   retryDelay: 10,
   maxInputTokens: 128000,
   maxErrorLength: 400,
@@ -52,6 +54,7 @@ export class AgentContext {
   paused: boolean;
   stopped: boolean;
   consecutiveFailures: number;
+  consecutiveValidatorFailures: number;
   nSteps: number;
   stepInfo: AgentStepInfo | null;
   actionResults: ActionResult[];
@@ -73,6 +76,7 @@ export class AgentContext {
     this.stopped = false;
     this.nSteps = 0;
     this.consecutiveFailures = 0;
+    this.consecutiveValidatorFailures = 0;
     this.stepInfo = null;
     this.actionResults = [];
     this.stateMessageAdded = false;
