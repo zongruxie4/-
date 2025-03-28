@@ -177,6 +177,11 @@ export class Executor {
             break;
           }
           validatorFailed = true;
+          context.consecutiveValidatorFailures++;
+          if (context.consecutiveValidatorFailures >= context.options.maxValidatorFailures) {
+            logger.error(`Stopping due to ${context.options.maxValidatorFailures} consecutive validator failures`);
+            throw new Error('Too many failures of validation');
+          }
         }
       }
 
