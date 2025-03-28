@@ -918,7 +918,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                     !providersFromStorage.has(providerId) &&
                     providerConfig.apiKey && (
                       <div className="ml-20 mt-1">
-                        <p className={`font-mono text-sm ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                        <p
+                          className={`font-mono text-sm break-words ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
                           {providerConfig.apiKey}
                         </p>
                       </div>
