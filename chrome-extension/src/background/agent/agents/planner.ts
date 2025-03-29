@@ -4,8 +4,13 @@ import { z } from 'zod';
 import type { AgentOutput } from '../types';
 import { HumanMessage } from '@langchain/core/messages';
 import { Actors, ExecutionState } from '../event/types';
-import { isAuthenticationError } from '@src/background/utils';
-import { ChatModelAuthError } from './errors';
+import {
+  ChatModelAuthError,
+  ChatModelForbiddenError,
+  isAuthenticationError,
+  isForbiddenError,
+  LLM_FORBIDDEN_ERROR_MESSAGE,
+} from './errors';
 const logger = createLogger('PlannerAgent');
 
 // Define Zod schema for planner output
@@ -80,6 +85,9 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
       // Check if this is an authentication error
       if (isAuthenticationError(error)) {
         throw new ChatModelAuthError('Planner API Authentication failed. Please verify your API key', error);
+      }
+      if (isForbiddenError(error)) {
+        throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
       }
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_FAIL, `Planning failed: ${errorMessage}`);

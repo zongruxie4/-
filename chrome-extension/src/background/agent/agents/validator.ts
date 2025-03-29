@@ -4,8 +4,13 @@ import { z } from 'zod';
 import { ActionResult, type AgentOutput } from '../types';
 import { Actors, ExecutionState } from '../event/types';
 import { HumanMessage } from '@langchain/core/messages';
-import { isAuthenticationError } from '@src/background/utils';
-import { ChatModelAuthError } from './errors';
+import {
+  ChatModelAuthError,
+  ChatModelForbiddenError,
+  isAuthenticationError,
+  isForbiddenError,
+  LLM_FORBIDDEN_ERROR_MESSAGE,
+} from './errors';
 const logger = createLogger('ValidatorAgent');
 
 // Define Zod schema for validator output
@@ -80,6 +85,9 @@ export class ValidatorAgent extends BaseAgent<typeof validatorOutputSchema, Vali
       // Check if this is an authentication error
       if (isAuthenticationError(error)) {
         throw new ChatModelAuthError('Validator API Authentication failed. Please verify your API key', error);
+      }
+      if (isForbiddenError(error)) {
+        throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
       }
 
       const errorMessage = error instanceof Error ? error.message : String(error);

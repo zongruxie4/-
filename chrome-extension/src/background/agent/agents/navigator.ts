@@ -7,8 +7,13 @@ import { buildDynamicActionSchema } from '../actions/builder';
 import { agentBrainSchema } from '../types';
 import { type BaseMessage, HumanMessage } from '@langchain/core/messages';
 import { Actors, ExecutionState } from '../event/types';
-import { isAuthenticationError } from '@src/background/utils';
-import { ChatModelAuthError } from './errors';
+import {
+  ChatModelAuthError,
+  ChatModelForbiddenError,
+  isAuthenticationError,
+  isForbiddenError,
+  LLM_FORBIDDEN_ERROR_MESSAGE,
+} from './errors';
 import { jsonNavigatorOutputSchema } from '../actions/json_schema';
 import { geminiNavigatorOutputSchema } from '../actions/json_gemini';
 import { calcBranchPathHashSet } from '@src/background/dom/views';
@@ -167,6 +172,9 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       // Check if this is an authentication error
       if (isAuthenticationError(error)) {
         throw new ChatModelAuthError('Navigator API Authentication failed. Please verify your API key', error);
+      }
+      if (isForbiddenError(error)) {
+        throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
       }
 
       const errorMessage = error instanceof Error ? error.message : String(error);

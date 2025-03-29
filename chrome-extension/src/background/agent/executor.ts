@@ -12,7 +12,7 @@ import type BrowserContext from '../browser/context';
 import { ActionBuilder } from './actions/builder';
 import { EventManager } from './event/manager';
 import { Actors, type EventCallback, EventType, ExecutionState } from './event/types';
-import { ChatModelAuthError } from './agents/errors';
+import { ChatModelAuthError, ChatModelForbiddenError } from './agents/errors';
 const logger = createLogger('Executor');
 
 export interface ExecutorExtraArgs {
@@ -223,7 +223,7 @@ export class Executor {
         return true;
       }
     } catch (error) {
-      if (error instanceof ChatModelAuthError) {
+      if (error instanceof ChatModelAuthError || error instanceof ChatModelForbiddenError) {
         throw error;
       }
       context.consecutiveFailures++;
