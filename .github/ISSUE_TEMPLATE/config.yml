@@ -4,4 +4,4 @@ blank_issues_enabled: false
 contact_links:
   - name: GitHub Discussions
     url: https://github.com/nanobrowser/nanobrowser/discussions
-    about: Please ask and answer questions here to keep the issue tracker clean.
+    about: For questions and discussions that don't belong in issues, please use our Discussions forum.
