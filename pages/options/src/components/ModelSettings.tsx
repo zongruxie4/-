@@ -46,6 +46,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
   const newlyAddedProviderRef = useRef<string | null>(null);
   const [nameErrors, setNameErrors] = useState<Record<string, string>>({});
+  // Add state for tracking API key visibility
+  const [visibleApiKeys, setVisibleApiKeys] = useState<Record<string, boolean>>({});
   // Create a non-async wrapper for use in render functions
   const [availableModels, setAvailableModels] = useState<
     Array<{ provider: string; providerName: string; model: string }>
@@ -196,6 +198,14 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         apiKey: apiKey.trim(),
         baseUrl: baseUrl !== undefined ? baseUrl.trim() : prev[provider]?.baseUrl,
       },
+    }));
+  };
+
+  // Add a toggle handler for API key visibility
+  const toggleApiKeyVisibility = (provider: string) => {
+    setVisibleApiKeys(prev => ({
+      ...prev,
+      [provider]: !prev[provider],
     }));
   };
 
@@ -899,23 +909,61 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       Key{providerConfig.type !== ProviderTypeEnum.CustomOpenAI ? '*' : ''}
                     </label>
-                    <input
-                      id={`${providerId}-api-key`}
-                      type="password"
-                      placeholder={
-                        providerConfig.type === ProviderTypeEnum.CustomOpenAI
-                          ? `${providerConfig.name || providerId} API key (optional)`
-                          : `${providerConfig.name || providerId} API key (required)`
-                      }
-                      value={providerConfig.apiKey || ''}
-                      onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
-                      className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
-                    />
+                    <div className="relative flex-1">
+                      <input
+                        id={`${providerId}-api-key`}
+                        type="password"
+                        placeholder={
+                          providerConfig.type === ProviderTypeEnum.CustomOpenAI
+                            ? `${providerConfig.name || providerId} API key (optional)`
+                            : `${providerConfig.name || providerId} API key (required)`
+                        }
+                        value={providerConfig.apiKey || ''}
+                        onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
+                        className={`w-full rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
+                      />
+                      {/* Show eye button only for newly added providers */}
+                      {modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) && (
+                        <button
+                          type="button"
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 ${
+                            isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                          onClick={() => toggleApiKeyVisibility(providerId)}
+                          aria-label={visibleApiKeys[providerId] ? 'Hide API key' : 'Show API key'}>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-5 w-5"
+                            aria-hidden="true">
+                            <title>{visibleApiKeys[providerId] ? 'Hide API key' : 'Show API key'}</title>
+                            {visibleApiKeys[providerId] ? (
+                              <>
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                <circle cx="12" cy="12" r="3" />
+                                <line x1="2" y1="22" x2="22" y2="2" />
+                              </>
+                            ) : (
+                              <>
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </>
+                            )}
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Display API key for newly added providers */}
+                  {/* Display API key for newly added providers only when visible */}
                   {modifiedProviders.has(providerId) &&
                     !providersFromStorage.has(providerId) &&
+                    visibleApiKeys[providerId] &&
                     providerConfig.apiKey && (
                       <div className="ml-20 mt-1">
                         <p

@@ -217,6 +217,7 @@ Nanobrowser builds on top of other awesome open-source projects:
 - [Browser Use](https://github.com/browser-use/browser-use)
 - [Puppeteer](https://github.com/EmergenceAI/Agent-E)
 - [Chrome Extension Boilerplate](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite)
+- [LangChain](https://github.com/langchain-ai/langchainjs)
 
 Huge thanks to their creators and contributors!
 
