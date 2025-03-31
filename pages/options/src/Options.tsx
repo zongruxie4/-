@@ -5,11 +5,12 @@ import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { GeneralSettings } from './components/GeneralSettings';
 import { ModelSettings } from './components/ModelSettings';
 
-type TabTypes = 'general' | 'models';
+type TabTypes = 'general' | 'models' | 'help';
 
 const TABS: { id: TabTypes; icon: string; label: string }[] = [
   { id: 'general', icon: '⚙️', label: 'General' },
   { id: 'models', icon: '📊', label: 'Models' },
+  { id: 'help', icon: '📚', label: 'Help' },
 ];
 
 const Options = () => {
@@ -28,6 +29,14 @@ const Options = () => {
     darkModeMediaQuery.addEventListener('change', handleChange);
     return () => darkModeMediaQuery.removeEventListener('change', handleChange);
   }, []);
+
+  const handleTabClick = (tabId: TabTypes) => {
+    if (tabId === 'help') {
+      window.location.href = 'https://nanobrowser.ai/docs';
+    } else {
+      setActiveTab(tabId);
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -52,7 +61,7 @@ const Options = () => {
             {TABS.map(item => (
               <li key={item.id}>
                 <Button
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleTabClick(item.id)}
                   className={`flex w-full items-center space-x-2 rounded-lg px-4 py-2 text-left text-base 
                     ${
                       activeTab !== item.id
