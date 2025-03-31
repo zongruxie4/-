@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
@@ -18,6 +18,7 @@ export default function ChatInput({
   isDarkMode = false,
 }: ChatInputProps) {
   const [text, setText] = useState('');
+  const isSendButtonDisabled = useMemo(() => disabled || text.trim() === '', [disabled, text]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Handle text changes and resize textarea
@@ -73,7 +74,7 @@ export default function ChatInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`overflow-hidden rounded-lg border transition-colors focus-within:border-sky-400 hover:border-sky-400 ${isDarkMode ? 'border-slate-700' : ''}`}
+      className={`overflow-hidden rounded-lg border transition-colors ${disabled ? 'cursor-not-allowed' : 'focus-within:border-sky-400 hover:border-sky-400'} ${isDarkMode ? 'border-slate-700' : ''}`}
       aria-label="Chat input form">
       <div className="flex flex-col">
         <textarea
@@ -82,12 +83,13 @@ export default function ChatInput({
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           disabled={disabled}
+          aria-disabled={disabled}
           rows={5}
           className={`w-full resize-none border-none p-2 focus:outline-none ${
             disabled
               ? isDarkMode
-                ? 'bg-slate-800 text-gray-400'
-                : 'bg-gray-100 text-gray-500'
+                ? 'cursor-not-allowed bg-slate-800 text-gray-400'
+                : 'cursor-not-allowed bg-gray-100 text-gray-500'
               : isDarkMode
                 ? 'bg-slate-800 text-gray-200'
                 : 'bg-white'
@@ -112,8 +114,9 @@ export default function ChatInput({
           ) : (
             <button
               type="submit"
-              disabled={disabled}
-              className={`rounded-md bg-[#19C2FF] px-3 py-1 text-white transition-colors hover:bg-[#0073DC] ${disabled ? 'opacity-50' : ''}`}>
+              disabled={isSendButtonDisabled}
+              aria-disabled={isSendButtonDisabled}
+              className={`rounded-md bg-[#19C2FF] px-3 py-1 text-white transition-colors hover:enabled:bg-[#0073DC] ${isSendButtonDisabled ? 'cursor-not-allowed opacity-50' : ''}`}>
               Send
             </button>
           )}
