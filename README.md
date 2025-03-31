@@ -178,12 +178,7 @@ Here are some powerful tasks you can accomplish with just a sentence:
 
 We're actively developing Nanobrowser with exciting features on the horizon, welcome to join us! 
 
-- [ ] **Expand LLM Support**: Add integration with more large language model providers for AI agents
-- [ ] **Security Firewall**: Implement protective measures to ensure safe browsing operations
-- [ ] **Memory Optimization**: Reduce token usage while maintaining context awareness
-- [ ] **Session Replay**: Efficiently replay historical tasks with minimal token consumption
-- [ ] **Specialized Agents**: Develop purpose-built agents for complex domain-specific tasks
-
+Check out our detailed roadmap and upcoming features in our [GitHub Discussions](https://github.com/nanobrowser/nanobrowser/discussions/85). 
 
 ## 🤝 Contributing
 
@@ -201,6 +196,14 @@ We're actively developing Nanobrowser with exciting features on the horizon, wel
 
 We believe in the power of open source and community collaboration.  Join us in building the future of web automation!
 
+
+## 🔒 Security
+
+If you discover a security vulnerability, please **DO NOT** disclose it publicly through issues, pull requests, or discussions.
+
+Instead, please create a [GitHub Security Advisory](https://github.com/nanobrowser/nanobrowser/security/advisories/new) to report the vulnerability responsibly. This allows us to address the issue before it's publicly disclosed.
+
+We appreciate your help in keeping Nanobrowser and its users safe!
 
 ## 💬 Community
 
