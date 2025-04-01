@@ -148,6 +148,7 @@ Nanobrowser allows you to configure different LLM models for each agent to balan
 
 - **Recommended Models**:
   - **Qwen 2.5 Coder 14B**
+  - **Falcon3 10B**
   - **Mistral Small 24B**
   - We welcome community experience sharing with other local models in our [Discord](https://discord.gg/NN3ABHggMK)
 
