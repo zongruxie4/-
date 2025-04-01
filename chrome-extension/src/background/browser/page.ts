@@ -462,6 +462,20 @@ export default class Page {
 
   private _convertKey(key: string): KeyInput {
     const lowerKey = key.trim().toLowerCase();
+    const isMac = navigator.userAgent.toLowerCase().includes('mac os x');
+
+    if (isMac) {
+      if (lowerKey === 'control' || lowerKey === 'ctrl') {
+        return 'Meta' as KeyInput; // Use Command key on Mac
+      }
+      if (lowerKey === 'command' || lowerKey === 'cmd') {
+        return 'Meta' as KeyInput; // Map Command/Cmd to Meta on Mac
+      }
+      if (lowerKey === 'option' || lowerKey === 'opt') {
+        return 'Alt' as KeyInput; // Map Option/Opt to Alt on Mac
+      }
+    }
+
     const keyMap: { [key: string]: string } = {
       // Letters
       a: 'KeyA',
