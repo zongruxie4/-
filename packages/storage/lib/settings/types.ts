@@ -15,6 +15,8 @@ export enum ProviderTypeEnum {
   Gemini = 'gemini',
   Grok = 'grok',
   Ollama = 'ollama',
+  AzureOpenAI = 'azure_openai',
+  OpenRouter = 'openrouter',
   CustomOpenAI = 'custom_openai',
 }
 
@@ -31,6 +33,13 @@ export const llmProviderModelNames = {
   ],
   [ProviderTypeEnum.Grok]: ['grok-2', 'grok-2-vision'],
   [ProviderTypeEnum.Ollama]: [],
+  [ProviderTypeEnum.AzureOpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o3-mini'],
+  [ProviderTypeEnum.OpenRouter]: [
+    'openai/gpt-4o',
+    'anthropic/claude-3.5-sonnet',
+    'google/gemini-pro-1.5',
+    'mistralai/mistral-large',
+  ],
   // Custom OpenAI providers don't have predefined models as they are user-defined
 };
 
@@ -99,6 +108,34 @@ export const llmProviderParameters = {
     },
     [AgentNameEnum.Navigator]: {
       temperature: 0.01,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0,
+      topP: 0.001,
+    },
+  },
+  [ProviderTypeEnum.AzureOpenAI]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.01,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0,
+      topP: 0.001,
+    },
+  },
+  [ProviderTypeEnum.OpenRouter]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.01,
+      topP: 0.001,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0,
       topP: 0.001,
     },
     [AgentNameEnum.Validator]: {

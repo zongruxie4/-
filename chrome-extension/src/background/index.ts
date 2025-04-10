@@ -5,7 +5,7 @@ import { Executor } from './agent/executor';
 import { createLogger } from './log';
 import { ExecutionState } from './agent/event/types';
 import { createChatModel } from './agent/helper';
-import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 
 const logger = createLogger('background');
 
@@ -182,18 +182,27 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   if (!navigatorModel) {
     throw new Error('Please choose a model for the navigator in the settings first');
   }
-  const navigatorLLM = createChatModel(providers[navigatorModel.provider], navigatorModel);
+  // Log the provider config being used for the navigator
+  const navigatorProviderConfig = providers[navigatorModel.provider];
+  logger.info('Navigator Provider Config:', JSON.stringify(navigatorProviderConfig, null, 2));
+  const navigatorLLM = createChatModel(navigatorProviderConfig, navigatorModel);
 
   let plannerLLM: BaseChatModel | null = null;
   const plannerModel = agentModels[AgentNameEnum.Planner];
   if (plannerModel) {
-    plannerLLM = createChatModel(providers[plannerModel.provider], plannerModel);
+    // Log the provider config being used for the planner
+    const plannerProviderConfig = providers[plannerModel.provider];
+    logger.info('Planner Provider Config:', JSON.stringify(plannerProviderConfig, null, 2));
+    plannerLLM = createChatModel(plannerProviderConfig, plannerModel);
   }
 
   let validatorLLM: BaseChatModel | null = null;
   const validatorModel = agentModels[AgentNameEnum.Validator];
   if (validatorModel) {
-    validatorLLM = createChatModel(providers[validatorModel.provider], validatorModel);
+    // Log the provider config being used for the validator
+    const validatorProviderConfig = providers[validatorModel.provider];
+    logger.info('Validator Provider Config:', JSON.stringify(validatorProviderConfig, null, 2));
+    validatorLLM = createChatModel(validatorProviderConfig, validatorModel);
   }
 
   const generalSettings = await generalSettingsStore.getSettings();

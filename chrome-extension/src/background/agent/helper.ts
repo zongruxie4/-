@@ -1,5 +1,5 @@
 import { type ProviderConfig, type ModelConfig, ProviderTypeEnum } from '@extension/storage';
-import { ChatOpenAI } from '@langchain/openai';
+import { ChatOpenAI, AzureChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatXAI } from '@langchain/xai';
@@ -13,11 +13,22 @@ function isOpenAIOModel(modelName: string): boolean {
   return modelName.startsWith('openai/o') || modelName.startsWith('o');
 }
 
-function createOpenAIChatModel(providerConfig: ProviderConfig, modelConfig: ModelConfig): BaseChatModel {
+function createOpenAIChatModel(
+  providerConfig: ProviderConfig,
+  modelConfig: ModelConfig,
+  // Add optional extra fetch options for headers etc.
+  extraFetchOptions?: { headers?: Record<string, string> },
+): BaseChatModel {
   const args: {
     model: string;
     apiKey?: string;
-    configuration?: Record<string, unknown>;
+    // Configuration should align with ClientOptions from @langchain/openai
+    configuration?: {
+      baseURL?: string;
+      defaultHeaders?: Record<string, string>;
+      // Add other ClientOptions if needed, e.g.?
+      // dangerouslyAllowBrowser?: boolean;
+    };
     modelKwargs?: { max_completion_tokens: number };
     topP?: number;
     temperature?: number;
@@ -25,13 +36,23 @@ function createOpenAIChatModel(providerConfig: ProviderConfig, modelConfig: Mode
   } = {
     model: modelConfig.modelName,
     apiKey: providerConfig.apiKey,
+    // Initialize configuration object
+    configuration: {},
   };
 
   if (providerConfig.baseUrl) {
-    args.configuration = {
-      baseURL: providerConfig.baseUrl,
+    // Set baseURL inside configuration
+    args.configuration!.baseURL = providerConfig.baseUrl;
+  }
+
+  // Merge extra headers if provided
+  if (extraFetchOptions?.headers) {
+    args.configuration!.defaultHeaders = {
+      ...(args.configuration!.defaultHeaders || {}),
+      ...extraFetchOptions.headers,
     };
   }
+
   // custom provider may have no api key
   if (providerConfig.apiKey) {
     args.apiKey = providerConfig.apiKey;
@@ -47,7 +68,24 @@ function createOpenAIChatModel(providerConfig: ProviderConfig, modelConfig: Mode
     args.temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
     args.maxTokens = maxTokens;
   }
+  // Log args being passed to ChatOpenAI constructor inside the helper
+  console.log('[createOpenAIChatModel] Args passed to new ChatOpenAI:', args);
   return new ChatOpenAI(args);
+}
+
+// Function to extract instance name from Azure endpoint URL
+function extractInstanceNameFromUrl(url: string): string | null {
+  try {
+    const parsedUrl = new URL(url);
+    const hostnameParts = parsedUrl.hostname.split('.');
+    // Expecting format like instance-name.openai.azure.com
+    if (hostnameParts.length >= 4 && hostnameParts[1] === 'openai' && hostnameParts[2] === 'azure') {
+      return hostnameParts[0];
+    }
+  } catch (e) {
+    console.error('Error parsing Azure endpoint URL:', e);
+  }
+  return null;
 }
 
 // create a chat model based on the agent name, the model name and provider
@@ -57,7 +95,8 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
 
   switch (modelConfig.provider) {
     case ProviderTypeEnum.OpenAI: {
-      return createOpenAIChatModel(providerConfig, modelConfig);
+      // Call helper without extra options
+      return createOpenAIChatModel(providerConfig, modelConfig, undefined);
     }
     case ProviderTypeEnum.Anthropic: {
       const args = {
@@ -125,9 +164,57 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
       };
       return new ChatOllama(args);
     }
+    case ProviderTypeEnum.AzureOpenAI: {
+      // Validate necessary fields first
+      if (
+        !providerConfig.baseUrl ||
+        !providerConfig.azureDeploymentName ||
+        !providerConfig.azureApiVersion ||
+        !providerConfig.apiKey
+      ) {
+        throw new Error(
+          'Azure configuration is incomplete. Endpoint, Deployment Name, API Version, and API Key are required. Please check settings.',
+        );
+      }
+
+      // Extract instance name from the endpoint URL
+      const instanceName = extractInstanceNameFromUrl(providerConfig.baseUrl);
+      if (!instanceName) {
+        throw new Error(
+          `Could not extract Instance Name from Azure Endpoint URL: ${providerConfig.baseUrl}. Expected format like https://<your-instance-name>.openai.azure.com/`,
+        );
+      }
+
+      // Use AzureChatOpenAI with specific parameters
+      const args = {
+        azureOpenAIApiInstanceName: instanceName, // Derived from endpoint
+        azureOpenAIApiDeploymentName: providerConfig.azureDeploymentName,
+        azureOpenAIApiKey: providerConfig.apiKey,
+        azureOpenAIApiVersion: providerConfig.azureApiVersion,
+        temperature,
+        topP,
+        maxTokens,
+        // DO NOT pass baseUrl or configuration here
+      };
+      console.log('[createChatModel] Azure args passed to AzureChatOpenAI:', args);
+      return new AzureChatOpenAI(args);
+    }
+    case ProviderTypeEnum.OpenRouter: {
+      // Call the helper function, passing OpenRouter headers via the third argument
+      console.log('[createChatModel] Calling createOpenAIChatModel for OpenRouter');
+      return createOpenAIChatModel(providerConfig, modelConfig, {
+        headers: {
+          'HTTP-Referer': 'nanobrowser-extension',
+          'X-Title': 'NanoBrowser Extension',
+        },
+      });
+    }
     default: {
+      // Handles CustomOpenAI
       // by default, we think it's a openai-compatible provider
-      return createOpenAIChatModel(providerConfig, modelConfig);
+      // Pass undefined for extraFetchOptions for default/custom cases
+      console.log('[createChatModel] Calling createOpenAIChatModel for default/custom provider');
+      return createOpenAIChatModel(providerConfig, modelConfig, undefined);
     }
   }
 }
