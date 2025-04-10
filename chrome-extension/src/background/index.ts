@@ -74,7 +74,39 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 logger.info('background loaded');
 
-// Setup connection listener
+// Listen for simple messages (e.g., from options page)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'fetch_openrouter_models') {
+    if (!message.apiKey) {
+      sendResponse({ type: 'error', error: 'API Key is required to fetch OpenRouter models.' });
+      return true; // Indicates async response
+    }
+
+    fetchOpenRouterModels(message.apiKey)
+      .then(models => {
+        sendResponse({ type: 'openrouter_models_fetched', models });
+      })
+      .catch(fetchError => {
+        logger.error('Error fetching OpenRouter models:', fetchError);
+        sendResponse({
+          type: 'error',
+          error:
+            fetchError instanceof Error
+              ? `Failed to fetch OpenRouter models: ${fetchError.message}`
+              : 'Failed to fetch OpenRouter models: Unknown error',
+        });
+      });
+
+    return true; // Indicates that the response is sent asynchronously
+  }
+
+  // Handle other message types if needed in the future
+
+  // Return false if response is not sent asynchronously
+  // return false;
+});
+
+// Setup connection listener for long-lived connections (e.g., side panel)
 chrome.runtime.onConnect.addListener(port => {
   if (port.name === 'side-panel-connection') {
     currentPort = port;
@@ -145,6 +177,7 @@ chrome.runtime.onConnect.addListener(port => {
             await currentExecutor.pause();
             return port.postMessage({ type: 'success' });
           }
+
           default:
             return port.postMessage({ type: 'error', error: 'Unknown message type' });
         }
@@ -217,6 +250,44 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   });
 
   return executor;
+}
+
+// Function to fetch models from OpenRouter API
+async function fetchOpenRouterModels(apiKey: string): Promise<string[]> {
+  const url = 'https://openrouter.ai/api/v1/models';
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      // Try to get more specific error from response body
+      let errorDetails = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorDetails += ` - ${errorData.error?.message || JSON.stringify(errorData)}`;
+      } catch (jsonError) {
+        // Ignore if response body is not JSON or empty
+      }
+      throw new Error(errorDetails);
+    }
+
+    const data = await response.json();
+
+    // Extract model IDs
+    if (data && Array.isArray(data.data)) {
+      const modelIds = data.data.map((model: { id: string }) => model.id).filter(Boolean); // Filter out any null/undefined IDs
+      return modelIds;
+    }
+    throw new Error('Invalid response format from OpenRouter API');
+  } catch (error) {
+    logger.error('fetchOpenRouterModels failed:', error);
+    throw error; // Re-throw the error to be caught by the caller
+  }
 }
 
 // Update subscribeToExecutorEvents to use port

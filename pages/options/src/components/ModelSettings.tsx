@@ -1,3 +1,11 @@
+/*
+ * Changes:
+ * - Added a searchable select component with filtering capability for model selection
+ * - Implemented keyboard navigation and accessibility for the custom dropdown
+ * - Added search functionality that filters models based on user input
+ * - Added keyboard event handlers to close dropdowns with Escape key
+ * - Styling for both light and dark mode themes
+ */
 import { useEffect, useState, useRef, useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
 import { Button } from '@extension/ui';
@@ -12,9 +20,11 @@ import {
   getDefaultAgentModelParams,
   type ProviderConfig,
 } from '@extension/storage';
+// Import chrome for messaging
+const IS_CHROME = typeof chrome !== 'undefined' && typeof chrome.runtime !== 'undefined';
 
 interface ModelSettingsProps {
-  isDarkMode?: boolean;
+  isDarkMode?: boolean; // Controls dark/light theme styling
 }
 
 export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
@@ -41,6 +51,19 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   const [availableModels, setAvailableModels] = useState<
     Array<{ provider: string; providerName: string; model: string }>
   >([]);
+  // State for OpenRouter model fetching
+  const [openRouterFetchState, setOpenRouterFetchState] = useState<
+    Record<
+      string,
+      {
+        allModels: string[] | null; // Store all fetched models here
+        displayMode: 'all' | 'free' | null; // Track which list to show
+        isFetching: boolean;
+        error: string | null;
+      }
+    >
+  >({});
+  const [searchInputs, setSearchInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const loadProviders = async () => {
@@ -858,6 +881,95 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     }));
   };
 
+  // Fix the handleFetchOpenRouterModels function's return block
+  const handleFetchOpenRouterModels = async (providerId: string, mode: 'all' | 'free') => {
+    const apiKey = providers[providerId]?.apiKey;
+    if (!apiKey) {
+      setOpenRouterFetchState(prev => ({
+        ...prev,
+        [providerId]: {
+          ...prev[providerId],
+          isFetching: false,
+          error: 'API Key is required to fetch models.',
+          displayMode: null,
+        }, // Reset displayMode on error
+      }));
+      return;
+    }
+
+    // Update state to show fetching and set display mode
+    setOpenRouterFetchState(prev => ({
+      ...prev,
+      [providerId]: {
+        allModels: prev[providerId]?.allModels ?? null, // Preserve existing models if any
+        isFetching: true,
+        error: null,
+        displayMode: mode, // Set the display mode based on the button clicked
+      },
+    }));
+
+    if (IS_CHROME) {
+      chrome.runtime.sendMessage({ type: 'fetch_openrouter_models', apiKey }, response => {
+        // Check for runtime error before accessing message
+        if (chrome.runtime.lastError) {
+          console.error('Error sending message to background:', chrome.runtime.lastError);
+          setOpenRouterFetchState(prev => ({
+            ...prev,
+            [providerId]: {
+              allModels: null, // Clear models on error
+              isFetching: false,
+              error: `Connection error: ${chrome.runtime.lastError?.message || 'Unknown connection error'}`,
+              displayMode: null, // Reset displayMode
+            },
+          }));
+          return;
+        }
+
+        if (response?.type === 'openrouter_models_fetched') {
+          // Always store all fetched models, sort them
+          const fetchedModels = response.models.sort();
+          setOpenRouterFetchState(prev => ({
+            ...prev,
+            [providerId]: {
+              ...prev[providerId], // Keep the current displayMode
+              allModels: fetchedModels,
+              isFetching: false,
+              error: null,
+            },
+          }));
+        } else if (response?.type === 'error') {
+          setOpenRouterFetchState(prev => ({
+            ...prev,
+            [providerId]: {
+              allModels: null, // Clear models on error
+              isFetching: false,
+              error: response.error,
+              displayMode: null, // Reset displayMode
+            },
+          }));
+        } else {
+          // Handle unexpected response
+          setOpenRouterFetchState(prev => ({
+            ...prev,
+            [providerId]: {
+              allModels: null,
+              isFetching: false,
+              error: 'Unexpected response from background script.',
+              displayMode: null, // Reset displayMode
+            },
+          }));
+        }
+      });
+    } else {
+      // Handle non-chrome environment (e.g., development, testing)
+      console.warn('Cannot send message: Chrome runtime not available.');
+      setOpenRouterFetchState(prev => ({
+        ...prev,
+        [providerId]: { allModels: null, isFetching: false, error: 'Chrome runtime not available.', displayMode: null },
+      }));
+    }
+  };
+
   return (
     <section className="space-y-6">
       {/* LLM Providers Section */}
@@ -1113,64 +1225,184 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       </div>
                     )}
 
-                    {/* Models/Deployments input field with tags (HIDE for Azure) */}
+                    {/* Models/Deployments input section */}
                     {(providerConfig.type as ProviderTypeEnum) !== ProviderTypeEnum.AzureOpenAI && (
                       <div className="flex items-start">
                         <label
-                          htmlFor={`${providerId}-models`}
+                          htmlFor={`${providerId}-models-label`}
                           className={`w-20 pt-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {/* Updated label for Azure */}
-                          {providerConfig.type === ProviderTypeEnum.AzureOpenAI ? 'Deployments' : 'Models'}
+                          Models
                         </label>
-                        <div className="flex-1">
-                          <div
-                            className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} p-2`}>
-                            {/* Display existing models as tags */}
-                            {(() => {
-                              // Get models from provider config or default models
-                              const models =
-                                providerConfig.modelNames !== undefined
-                                  ? providerConfig.modelNames
-                                  : llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || [];
+                        <div className="flex-1 space-y-2">
+                          {/* === START: Conditional UI for OpenRouter === */}
+                          {(providerConfig.type as ProviderTypeEnum) === ProviderTypeEnum.OpenRouter ? (
+                            <>
+                              {/* Fetch Buttons Container */}
+                              <div className="mb-2 flex space-x-2">
+                                <Button
+                                  variant="secondary"
+                                  onClick={() => handleFetchOpenRouterModels(providerId, 'all')}
+                                  disabled={
+                                    !providers[providerId]?.apiKey || openRouterFetchState[providerId]?.isFetching
+                                  }
+                                  title={!providers[providerId]?.apiKey ? 'Enter API Key first' : ''}>
+                                  {openRouterFetchState[providerId]?.isFetching &&
+                                  openRouterFetchState[providerId]?.displayMode === 'all'
+                                    ? 'Fetching All...'
+                                    : 'Fetch All Models'}
+                                </Button>
+                                <Button
+                                  variant="secondary"
+                                  onClick={() => handleFetchOpenRouterModels(providerId, 'free')}
+                                  disabled={
+                                    !providers[providerId]?.apiKey || openRouterFetchState[providerId]?.isFetching
+                                  }
+                                  title={!providers[providerId]?.apiKey ? 'Enter API Key first' : ''}>
+                                  {openRouterFetchState[providerId]?.isFetching &&
+                                  openRouterFetchState[providerId]?.displayMode === 'free'
+                                    ? 'Fetching Free...'
+                                    : 'Fetch Free Models'}
+                                </Button>
+                              </div>
 
-                              return models.map(model => (
-                                <div
-                                  key={model}
-                                  className={`flex items-center rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'} px-2 py-1 text-sm`}>
-                                  <span>{model}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeModel(providerId, model)}
-                                    className={`ml-1 font-bold ${isDarkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
-                                    aria-label={`Remove ${model}`}>
-                                    ×
-                                  </button>
-                                </div>
-                              ));
-                            })()}
+                              {/* Error Display */}
+                              {openRouterFetchState[providerId]?.error && (
+                                <p
+                                  className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{`Error: ${openRouterFetchState[providerId]?.error}`}</p>
+                              )}
 
-                            {/* Input for new models */}
-                            <input
-                              id={`${providerId}-models`}
-                              type="text"
-                              placeholder="" // Placeholder kept empty for tags input style
-                              value={newModelInputs[providerId] || ''}
-                              onChange={e => handleModelsChange(providerId, e.target.value)}
-                              onKeyDown={e => handleKeyDown(e, providerId)}
-                              className={`min-w-[150px] flex-1 border-none text-sm ${isDarkMode ? 'bg-transparent text-gray-200' : 'bg-transparent text-gray-700'} p-1 outline-none`}
-                            />
-                          </div>
-                          {/* Updated description for model input */}
-                          <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            Type and Press Enter or Space to add.
-                            {/* Added clarification for Azure */}
-                            {providerConfig.type === ProviderTypeEnum.AzureOpenAI && (
-                              <span className="block">
-                                Enter your exact Azure Deployment Names here (e.g., &apos;my-gpt4o-deployment&apos;).
-                                This name is used to call the specific model you deployed in Azure.
-                              </span>
-                            )}
-                          </p>
+                              {/* Search input for filtering models */}
+                              {openRouterFetchState[providerId]?.allModels && (
+                                <input
+                                  type="text"
+                                  placeholder="Search models..."
+                                  className={`mb-2 w-full rounded-md border text-sm ${
+                                    isDarkMode
+                                      ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800'
+                                      : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'
+                                  } p-2 outline-none`}
+                                  value={searchInputs[providerId] || ''}
+                                  onChange={e =>
+                                    setSearchInputs(prev => ({
+                                      ...prev,
+                                      [providerId]: e.target.value,
+                                    }))
+                                  }
+                                />
+                              )}
+
+                              {/* Model Select Dropdown (if models fetched) */}
+                              {openRouterFetchState[providerId]?.allModels && (
+                                <select
+                                  id={`${providerId}-models-select`}
+                                  multiple
+                                  value={providerConfig.modelNames || []} // Keep selection based on providerConfig
+                                  onChange={e => {
+                                    const selectedOptions = Array.from(
+                                      e.target.selectedOptions,
+                                      option => option.value,
+                                    );
+                                    setModifiedProviders(prev => new Set(prev).add(providerId));
+                                    setProviders(prev => ({
+                                      ...prev,
+                                      [providerId]: {
+                                        ...prev[providerId],
+                                        modelNames: selectedOptions,
+                                      },
+                                    }));
+                                  }}
+                                  className={`h-32 w-full rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}>
+                                  {/* Filter models based on displayMode and search text */}
+                                  {(openRouterFetchState[providerId]?.allModels || [])
+                                    .filter(modelId => {
+                                      // Filter by display mode (free/all)
+                                      const passesDisplayMode =
+                                        openRouterFetchState[providerId]?.displayMode === 'free'
+                                          ? modelId.endsWith(':free')
+                                          : true;
+
+                                      // Filter by search text
+                                      const searchText = (searchInputs[providerId] || '').toLowerCase().trim();
+                                      // If search is empty, show all models that pass displayMode
+                                      if (!searchText) return passesDisplayMode;
+                                      // Otherwise filter by search text in model ID
+                                      const passesSearch = modelId.toLowerCase().includes(searchText);
+
+                                      return passesDisplayMode && passesSearch;
+                                    })
+                                    .sort((a, b) => a.localeCompare(b)) // Keep models sorted alphabetically
+                                    .map(modelId => (
+                                      <option key={modelId} value={modelId}>
+                                        {modelId}
+                                      </option>
+                                    ))}
+                                </select>
+                              )}
+
+                              {/* Prompt/Selected Models Display (if not fetched yet) */}
+                              {!openRouterFetchState[providerId]?.allModels &&
+                                !openRouterFetchState[providerId]?.isFetching && (
+                                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {providerConfig.modelNames && providerConfig.modelNames.length > 0
+                                      ? 'Currently selected models (fetch to see available options):'
+                                      : 'Click fetch buttons to load model list.'}
+                                  </p>
+                                )}
+                              {!openRouterFetchState[providerId]?.allModels &&
+                                providerConfig.modelNames &&
+                                providerConfig.modelNames.length > 0 && (
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    {providerConfig.modelNames.map(model => (
+                                      <span
+                                        key={model}
+                                        className={`rounded-full px-2 py-0.5 text-xs ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'}`}>
+                                        {model}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                            </>
+                          ) : (
+                            /* === ELSE: Default Tag Input for other providers === */
+                            <>
+                              <div
+                                className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} p-2`}>
+                                {(() => {
+                                  const models =
+                                    providerConfig.modelNames !== undefined
+                                      ? providerConfig.modelNames
+                                      : llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || [];
+                                  return models.map(model => (
+                                    <div
+                                      key={model}
+                                      className={`flex items-center rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'} px-2 py-1 text-sm`}>
+                                      <span>{model}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeModel(providerId, model)}
+                                        className={`ml-1 font-bold ${isDarkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
+                                        aria-label={`Remove ${model}`}>
+                                        ×
+                                      </button>
+                                    </div>
+                                  ));
+                                })()}
+                                <input
+                                  id={`${providerId}-models-input`}
+                                  type="text"
+                                  placeholder=""
+                                  value={newModelInputs[providerId] || ''}
+                                  onChange={e => handleModelsChange(providerId, e.target.value)}
+                                  onKeyDown={e => handleKeyDown(e, providerId)}
+                                  className={`min-w-[150px] flex-1 border-none text-sm ${isDarkMode ? 'bg-transparent text-gray-200' : 'bg-transparent text-gray-700'} p-1 outline-none`}
+                                />
+                              </div>
+                              <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Type and Press Enter or Space to add.
+                              </p>
+                            </>
+                          )}
+                          {/* === END: Conditional UI === */}
                         </div>
                       </div>
                     )}
