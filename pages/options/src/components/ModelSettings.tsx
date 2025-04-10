@@ -1166,8 +1166,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             {/* Added clarification for Azure */}
                             {providerConfig.type === ProviderTypeEnum.AzureOpenAI && (
                               <span className="block">
-                                Enter your exact Azure Deployment Names here (e.g., 'my-gpt4o-deployment'). This name is
-                                used to call the specific model you deployed in Azure.
+                                Enter your exact Azure Deployment Names here (e.g., &apos;my-gpt4o-deployment&apos;).
+                                This name is used to call the specific model you deployed in Azure.
                               </span>
                             )}
                           </p>

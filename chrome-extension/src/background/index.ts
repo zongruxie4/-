@@ -184,7 +184,6 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   }
   // Log the provider config being used for the navigator
   const navigatorProviderConfig = providers[navigatorModel.provider];
-  logger.info('Navigator Provider Config:', JSON.stringify(navigatorProviderConfig, null, 2));
   const navigatorLLM = createChatModel(navigatorProviderConfig, navigatorModel);
 
   let plannerLLM: BaseChatModel | null = null;
@@ -192,7 +191,6 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   if (plannerModel) {
     // Log the provider config being used for the planner
     const plannerProviderConfig = providers[plannerModel.provider];
-    logger.info('Planner Provider Config:', JSON.stringify(plannerProviderConfig, null, 2));
     plannerLLM = createChatModel(plannerProviderConfig, plannerModel);
   }
 
@@ -201,7 +199,6 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   if (validatorModel) {
     // Log the provider config being used for the validator
     const validatorProviderConfig = providers[validatorModel.provider];
-    logger.info('Validator Provider Config:', JSON.stringify(validatorProviderConfig, null, 2));
     validatorLLM = createChatModel(validatorProviderConfig, validatorModel);
   }
 
