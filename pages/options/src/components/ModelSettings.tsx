@@ -52,11 +52,16 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     Array<{ provider: string; providerName: string; model: string }>
   >([]);
   // State for OpenRouter model fetching
+  interface OpenRouterModel {
+    id: string;
+    isFree: boolean;
+  }
+
   const [openRouterFetchState, setOpenRouterFetchState] = useState<
     Record<
       string,
       {
-        allModels: string[] | null; // Store all fetched models here
+        allModels: OpenRouterModel[] | null; // Store all fetched models here
         displayMode: 'all' | 'free' | null; // Track which list to show
         isFetching: boolean;
         error: string | null;
@@ -926,8 +931,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         }
 
         if (response?.type === 'openrouter_models_fetched') {
-          // Always store all fetched models, sort them
-          const fetchedModels = response.models.sort();
+          // Convert returned models to the correct type and sort them
+          const fetchedModels = (response.models as OpenRouterModel[]).sort((a, b) => a.id.localeCompare(b.id));
           setOpenRouterFetchState(prev => ({
             ...prev,
             [providerId]: {
@@ -1307,7 +1312,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                                       ...prev,
                                       [providerId]: {
                                         ...prev[providerId],
-                                        modelNames: selectedOptions,
+                                        modelNames: selectedOptions.map(option => option), // Just store the IDs
                                       },
                                     }));
                                   }}
@@ -1318,7 +1323,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                                       // Filter by display mode (free/all)
                                       const passesDisplayMode =
                                         openRouterFetchState[providerId]?.displayMode === 'free'
-                                          ? modelId.endsWith(':free')
+                                          ? modelId.isFree
                                           : true;
 
                                       // Filter by search text
@@ -1326,14 +1331,14 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                                       // If search is empty, show all models that pass displayMode
                                       if (!searchText) return passesDisplayMode;
                                       // Otherwise filter by search text in model ID
-                                      const passesSearch = modelId.toLowerCase().includes(searchText);
+                                      const passesSearch = modelId.id.toLowerCase().includes(searchText);
 
                                       return passesDisplayMode && passesSearch;
                                     })
-                                    .sort((a, b) => a.localeCompare(b)) // Keep models sorted alphabetically
-                                    .map(modelId => (
-                                      <option key={modelId} value={modelId}>
-                                        {modelId}
+                                    .sort((a, b) => a.id.localeCompare(b.id)) // Sort by model ID
+                                    .map(model => (
+                                      <option key={model.id} value={model.id}>
+                                        {model.id}
                                       </option>
                                     ))}
                                 </select>

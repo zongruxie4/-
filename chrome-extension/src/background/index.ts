@@ -278,10 +278,14 @@ async function fetchOpenRouterModels(apiKey: string): Promise<string[]> {
 
     const data = await response.json();
 
-    // Extract model IDs
+    // Extract model IDs and check pricing
     if (data && Array.isArray(data.data)) {
-      const modelIds = data.data.map((model: { id: string }) => model.id).filter(Boolean); // Filter out any null/undefined IDs
-      return modelIds;
+      return data.data
+        .map((model: { id: string; pricing: Record<string, string> }) => ({
+          id: model.id,
+          isFree: Object.values(model.pricing || {}).every(price => price === '0'),
+        }))
+        .filter(Boolean);
     }
     throw new Error('Invalid response format from OpenRouter API');
   } catch (error) {
