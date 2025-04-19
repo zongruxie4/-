@@ -51,24 +51,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   const [availableModels, setAvailableModels] = useState<
     Array<{ provider: string; providerName: string; model: string }>
   >([]);
-  // State for OpenRouter model fetching
-  interface OpenRouterModel {
-    id: string;
-    isFree: boolean;
-  }
-
-  const [openRouterFetchState, setOpenRouterFetchState] = useState<
-    Record<
-      string,
-      {
-        allModels: OpenRouterModel[] | null; // Store all fetched models here
-        displayMode: 'all' | 'free' | null; // Track which list to show
-        isFetching: boolean;
-        error: string | null;
-      }
-    >
-  >({});
-  const [searchInputs, setSearchInputs] = useState<Record<string, string>>({});
+  // State for model input handling
 
   useEffect(() => {
     const loadProviders = async () => {
@@ -179,15 +162,29 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
       // Only use providers that are actually in storage
       for (const [provider, config] of Object.entries(storedProviders)) {
-        const providerModels =
-          config.modelNames || llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
-        models.push(
-          ...providerModels.map(model => ({
-            provider,
-            providerName: config.name || provider,
-            model,
-          })),
-        );
+        if (config.type === ProviderTypeEnum.AzureOpenAI) {
+          // Handle Azure providers specially - use deployment names as models
+          const deploymentNames = config.azureDeploymentNames || [];
+
+          models.push(
+            ...deploymentNames.map(deployment => ({
+              provider,
+              providerName: config.name || provider,
+              model: deployment,
+            })),
+          );
+        } else {
+          // Standard handling for non-Azure providers
+          const providerModels =
+            config.modelNames || llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
+          models.push(
+            ...providerModels.map(model => ({
+              provider,
+              providerName: config.name || provider,
+              model,
+            })),
+          );
+        }
       }
     } catch (error) {
       console.error('Error loading providers for model selection:', error);
@@ -343,11 +340,11 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     } else if (providerType === ProviderTypeEnum.Ollama) {
       hasInput = Boolean(config?.baseUrl?.trim()); // Ollama needs Base URL
     } else if (providerType === ProviderTypeEnum.AzureOpenAI) {
-      // Azure needs API Key, Endpoint, Deployment Name, and API Version
+      // Azure needs API Key, Endpoint, Deployment Names, and API Version
       hasInput =
         Boolean(config?.apiKey?.trim()) &&
         Boolean(config?.baseUrl?.trim()) &&
-        Boolean(config?.azureDeploymentName?.trim()) &&
+        Boolean(config?.azureDeploymentNames?.length) &&
         Boolean(config?.azureApiVersion?.trim());
     } else if (providerType === ProviderTypeEnum.OpenRouter) {
       // OpenRouter needs API Key and optionally Base URL (has default)
@@ -499,6 +496,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     // modelValue will be in format "provider>model"
     const [provider, model] = modelValue.split('>');
 
+    console.log(`[handleModelChange] Setting ${agentName} model: provider=${provider}, model=${model}`);
+
     // Set parameters based on provider type
     const newParameters = getDefaultAgentModelParams(provider, agentName);
 
@@ -514,6 +513,14 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
     try {
       if (model) {
+        const providerConfig = providers[provider];
+
+        // For Azure, verify the model is in the deployment names list
+        if (providerConfig && providerConfig.type === ProviderTypeEnum.AzureOpenAI) {
+          console.log(`[handleModelChange] Azure model selected: ${model}`);
+          console.log(`[handleModelChange] Available deployments:`, providerConfig.azureDeploymentNames || []);
+        }
+
         await agentModelStore.setAgentModel(agentName, {
           provider,
           modelName: model,
@@ -545,11 +552,23 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         // Find provider
         let provider: string | undefined;
         for (const [providerKey, providerConfig] of Object.entries(providers)) {
-          const modelNames =
-            providerConfig.modelNames || llmProviderModelNames[providerKey as keyof typeof llmProviderModelNames] || [];
-          if (modelNames.includes(selectedModels[agentName])) {
-            provider = providerKey;
-            break;
+          if (providerConfig.type === ProviderTypeEnum.AzureOpenAI) {
+            // Check Azure deployment names
+            const deploymentNames = providerConfig.azureDeploymentNames || [];
+            if (deploymentNames.includes(selectedModels[agentName])) {
+              provider = providerKey;
+              break;
+            }
+          } else {
+            // Check standard model names for non-Azure providers
+            const modelNames =
+              providerConfig.modelNames ||
+              llmProviderModelNames[providerKey as keyof typeof llmProviderModelNames] ||
+              [];
+            if (modelNames.includes(selectedModels[agentName])) {
+              provider = providerKey;
+              break;
+            }
           }
         }
 
@@ -854,25 +873,74 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
   const getProviderForModel = (modelName: string): string => {
     for (const [provider, config] of Object.entries(providers)) {
-      const modelNames =
-        config.modelNames || llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
-      if (modelNames.includes(modelName)) {
-        return provider;
+      // Check Azure deployment names
+      if (config.type === ProviderTypeEnum.AzureOpenAI) {
+        const deploymentNames = config.azureDeploymentNames || [];
+        if (deploymentNames.includes(modelName)) {
+          return provider;
+        }
+      } else {
+        // Check regular model names for non-Azure providers
+        const modelNames =
+          config.modelNames || llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
+        if (modelNames.includes(modelName)) {
+          return provider;
+        }
       }
     }
     return '';
   };
 
-  // Add state handlers for new Azure fields
-  const handleAzureDeploymentNameChange = (provider: string, deploymentName: string) => {
+  // Add and remove Azure deployments
+  const addAzureDeployment = (provider: string, deploymentName: string) => {
+    if (!deploymentName.trim()) return;
+
     setModifiedProviders(prev => new Set(prev).add(provider));
-    setProviders(prev => ({
+    setProviders(prev => {
+      const providerData = prev[provider] || {};
+
+      // Initialize or use existing deploymentNames array
+      const deploymentNames = providerData.azureDeploymentNames || [];
+
+      // Don't add duplicates
+      if (deploymentNames.includes(deploymentName.trim())) return prev;
+
+      return {
+        ...prev,
+        [provider]: {
+          ...providerData,
+          azureDeploymentNames: [...deploymentNames, deploymentName.trim()],
+        },
+      };
+    });
+
+    // Clear the input
+    setNewModelInputs(prev => ({
       ...prev,
-      [provider]: {
-        ...prev[provider],
-        azureDeploymentName: deploymentName.trim(),
-      },
+      [provider]: '',
     }));
+  };
+
+  const removeAzureDeployment = (provider: string, deploymentToRemove: string) => {
+    setModifiedProviders(prev => new Set(prev).add(provider));
+
+    setProviders(prev => {
+      const providerData = prev[provider] || {};
+
+      // Get current deployments
+      const deploymentNames = providerData.azureDeploymentNames || [];
+
+      // Filter out the deployment to remove
+      const filteredDeployments = deploymentNames.filter(name => name !== deploymentToRemove);
+
+      return {
+        ...prev,
+        [provider]: {
+          ...providerData,
+          azureDeploymentNames: filteredDeployments,
+        },
+      };
+    });
   };
 
   const handleAzureApiVersionChange = (provider: string, apiVersion: string) => {
@@ -884,95 +952,6 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         azureApiVersion: apiVersion.trim(),
       },
     }));
-  };
-
-  // Fix the handleFetchOpenRouterModels function's return block
-  const handleFetchOpenRouterModels = async (providerId: string, mode: 'all' | 'free') => {
-    const apiKey = providers[providerId]?.apiKey;
-    if (!apiKey) {
-      setOpenRouterFetchState(prev => ({
-        ...prev,
-        [providerId]: {
-          ...prev[providerId],
-          isFetching: false,
-          error: 'API Key is required to fetch models.',
-          displayMode: null,
-        }, // Reset displayMode on error
-      }));
-      return;
-    }
-
-    // Update state to show fetching and set display mode
-    setOpenRouterFetchState(prev => ({
-      ...prev,
-      [providerId]: {
-        allModels: prev[providerId]?.allModels ?? null, // Preserve existing models if any
-        isFetching: true,
-        error: null,
-        displayMode: mode, // Set the display mode based on the button clicked
-      },
-    }));
-
-    if (IS_CHROME) {
-      chrome.runtime.sendMessage({ type: 'fetch_openrouter_models', apiKey }, response => {
-        // Check for runtime error before accessing message
-        if (chrome.runtime.lastError) {
-          console.error('Error sending message to background:', chrome.runtime.lastError);
-          setOpenRouterFetchState(prev => ({
-            ...prev,
-            [providerId]: {
-              allModels: null, // Clear models on error
-              isFetching: false,
-              error: `Connection error: ${chrome.runtime.lastError?.message || 'Unknown connection error'}`,
-              displayMode: null, // Reset displayMode
-            },
-          }));
-          return;
-        }
-
-        if (response?.type === 'openrouter_models_fetched') {
-          // Convert returned models to the correct type and sort them
-          const fetchedModels = (response.models as OpenRouterModel[]).sort((a, b) => a.id.localeCompare(b.id));
-          setOpenRouterFetchState(prev => ({
-            ...prev,
-            [providerId]: {
-              ...prev[providerId], // Keep the current displayMode
-              allModels: fetchedModels,
-              isFetching: false,
-              error: null,
-            },
-          }));
-        } else if (response?.type === 'error') {
-          setOpenRouterFetchState(prev => ({
-            ...prev,
-            [providerId]: {
-              allModels: null, // Clear models on error
-              isFetching: false,
-              error: response.error,
-              displayMode: null, // Reset displayMode
-            },
-          }));
-        } else {
-          // Handle unexpected response
-          setOpenRouterFetchState(prev => ({
-            ...prev,
-            [providerId]: {
-              allModels: null,
-              isFetching: false,
-              error: 'Unexpected response from background script.',
-              displayMode: null, // Reset displayMode
-            },
-          }));
-        }
-      });
-    } else {
-      // Handle non-chrome environment (e.g., development, testing)
-      console.warn('Cannot send message: Chrome runtime not available.');
-      setOpenRouterFetchState(prev => ({
-        ...prev,
-        [providerId]: { allModels: null, isFetching: false, error: 'Chrome runtime not available.', displayMode: null },
-      }));
-    }
   };
 
   return (
@@ -1192,22 +1171,65 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       </div>
                     )}
 
-                    {/* NEW: Azure Deployment Name input */}
+                    {/* Azure Deployment Name input as tags/chips like OpenRouter models */}
                     {(providerConfig.type as ProviderTypeEnum) === ProviderTypeEnum.AzureOpenAI && (
-                      <div className="flex items-center">
+                      <div className="flex items-start">
                         <label
                           htmlFor={`${providerId}-azure-deployment`}
-                          className={`w-32 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          Deployment Name*
+                          className={`w-20 pt-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          Deployment*
                         </label>
-                        <input
-                          id={`${providerId}-azure-deployment`}
-                          type="text"
-                          placeholder="Your Azure deployment name" // e.g., my-gpt4o
-                          value={providerConfig.azureDeploymentName || ''}
-                          onChange={e => handleAzureDeploymentNameChange(providerId, e.target.value)}
-                          className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
-                        />
+                        <div className="flex-1 space-y-2">
+                          <div
+                            className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} p-2`}>
+                            {/* Show azure deployments or empty message */}
+                            {(providerConfig.azureDeploymentNames || []).length > 0 ? (
+                              (providerConfig.azureDeploymentNames || []).map((deploymentName: string) => (
+                                <div
+                                  key={deploymentName}
+                                  className={`flex items-center rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'} px-2 py-1 text-sm`}>
+                                  <span>{deploymentName}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAzureDeployment(providerId, deploymentName)}
+                                    className={`ml-1 font-bold ${isDarkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
+                                    aria-label={`Remove ${deploymentName}`}>
+                                    ×
+                                  </button>
+                                </div>
+                              ))
+                            ) : (
+                              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                No deployment names set. Add model names below.
+                              </span>
+                            )}
+                            <input
+                              id={`${providerId}-azure-deployment-input`}
+                              type="text"
+                              placeholder="Enter Azure model name (e.g. gpt-4o, gpt-4o-mini)"
+                              value={newModelInputs[providerId] || ''}
+                              onChange={e => handleModelsChange(providerId, e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  const value = newModelInputs[providerId] || '';
+                                  if (value.trim()) {
+                                    addAzureDeployment(providerId, value.trim());
+                                    // Clear the input
+                                    setNewModelInputs(prev => ({
+                                      ...prev,
+                                      [providerId]: '',
+                                    }));
+                                  }
+                                }
+                              }}
+                              className={`min-w-[150px] flex-1 border-none text-sm ${isDarkMode ? 'bg-transparent text-gray-200' : 'bg-transparent text-gray-700'} p-1 outline-none`}
+                            />
+                          </div>
+                          <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                            Type model name and press Enter or Space to set.
+                          </p>
+                        </div>
                       </div>
                     )}
 
@@ -1216,7 +1238,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       <div className="flex items-center">
                         <label
                           htmlFor={`${providerId}-azure-version`}
-                          className={`w-32 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                           API Version*
                         </label>
                         <input
@@ -1230,7 +1252,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       </div>
                     )}
 
-                    {/* Models/Deployments input section */}
+                    {/* Models input section (for non-Azure providers) */}
                     {(providerConfig.type as ProviderTypeEnum) !== ProviderTypeEnum.AzureOpenAI && (
                       <div className="flex items-start">
                         <label
@@ -1239,136 +1261,47 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           Models
                         </label>
                         <div className="flex-1 space-y-2">
-                          {/* === START: Conditional UI for OpenRouter === */}
+                          {/* Conditional UI for OpenRouter */}
                           {(providerConfig.type as ProviderTypeEnum) === ProviderTypeEnum.OpenRouter ? (
                             <>
-                              {/* Fetch Buttons Container */}
-                              <div className="mb-2 flex space-x-2">
-                                <Button
-                                  variant="secondary"
-                                  onClick={() => handleFetchOpenRouterModels(providerId, 'all')}
-                                  disabled={
-                                    !providers[providerId]?.apiKey || openRouterFetchState[providerId]?.isFetching
-                                  }
-                                  title={!providers[providerId]?.apiKey ? 'Enter API Key first' : ''}>
-                                  {openRouterFetchState[providerId]?.isFetching &&
-                                  openRouterFetchState[providerId]?.displayMode === 'all'
-                                    ? 'Fetching All...'
-                                    : 'Fetch All Models'}
-                                </Button>
-                                <Button
-                                  variant="secondary"
-                                  onClick={() => handleFetchOpenRouterModels(providerId, 'free')}
-                                  disabled={
-                                    !providers[providerId]?.apiKey || openRouterFetchState[providerId]?.isFetching
-                                  }
-                                  title={!providers[providerId]?.apiKey ? 'Enter API Key first' : ''}>
-                                  {openRouterFetchState[providerId]?.isFetching &&
-                                  openRouterFetchState[providerId]?.displayMode === 'free'
-                                    ? 'Fetching Free...'
-                                    : 'Fetch Free Models'}
-                                </Button>
-                              </div>
-
-                              {/* Error Display */}
-                              {openRouterFetchState[providerId]?.error && (
-                                <p
-                                  className={`text-xs ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{`Error: ${openRouterFetchState[providerId]?.error}`}</p>
-                              )}
-
-                              {/* Search input for filtering models */}
-                              {openRouterFetchState[providerId]?.allModels && (
+                              <div
+                                className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} p-2`}>
+                                {providerConfig.modelNames && providerConfig.modelNames.length > 0 ? (
+                                  providerConfig.modelNames.map(model => (
+                                    <div
+                                      key={model}
+                                      className={`flex items-center rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'} px-2 py-1 text-sm`}>
+                                      <span>{model}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeModel(providerId, model)}
+                                        className={`ml-1 font-bold ${isDarkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
+                                        aria-label={`Remove ${model}`}>
+                                        ×
+                                      </button>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    No models selected. Add model names manually if needed.
+                                  </span>
+                                )}
                                 <input
+                                  id={`${providerId}-models-input`}
                                   type="text"
-                                  placeholder="Search models..."
-                                  className={`mb-2 w-full rounded-md border text-sm ${
-                                    isDarkMode
-                                      ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800'
-                                      : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'
-                                  } p-2 outline-none`}
-                                  value={searchInputs[providerId] || ''}
-                                  onChange={e =>
-                                    setSearchInputs(prev => ({
-                                      ...prev,
-                                      [providerId]: e.target.value,
-                                    }))
-                                  }
+                                  placeholder=""
+                                  value={newModelInputs[providerId] || ''}
+                                  onChange={e => handleModelsChange(providerId, e.target.value)}
+                                  onKeyDown={e => handleKeyDown(e, providerId)}
+                                  className={`min-w-[150px] flex-1 border-none text-sm ${isDarkMode ? 'bg-transparent text-gray-200' : 'bg-transparent text-gray-700'} p-1 outline-none`}
                                 />
-                              )}
-
-                              {/* Model Select Dropdown (if models fetched) */}
-                              {openRouterFetchState[providerId]?.allModels && (
-                                <select
-                                  id={`${providerId}-models-select`}
-                                  multiple
-                                  value={providerConfig.modelNames || []} // Keep selection based on providerConfig
-                                  onChange={e => {
-                                    const selectedOptions = Array.from(
-                                      e.target.selectedOptions,
-                                      option => option.value,
-                                    );
-                                    setModifiedProviders(prev => new Set(prev).add(providerId));
-                                    setProviders(prev => ({
-                                      ...prev,
-                                      [providerId]: {
-                                        ...prev[providerId],
-                                        modelNames: selectedOptions.map(option => option), // Just store the IDs
-                                      },
-                                    }));
-                                  }}
-                                  className={`h-32 w-full rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}>
-                                  {/* Filter models based on displayMode and search text */}
-                                  {(openRouterFetchState[providerId]?.allModels || [])
-                                    .filter(modelId => {
-                                      // Filter by display mode (free/all)
-                                      const passesDisplayMode =
-                                        openRouterFetchState[providerId]?.displayMode === 'free'
-                                          ? modelId.isFree
-                                          : true;
-
-                                      // Filter by search text
-                                      const searchText = (searchInputs[providerId] || '').toLowerCase().trim();
-                                      // If search is empty, show all models that pass displayMode
-                                      if (!searchText) return passesDisplayMode;
-                                      // Otherwise filter by search text in model ID
-                                      const passesSearch = modelId.id.toLowerCase().includes(searchText);
-
-                                      return passesDisplayMode && passesSearch;
-                                    })
-                                    .sort((a, b) => a.id.localeCompare(b.id)) // Sort by model ID
-                                    .map(model => (
-                                      <option key={model.id} value={model.id}>
-                                        {model.id}
-                                      </option>
-                                    ))}
-                                </select>
-                              )}
-
-                              {/* Prompt/Selected Models Display (if not fetched yet) */}
-                              {!openRouterFetchState[providerId]?.allModels &&
-                                !openRouterFetchState[providerId]?.isFetching && (
-                                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    {providerConfig.modelNames && providerConfig.modelNames.length > 0
-                                      ? 'Currently selected models (fetch to see available options):'
-                                      : 'Click fetch buttons to load model list.'}
-                                  </p>
-                                )}
-                              {!openRouterFetchState[providerId]?.allModels &&
-                                providerConfig.modelNames &&
-                                providerConfig.modelNames.length > 0 && (
-                                  <div className="mt-1 flex flex-wrap gap-1">
-                                    {providerConfig.modelNames.map(model => (
-                                      <span
-                                        key={model}
-                                        className={`rounded-full px-2 py-0.5 text-xs ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'}`}>
-                                        {model}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
+                              </div>
+                              <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Type and Press Enter or Space to add.
+                              </p>
                             </>
                           ) : (
-                            /* === ELSE: Default Tag Input for other providers === */
+                            /* Default Tag Input for other providers */
                             <>
                               <div
                                 className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} p-2`}>

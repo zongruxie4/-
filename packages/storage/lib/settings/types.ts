@@ -35,7 +35,9 @@ export const llmProviderModelNames = {
   [ProviderTypeEnum.Ollama]: [],
   [ProviderTypeEnum.AzureOpenAI]: ['gpt-4o', 'gpt-4o-mini', 'o3-mini'],
   [ProviderTypeEnum.OpenRouter]: [
-    'openai/gpt-4o',
+    'openai/gpt-4o-2024-05-13',
+    'openai/gpt-4o-2024-11-20',
+    'openai/gpt-3.5-turbo',
     'anthropic/claude-3.5-sonnet',
     'google/gemini-pro-1.5',
     'mistralai/mistral-large',

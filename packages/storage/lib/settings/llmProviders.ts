@@ -9,10 +9,10 @@ export interface ProviderConfig {
   type?: ProviderTypeEnum; // Help to decide which LangChain ChatModel package to use
   apiKey: string; // Must be provided, but may be empty for local models
   baseUrl?: string; // Optional base URL if provided // For Azure: Endpoint
-  modelNames?: string[]; // Chosen model names (NOT used for Azure OpenAI anymore)
+  modelNames?: string[]; // Chosen model names (NOT used for Azure OpenAI)
   createdAt?: number; // Timestamp in milliseconds when the provider was created
   // Azure Specific Fields:
-  azureDeploymentName?: string;
+  azureDeploymentNames?: string[]; // Azure deployment names array
   azureApiVersion?: string;
 }
 
@@ -117,8 +117,8 @@ export function getDefaultProviderConfig(providerId: string): ProviderConfig {
         name: getDefaultDisplayNameFromProviderId(ProviderTypeEnum.AzureOpenAI),
         type: ProviderTypeEnum.AzureOpenAI,
         baseUrl: '', // User needs to provide Azure endpoint
-        // modelNames: [], // Not used for Azure configuration anymore
-        azureDeploymentName: '', // User needs to provide Deployment Name
+        // modelNames: [], // Not used for Azure configuration
+        azureDeploymentNames: [], // Azure deployment names
         azureApiVersion: '2024-02-15-preview', // Provide a common default API version
         createdAt: Date.now(),
       };
@@ -161,14 +161,16 @@ function ensureBackwardCompatibility(providerId: string, config: ProviderConfig)
   // Handle Azure specifics
   if (updatedConfig.type === ProviderTypeEnum.AzureOpenAI) {
     // Ensure Azure fields exist, provide defaults if missing
-    if (updatedConfig.azureDeploymentName === undefined) {
-      // console.log(`[ensureBackwardCompatibility] Adding default azureDeploymentName for ${providerId}`);
-      updatedConfig.azureDeploymentName = '';
-    }
     if (updatedConfig.azureApiVersion === undefined) {
       // console.log(`[ensureBackwardCompatibility] Adding default azureApiVersion for ${providerId}`);
       updatedConfig.azureApiVersion = '2024-02-15-preview';
     }
+
+    // Initialize azureDeploymentNames array if it doesn't exist yet
+    if (!updatedConfig.azureDeploymentNames) {
+      updatedConfig.azureDeploymentNames = [];
+    }
+
     // CRITICAL: Delete modelNames if it exists for Azure type to clean up old configs
     if (Object.prototype.hasOwnProperty.call(updatedConfig, 'modelNames')) {
       // console.log(`[ensureBackwardCompatibility] Deleting modelNames for Azure config ${providerId}`);
@@ -209,8 +211,8 @@ export const llmProviderStore: LLMProviderStorage = {
       if (!config.baseUrl?.trim()) {
         throw new Error('Azure Endpoint (baseUrl) is required');
       }
-      if (!config.azureDeploymentName?.trim()) {
-        throw new Error('Azure Deployment Name is required');
+      if (!config.azureDeploymentNames || config.azureDeploymentNames.length === 0) {
+        throw new Error('At least one Azure Deployment Name is required');
       }
       if (!config.azureApiVersion?.trim()) {
         throw new Error('Azure API Version is required');
@@ -238,7 +240,7 @@ export const llmProviderStore: LLMProviderStorage = {
       createdAt: config.createdAt || Date.now(),
       ...(providerType === ProviderTypeEnum.AzureOpenAI
         ? {
-            azureDeploymentName: config.azureDeploymentName,
+            azureDeploymentNames: config.azureDeploymentNames || [],
             azureApiVersion: config.azureApiVersion,
           }
         : {
