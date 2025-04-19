@@ -23,6 +23,11 @@ import {
 // Import chrome for messaging
 const IS_CHROME = typeof chrome !== 'undefined' && typeof chrome.runtime !== 'undefined';
 
+// Helper function to check if a model is an O-series model
+function isOpenAIOModel(modelName: string): boolean {
+  return modelName.startsWith('openai/o') || modelName.startsWith('o');
+}
+
 interface ModelSettingsProps {
   isDarkMode?: boolean; // Controls dark/light theme styling
 }
@@ -40,6 +45,13 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     [AgentNameEnum.Navigator]: { temperature: 0, topP: 0 },
     [AgentNameEnum.Planner]: { temperature: 0, topP: 0 },
     [AgentNameEnum.Validator]: { temperature: 0, topP: 0 },
+  });
+
+  // State for reasoning effort for O-series models
+  const [reasoningEffort, setReasoningEffort] = useState<Record<AgentNameEnum, 'low' | 'medium' | 'high' | undefined>>({
+    [AgentNameEnum.Navigator]: undefined,
+    [AgentNameEnum.Planner]: undefined,
+    [AgentNameEnum.Validator]: undefined,
   });
   const [newModelInputs, setNewModelInputs] = useState<Record<string, string>>({});
   const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
@@ -98,6 +110,13 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                   temperature: config.parameters?.temperature ?? prev[agent].temperature,
                   topP: config.parameters?.topP ?? prev[agent].topP,
                 },
+              }));
+            }
+            // Also load reasoningEffort if available
+            if (config.reasoningEffort) {
+              setReasoningEffort(prev => ({
+                ...prev,
+                [agent]: config.reasoningEffort as 'low' | 'medium' | 'high',
               }));
             }
           }
@@ -521,10 +540,26 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           console.log(`[handleModelChange] Available deployments:`, providerConfig.azureDeploymentNames || []);
         }
 
+        // Reset reasoning effort if switching models
+        if (isOpenAIOModel(model)) {
+          // Keep existing reasoning effort if already set for O-series models
+          setReasoningEffort(prev => ({
+            ...prev,
+            [agentName]: prev[agentName] || 'medium', // Default to medium if not set
+          }));
+        } else {
+          // Clear reasoning effort for non-O-series models
+          setReasoningEffort(prev => ({
+            ...prev,
+            [agentName]: undefined,
+          }));
+        }
+
         await agentModelStore.setAgentModel(agentName, {
           provider,
           modelName: model,
           parameters: newParameters,
+          reasoningEffort: isOpenAIOModel(model) ? reasoningEffort[agentName] || 'medium' : undefined,
         });
       } else {
         // Reset storage if no model is selected
@@ -532,6 +567,32 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       }
     } catch (error) {
       console.error('Error saving agent model:', error);
+    }
+  };
+
+  const handleReasoningEffortChange = async (agentName: AgentNameEnum, value: 'low' | 'medium' | 'high') => {
+    setReasoningEffort(prev => ({
+      ...prev,
+      [agentName]: value,
+    }));
+
+    // Only update if we have a selected model
+    if (selectedModels[agentName] && isOpenAIOModel(selectedModels[agentName])) {
+      try {
+        // Find provider
+        const provider = getProviderForModel(selectedModels[agentName]);
+
+        if (provider) {
+          await agentModelStore.setAgentModel(agentName, {
+            provider,
+            modelName: selectedModels[agentName],
+            parameters: modelParameters[agentName],
+            reasoningEffort: value,
+          });
+        }
+      } catch (error) {
+        console.error('Error saving reasoning effort:', error);
+      }
     }
   };
 
@@ -711,6 +772,28 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             </div>
           </div>
         </div>
+
+        {/* Reasoning Effort Selector (only for O-series models) */}
+        {selectedModels[agentName] && isOpenAIOModel(selectedModels[agentName]) && (
+          <div className="flex items-center">
+            <label
+              htmlFor={`${agentName}-reasoning-effort`}
+              className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Reasoning
+            </label>
+            <div className="flex flex-1 items-center space-x-2">
+              <select
+                id={`${agentName}-reasoning-effort`}
+                value={reasoningEffort[agentName] || 'medium'}
+                onChange={e => handleReasoningEffortChange(agentName, e.target.value as 'low' | 'medium' | 'high')}
+                className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}>
+                <option value="low">Low (Faster)</option>
+                <option value="medium">Medium (Balanced)</option>
+                <option value="high">High (More thorough)</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

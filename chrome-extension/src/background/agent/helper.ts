@@ -29,7 +29,10 @@ function createOpenAIChatModel(
       // Add other ClientOptions if needed, e.g.?
       // dangerouslyAllowBrowser?: boolean;
     };
-    modelKwargs?: { max_completion_tokens: number };
+    modelKwargs?: {
+      max_completion_tokens: number;
+      reasoning_effort?: 'low' | 'medium' | 'high';
+    };
     topP?: number;
     temperature?: number;
     maxTokens?: number;
@@ -70,6 +73,11 @@ function createOpenAIChatModel(
     args.modelKwargs = {
       max_completion_tokens: maxTokens,
     };
+
+    // Add reasoning_effort parameter for o-series models if specified
+    if (modelConfig.reasoningEffort) {
+      args.modelKwargs.reasoning_effort = modelConfig.reasoningEffort;
+    }
   } else {
     args.topP = (modelConfig.parameters?.topP ?? 0.1) as number;
     args.temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
@@ -218,7 +226,13 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         model: deploymentName, // Set model = deployment name to fix Azure requests
         // For O series models, use modelKwargs instead of temperature/topP
         ...(isOSeriesModel
-          ? { modelKwargs: { max_completion_tokens: maxTokens } }
+          ? {
+              modelKwargs: {
+                max_completion_tokens: maxTokens,
+                // Add reasoning_effort parameter for Azure o-series models if specified
+                ...(modelConfig.reasoningEffort ? { reasoning_effort: modelConfig.reasoningEffort } : {}),
+              },
+            }
           : {
               temperature,
               topP,
