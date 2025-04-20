@@ -24,3 +24,4 @@ chrome-extension/public/manifest.json
 
 .nanobrowser
 .vscode
+*.py

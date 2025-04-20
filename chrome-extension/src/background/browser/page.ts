@@ -169,6 +169,7 @@ export default class Page {
     }
     return _getClickableElements(
       this._tabId,
+      this.url(),
       this._config.highlightElements,
       focusElement,
       this._config.viewportExpansion,

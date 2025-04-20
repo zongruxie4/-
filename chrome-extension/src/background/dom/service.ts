@@ -1,6 +1,7 @@
 import { createLogger } from '@src/background/log';
-import type { BuildDomTreeArgs, RawDomTreeNode } from './raw_types';
+import type { BuildDomTreeArgs, RawDomTreeNode, BuildDomTreeResult } from './raw_types';
 import { type DOMState, type DOMBaseNode, DOMElementNode, DOMTextNode } from './views';
+import type { ViewportInfo } from './history/view';
 
 const logger = createLogger('DOMService');
 
@@ -93,9 +94,9 @@ export async function getReadabilityContent(tabId: number): Promise<ReadabilityR
 }
 
 /**
-/**
  * Get the clickable elements for the current page.
  * @param tabId - The ID of the tab to get the clickable elements for.
+ * @param url - The URL of the page.
  * @param highlightElements - Whether to highlight the clickable elements.
  * @param focusElement - The element to focus on.
  * @param viewportExpansion - The viewport expansion to use.
@@ -103,43 +104,45 @@ export async function getReadabilityContent(tabId: number): Promise<ReadabilityR
  */
 export async function getClickableElements(
   tabId: number,
+  url: string,
   highlightElements = true,
   focusElement = -1,
   viewportExpansion = 0,
-): Promise<DOMState | null> {
-  try {
-    const elementTree = await _buildDomTree(tabId, highlightElements, focusElement, viewportExpansion);
-    const selectorMap = createSelectorMap(elementTree);
-    return { elementTree, selectorMap };
-  } catch (error) {
-    logger.error('Failed to build DOM tree:', error);
-    return null;
-  }
-}
-
-function createSelectorMap(elementTree: DOMElementNode): Map<number, DOMElementNode> {
-  const selectorMap = new Map<number, DOMElementNode>();
-
-  function processNode(node: DOMBaseNode): void {
-    if (node instanceof DOMElementNode) {
-      if (node.highlightIndex != null) {
-        // console.log('createSelectorMap node.highlightIndex:', node.highlightIndex);
-        selectorMap.set(node.highlightIndex, node);
-      }
-      node.children.forEach(processNode);
-    }
-  }
-
-  processNode(elementTree);
-  return selectorMap;
+): Promise<DOMState> {
+  const [elementTree, selectorMap] = await _buildDomTree(
+    tabId,
+    url,
+    highlightElements,
+    focusElement,
+    viewportExpansion,
+  );
+  return { elementTree, selectorMap };
 }
 
 async function _buildDomTree(
   tabId: number,
+  url: string,
   highlightElements = true,
   focusElement = -1,
   viewportExpansion = 0,
-): Promise<DOMElementNode> {
+  debugMode = false,
+): Promise<[DOMElementNode, Map<number, DOMElementNode>]> {
+  // If URL is provided and it's about:blank, return a minimal DOM tree
+  if (url === 'about:blank') {
+    const elementTree = new DOMElementNode({
+      tagName: 'body',
+      xpath: '',
+      attributes: {},
+      children: [],
+      isVisible: false,
+      isInteractive: false,
+      isTopElement: false,
+      isInViewport: false,
+      parent: null,
+    });
+    return [elementTree, new Map<number, DOMElementNode>()];
+  }
+
   const results = await chrome.scripting.executeScript({
     target: { tabId },
     func: args => {
@@ -151,64 +154,130 @@ async function _buildDomTree(
         doHighlightElements: highlightElements,
         focusHighlightIndex: focusElement,
         viewportExpansion,
+        debugMode,
       },
     ],
   });
 
-  const rawDomTree = results[0].result;
-  if (rawDomTree !== null) {
-    const elementTree = parseNode(rawDomTree as RawDomTreeNode);
-    if (elementTree !== null && elementTree instanceof DOMElementNode) {
-      return elementTree;
-    }
+  // First cast to unknown, then to BuildDomTreeResult
+  const evalPage = results[0]?.result as unknown as BuildDomTreeResult;
+  if (!evalPage || !evalPage.map || !evalPage.rootId) {
+    throw new Error('Failed to build DOM tree: No result returned or invalid structure');
   }
-  throw new Error('Failed to build DOM tree: Invalid or empty tree structure');
+
+  // Log performance metrics in debug mode
+  if (debugMode && evalPage.perfMetrics) {
+    logger.debug('DOM Tree Building Performance Metrics:', evalPage.perfMetrics);
+  }
+
+  return _constructDomTree(evalPage);
 }
 
-function parseNode(nodeData: RawDomTreeNode, parent: DOMElementNode | null = null): DOMBaseNode | null {
-  if (!nodeData) return null;
+/**
+ * Constructs a DOM tree from the evaluated page data.
+ * @param evalPage - The result of building the DOM tree.
+ * @returns A tuple containing the DOM element tree and selector map.
+ */
+function _constructDomTree(evalPage: BuildDomTreeResult): [DOMElementNode, Map<number, DOMElementNode>] {
+  const jsNodeMap = evalPage.map;
+  const jsRootId = evalPage.rootId;
 
-  if ('type' in nodeData) {
-    // && nodeData.type === 'TEXT_NODE'
-    return new DOMTextNode(nodeData.text, nodeData.isVisible, parent);
+  const selectorMap = new Map<number, DOMElementNode>();
+  const nodeMap: Record<string, DOMBaseNode> = {};
+
+  // First pass: create all nodes
+  for (const [id, nodeData] of Object.entries(jsNodeMap)) {
+    const [node] = _parse_node(nodeData);
+    if (node === null) {
+      continue;
+    }
+
+    nodeMap[id] = node;
+
+    // Add to selector map if it has a highlight index
+    if (node instanceof DOMElementNode && node.highlightIndex !== undefined && node.highlightIndex !== null) {
+      selectorMap.set(node.highlightIndex, node);
+    }
   }
 
-  const tagName = nodeData.tagName;
+  // Second pass: build the tree structure
+  for (const [id, node] of Object.entries(nodeMap)) {
+    if (node instanceof DOMElementNode) {
+      const nodeData = jsNodeMap[id];
+      const childrenIds = 'children' in nodeData ? nodeData.children : [];
 
-  // Parse coordinates if they exist
-  const viewportCoordinates = nodeData.viewportCoordinates;
-  const pageCoordinates = nodeData.pageCoordinates;
-  const viewportInfo = nodeData.viewportInfo;
+      for (const childId of childrenIds) {
+        if (!(childId in nodeMap)) {
+          continue;
+        }
 
-  // Element node (possible other kinds of nodes, but we don't care about them for now)
-  const elementNode = new DOMElementNode({
-    tagName: tagName,
-    xpath: nodeData.xpath,
-    attributes: nodeData.attributes ?? {},
-    children: [],
-    isVisible: nodeData.isVisible ?? false,
-    isInteractive: nodeData.isInteractive ?? false,
-    isTopElement: nodeData.isTopElement ?? false,
-    highlightIndex: nodeData.highlightIndex,
-    viewportCoordinates: viewportCoordinates ?? undefined,
-    pageCoordinates: pageCoordinates ?? undefined,
-    viewportInfo: viewportInfo ?? undefined,
-    shadowRoot: nodeData.shadowRoot ?? false,
-    parent,
-  });
+        const childNode = nodeMap[childId];
 
-  const children: DOMBaseNode[] = [];
-  for (const child of nodeData.children || []) {
-    if (child !== null) {
-      const childNode = parseNode(child, elementNode);
-      if (childNode !== null) {
-        children.push(childNode);
+        childNode.parent = node;
+        node.children.push(childNode);
       }
     }
   }
 
-  elementNode.children = children;
-  return elementNode;
+  const htmlToDict = nodeMap[jsRootId];
+
+  if (htmlToDict === undefined || !(htmlToDict instanceof DOMElementNode)) {
+    throw new Error('Failed to parse HTML to dictionary');
+  }
+
+  return [htmlToDict, selectorMap];
+}
+
+/**
+ * Parse a raw DOM node and return the node object and its children IDs.
+ * @param nodeData - The raw DOM node data to parse.
+ * @returns A tuple containing the parsed node and an array of child IDs.
+ */
+export function _parse_node(nodeData: RawDomTreeNode): [DOMBaseNode | null, string[]] {
+  if (!nodeData) {
+    return [null, []];
+  }
+
+  // Process text nodes immediately
+  if ('type' in nodeData && nodeData.type === 'TEXT_NODE') {
+    const textNode = new DOMTextNode(nodeData.text, nodeData.isVisible, null);
+    return [textNode, []];
+  }
+
+  // At this point, nodeData is RawDomElementNode (not a text node)
+  // TypeScript needs help to narrow the type
+  const elementData = nodeData as Exclude<RawDomTreeNode, { type: string }>;
+
+  // Process viewport info if it exists
+  let viewportInfo: ViewportInfo | undefined = undefined;
+  if ('viewport' in nodeData && typeof nodeData.viewport === 'object' && nodeData.viewport) {
+    const viewportObj = nodeData.viewport as { width: number; height: number };
+    viewportInfo = {
+      width: viewportObj.width,
+      height: viewportObj.height,
+      scrollX: 0,
+      scrollY: 0,
+    };
+  }
+
+  const elementNode = new DOMElementNode({
+    tagName: elementData.tagName,
+    xpath: elementData.xpath,
+    attributes: elementData.attributes ?? {},
+    children: [],
+    isVisible: elementData.isVisible ?? false,
+    isInteractive: elementData.isInteractive ?? false,
+    isTopElement: elementData.isTopElement ?? false,
+    isInViewport: elementData.isInViewport ?? false,
+    highlightIndex: elementData.highlightIndex,
+    shadowRoot: elementData.shadowRoot ?? false,
+    parent: null,
+    viewportInfo: viewportInfo,
+  });
+
+  const childrenIds = elementData.children || [];
+
+  return [elementNode, childrenIds];
 }
 
 export async function removeHighlights(tabId: number): Promise<void> {

@@ -1,15 +1,14 @@
-import type { ViewportInfo, CoordinateSet } from './history/view';
-import type { HashedDomElement } from './history/view';
+import type { CoordinateSet, HashedDomElement, ViewportInfo } from './history/view';
 import { HistoryTreeProcessor } from './history/service';
 
 export abstract class DOMBaseNode {
   isVisible: boolean;
-  parent?: DOMElementNode | null;
+  parent: DOMElementNode | null;
 
   constructor(isVisible: boolean, parent?: DOMElementNode | null) {
     this.isVisible = isVisible;
     // Use None as default and set parent later to avoid circular reference issues
-    this.parent = parent;
+    this.parent = parent ?? null;
   }
 }
 
@@ -32,6 +31,20 @@ export class DOMTextNode extends DOMBaseNode {
     }
     return false;
   }
+
+  isParentInViewport(): boolean {
+    if (this.parent === null) {
+      return false;
+    }
+    return this.parent.isInViewport;
+  }
+
+  isParentTopElement(): boolean {
+    if (this.parent === null) {
+      return false;
+    }
+    return this.parent.isTopElement;
+  }
 }
 
 export class DOMElementNode extends DOMBaseNode {
@@ -45,11 +58,19 @@ export class DOMElementNode extends DOMBaseNode {
   children: DOMBaseNode[];
   isInteractive: boolean;
   isTopElement: boolean;
+  isInViewport: boolean;
   shadowRoot: boolean;
-  highlightIndex?: number;
+  highlightIndex: number | null;
   viewportCoordinates?: CoordinateSet;
   pageCoordinates?: CoordinateSet;
   viewportInfo?: ViewportInfo;
+
+  /*
+	### State injected by the browser context.
+
+	The idea is that the clickable elements are sometimes persistent from the previous page -> tells the model which objects are new/_how_ the state has changed
+	*/
+  isNew: boolean | null;
 
   constructor(params: {
     tagName: string | null;
@@ -59,11 +80,13 @@ export class DOMElementNode extends DOMBaseNode {
     isVisible: boolean;
     isInteractive?: boolean;
     isTopElement?: boolean;
+    isInViewport?: boolean;
     shadowRoot?: boolean;
-    highlightIndex?: number;
+    highlightIndex?: number | null;
     viewportCoordinates?: CoordinateSet;
     pageCoordinates?: CoordinateSet;
     viewportInfo?: ViewportInfo;
+    isNew?: boolean | null;
     parent?: DOMElementNode | null;
   }) {
     super(params.isVisible, params.parent);
@@ -73,11 +96,13 @@ export class DOMElementNode extends DOMBaseNode {
     this.children = params.children;
     this.isInteractive = params.isInteractive ?? false;
     this.isTopElement = params.isTopElement ?? false;
+    this.isInViewport = params.isInViewport ?? false;
     this.shadowRoot = params.shadowRoot ?? false;
-    this.highlightIndex = params.highlightIndex;
+    this.highlightIndex = params.highlightIndex ?? null;
     this.viewportCoordinates = params.viewportCoordinates;
     this.pageCoordinates = params.pageCoordinates;
     this.viewportInfo = params.viewportInfo;
+    this.isNew = params.isNew ?? null;
   }
 
   // Cache for the hash value
@@ -100,12 +125,12 @@ export class DOMElementNode extends DOMBaseNode {
     // If a calculation is in progress, reuse that promise
     if (!this._hashPromise) {
       this._hashPromise = HistoryTreeProcessor.hashDomElement(this)
-        .then(result => {
+        .then((result: HashedDomElement) => {
           this._hashedValue = result;
           this._hashPromise = undefined; // Clean up
           return result;
         })
-        .catch(error => {
+        .catch((error: Error) => {
           // Clear the promise reference to allow retry on next call
           this._hashPromise = undefined;
 
@@ -147,7 +172,7 @@ export class DOMElementNode extends DOMBaseNode {
       }
 
       // Skip this branch if we hit a highlighted element (except for the current node)
-      if (node instanceof DOMElementNode && node !== this && node.highlightIndex !== undefined) {
+      if (node instanceof DOMElementNode && node !== this && node.highlightIndex != null) {
         return;
       }
 
@@ -168,29 +193,89 @@ export class DOMElementNode extends DOMBaseNode {
     const formattedText: string[] = [];
 
     const processNode = (node: DOMBaseNode, depth: number): void => {
+      let nextDepth = depth;
+      const depthStr = '\t'.repeat(depth);
+
       if (node instanceof DOMElementNode) {
         // Add element with highlight_index
-        if (node.highlightIndex !== undefined) {
-          let attributesStr = '';
+        if (node.highlightIndex !== null) {
+          nextDepth += 1;
+
+          const text = node.getAllTextTillNextClickableElement();
+          let attributesHtmlStr = '';
+
           if (includeAttributes.length) {
-            attributesStr = ` ${includeAttributes
-              .map(key => (node.attributes[key] ? `${key}="${node.attributes[key]}"` : ''))
-              .filter(Boolean)
-              .join(' ')}`;
+            // Create a new object to store attributes
+            const attributesToInclude: Record<string, string> = {};
+
+            for (const key of includeAttributes) {
+              // Include the attribute even if it's an empty string
+              if (key in node.attributes) {
+                attributesToInclude[key] = String(node.attributes[key]);
+              }
+            }
+
+            // Easy LLM optimizations
+            // if tag == role attribute, don't include it
+            if (node.tagName === attributesToInclude.role) {
+              // Use null instead of delete
+              attributesToInclude.role = null as unknown as string;
+            }
+
+            // if aria-label == text of the node, don't include it
+            if ('aria-label' in attributesToInclude && attributesToInclude['aria-label'].trim() === text.trim()) {
+              // Use null instead of delete
+              attributesToInclude['aria-label'] = null as unknown as string;
+            }
+
+            // if placeholder == text of the node, don't include it
+            if ('placeholder' in attributesToInclude && attributesToInclude.placeholder.trim() === text.trim()) {
+              // Use null instead of delete
+              attributesToInclude.placeholder = null as unknown as string;
+            }
+
+            if (Object.keys(attributesToInclude).length > 0) {
+              // Format as key1='value1' key2='value2'
+              attributesHtmlStr = Object.entries(attributesToInclude)
+                .filter(([, value]) => value !== null)
+                .map(([key, value]) => `${key}='${value}'`)
+                .join(' ');
+            }
           }
 
-          formattedText.push(
-            `[${node.highlightIndex}]<${node.tagName}${attributesStr}>${node.getAllTextTillNextClickableElement()}</${node.tagName}>`,
-          );
+          // Build the line
+          const highlightIndicator = node.isNew ? `*[${node.highlightIndex}]*` : `[${node.highlightIndex}]`;
+
+          let line = `${depthStr}${highlightIndicator}<${node.tagName}`;
+
+          if (attributesHtmlStr) {
+            line += ` ${attributesHtmlStr}`;
+          }
+
+          if (text) {
+            // Add space before >text only if there were NO attributes added before
+            if (!attributesHtmlStr) {
+              line += ' ';
+            }
+            line += `>${text}`;
+          }
+          // Add space before /> only if neither attributes NOR text were added
+          else if (!attributesHtmlStr) {
+            line += ' ';
+          }
+
+          line += ' />'; // 1 token
+          formattedText.push(line);
         }
+
         // Process children regardless
         for (const child of node.children) {
-          processNode(child, depth + 1);
+          processNode(child, nextDepth);
         }
       } else if (node instanceof DOMTextNode) {
-        // Add text node only if it doesn't have a highlighted parent
-        if (!node.hasParentWithHighlightIndex()) {
-          formattedText.push(`[]${node.text}`);
+        // Add text only if it doesn't have a highlighted parent
+        if (!node.hasParentWithHighlightIndex() && node.parent && node.parent.isVisible && node.parent.isTopElement) {
+          formattedText.push(`${depthStr}${node.text}`);
         }
       }
     };
@@ -200,11 +285,12 @@ export class DOMElementNode extends DOMBaseNode {
   }
 
   getFileUploadElement(checkSiblings = true): DOMElementNode | null {
-    // biome-ignore lint/complexity/useLiteralKeys: <explanation>
-    if (this.tagName === 'input' && this.attributes['type'] === 'file') {
+    // Check if current element is a file input
+    if (this.tagName === 'input' && this.attributes?.type === 'file') {
       return this;
     }
 
+    // Check children
     for (const child of this.children) {
       if (child instanceof DOMElementNode) {
         const result = child.getFileUploadElement(false);
@@ -212,6 +298,7 @@ export class DOMElementNode extends DOMBaseNode {
       }
     }
 
+    // Check siblings only for the initial call
     if (checkSiblings && this.parent) {
       for (const sibling of this.parent.children) {
         if (sibling !== this && sibling instanceof DOMElementNode) {
@@ -245,10 +332,23 @@ export class DOMElementNode extends DOMBaseNode {
         continue;
       }
 
+      // Handle custom elements with colons by escaping them
+      if (part.includes(':') && !part.includes('[')) {
+        const basePart = part.replace(/:/g, '\\:');
+        cssParts.push(basePart);
+        continue;
+      }
+
       // Handle index notation [n]
       if (part.includes('[')) {
         const bracketIndex = part.indexOf('[');
         let basePart = part.substring(0, bracketIndex);
+
+        // Handle custom elements with colons in the base part
+        if (basePart.includes(':')) {
+          basePart = basePart.replace(/:/g, '\\:');
+        }
+
         const indexPart = part.substring(bracketIndex);
 
         // Handle multiple indices
@@ -299,14 +399,13 @@ export class DOMElementNode extends DOMBaseNode {
       let cssSelector = this.convertSimpleXPathToCssSelector(this.xpath);
 
       // Handle class attributes
-      // biome-ignore lint/complexity/useLiteralKeys: <explanation>
-      if (this.attributes['class'] && includeDynamicAttributes) {
+      const classValue = this.attributes.class;
+      if (classValue && includeDynamicAttributes) {
         // Define a regex pattern for valid class names in CSS
         const validClassNamePattern = /^[a-zA-Z_][a-zA-Z0-9_-]*$/;
 
         // Iterate through the class attribute values
-        // biome-ignore lint/complexity/useLiteralKeys: <explanation>s
-        const classes = this.attributes['class'].split(/\s+/);
+        const classes = classValue.trim().split(/\s+/);
         for (const className of classes) {
           // Skip empty class names
           if (!className.trim()) {
@@ -328,7 +427,6 @@ export class DOMElementNode extends DOMBaseNode {
         // Standard HTML attributes
         'name',
         'type',
-        'value',
         'placeholder',
         // Accessibility attributes
         'aria-label',
@@ -394,7 +492,7 @@ export class DOMElementNode extends DOMBaseNode {
     } catch (error) {
       // Fallback to a more basic selector if something goes wrong
       const tagName = this.tagName || '*';
-      return `${tagName}[highlight-index='${this.highlightIndex}']`;
+      return `${tagName}[highlightIndex='${this.highlightIndex}']`;
     }
   }
 }
@@ -404,10 +502,8 @@ export interface DOMState {
   selectorMap: Map<number, DOMElementNode>;
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export function domElementNodeToDict(elementTree: DOMBaseNode): any {
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  function nodeToDict(node: DOMBaseNode): any {
+export function domElementNodeToDict(elementTree: DOMBaseNode): unknown {
+  function nodeToDict(node: DOMBaseNode): unknown {
     if (node instanceof DOMTextNode) {
       return {
         type: 'text',
@@ -417,7 +513,7 @@ export function domElementNodeToDict(elementTree: DOMBaseNode): any {
     if (node instanceof DOMElementNode) {
       return {
         type: 'element',
-        tagName: node.tagName, // Note: using camelCase to match TypeScript conventions
+        tagName: node.tagName,
         attributes: node.attributes,
         highlightIndex: node.highlightIndex,
         children: node.children.map(child => nodeToDict(child)),
