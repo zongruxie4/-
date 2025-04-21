@@ -6,7 +6,7 @@ import { DOMHistoryElement, HashedDomElement } from './view';
  */
 export function convertDomElementToHistoryElement(domElement: DOMElementNode): DOMHistoryElement {
   const parentBranchPath = _getParentBranchPath(domElement);
-  const cssSelector = domElement.getAdvancedCssSelector();
+  const cssSelector = domElement.getEnhancedCssSelector();
   return new DOMHistoryElement(
     domElement.tagName ?? '', // Provide empty string as fallback
     domElement.xpath ?? '', // Provide empty string as fallback

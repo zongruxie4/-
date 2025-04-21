@@ -311,7 +311,7 @@ export class DOMElementNode extends DOMBaseNode {
     return null;
   }
 
-  getAdvancedCssSelector(): string {
+  getEnhancedCssSelector(): string {
     return this.enhancedCssSelectorForElement();
   }
 
