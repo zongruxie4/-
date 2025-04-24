@@ -1225,7 +1225,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             htmlFor={`${providerId}-base-url`}
                             className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                             {/* Adjust Label based on provider */}
-                            {providerConfig.type === ProviderTypeEnum.AzureOpenAI ? 'Endpoint*' : 'Base URL'}
+                            {providerConfig.type === ProviderTypeEnum.AzureOpenAI ? 'Endpoint' : 'Base URL'}
                             {/* Show asterisk only if required */}
                             {/* OpenRouter has a default, so not strictly required, but needed for save button */}
                             {providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
@@ -1265,27 +1265,23 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         <div className="flex-1 space-y-2">
                           <div
                             className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} p-2`}>
-                            {/* Show azure deployments or empty message */}
-                            {(providerConfig.azureDeploymentNames || []).length > 0 ? (
-                              (providerConfig.azureDeploymentNames || []).map((deploymentName: string) => (
-                                <div
-                                  key={deploymentName}
-                                  className={`flex items-center rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'} px-2 py-1 text-sm`}>
-                                  <span>{deploymentName}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeAzureDeployment(providerId, deploymentName)}
-                                    className={`ml-1 font-bold ${isDarkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
-                                    aria-label={`Remove ${deploymentName}`}>
-                                    ×
-                                  </button>
-                                </div>
-                              ))
-                            ) : (
-                              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                No deployment names set. Add model names below.
-                              </span>
-                            )}
+                            {/* Show azure deployments */}
+                            {(providerConfig.azureDeploymentNames || []).length > 0
+                              ? (providerConfig.azureDeploymentNames || []).map((deploymentName: string) => (
+                                  <div
+                                    key={deploymentName}
+                                    className={`flex items-center rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'} px-2 py-1 text-sm`}>
+                                    <span>{deploymentName}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeAzureDeployment(providerId, deploymentName)}
+                                      className={`ml-1 font-bold ${isDarkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
+                                      aria-label={`Remove ${deploymentName}`}>
+                                      ×
+                                    </button>
+                                  </div>
+                                ))
+                              : null}
                             <input
                               id={`${providerId}-azure-deployment-input`}
                               type="text"
@@ -1310,7 +1306,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             />
                           </div>
                           <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            Type model name and press Enter or Space to set.
+                            Type model name and press Enter or Space to set. Deployment name should match OpenAI model
+                            name (e.g., gpt-4o) for best compatibility.
                           </p>
                         </div>
                       </div>
