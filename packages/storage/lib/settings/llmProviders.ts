@@ -44,6 +44,17 @@ const storage = createStorage<LLMKeyRecord>(
 // Helper function to determine provider type from provider name
 // Make sure to update this function if you add a new provider type
 export function getProviderTypeByProviderId(providerId: string): ProviderTypeEnum {
+  // Check if this is an Azure provider (either the main one or one with a custom ID)
+  if (providerId === ProviderTypeEnum.AzureOpenAI) {
+    return ProviderTypeEnum.AzureOpenAI;
+  }
+
+  // Handle custom Azure providers with IDs like azure_openai_2
+  if (typeof providerId === 'string' && providerId.startsWith(`${ProviderTypeEnum.AzureOpenAI}_`)) {
+    return ProviderTypeEnum.AzureOpenAI;
+  }
+
+  // Handle standard provider types
   switch (providerId) {
     case ProviderTypeEnum.OpenAI:
     case ProviderTypeEnum.Anthropic:
@@ -51,7 +62,6 @@ export function getProviderTypeByProviderId(providerId: string): ProviderTypeEnu
     case ProviderTypeEnum.Gemini:
     case ProviderTypeEnum.Grok:
     case ProviderTypeEnum.Ollama:
-    case ProviderTypeEnum.AzureOpenAI:
     case ProviderTypeEnum.OpenRouter:
       return providerId;
     default:

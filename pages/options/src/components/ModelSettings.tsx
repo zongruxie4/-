@@ -906,7 +906,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
     // Sort the filtered providers
     return filteredProviders.sort(([keyA, configA], [keyB, configB]) => {
-      // First, separate newly added providers from stored providers
+      // Separate newly added providers from stored providers
       const isNewA = !providersFromStorage.has(keyA) && modifiedProviders.has(keyA);
       const isNewB = !providersFromStorage.has(keyB) && modifiedProviders.has(keyB);
 
@@ -950,8 +950,48 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       return;
     }
 
+    // Handle Azure OpenAI specially to allow multiple instances
+    if (providerType === ProviderTypeEnum.AzureOpenAI) {
+      addAzureProvider();
+      return;
+    }
+
     // Handle built-in supported providers
     addBuiltInProvider(providerType);
+  };
+
+  // New function to add Azure providers with unique IDs
+  const addAzureProvider = () => {
+    // Count existing Azure providers
+    const azureProviders = Object.keys(providers).filter(
+      key => key === ProviderTypeEnum.AzureOpenAI || key.startsWith(ProviderTypeEnum.AzureOpenAI + '_'),
+    );
+    const nextNumber = azureProviders.length + 1;
+
+    // Create unique ID
+    const providerId =
+      nextNumber === 1 ? ProviderTypeEnum.AzureOpenAI : `${ProviderTypeEnum.AzureOpenAI}_${nextNumber}`;
+
+    // Create config with appropriate name
+    const config = getDefaultProviderConfig(ProviderTypeEnum.AzureOpenAI);
+    config.name = `Azure OpenAI ${nextNumber}`;
+
+    // Add to providers
+    setProviders(prev => ({
+      ...prev,
+      [providerId]: config,
+    }));
+
+    setModifiedProviders(prev => new Set(prev).add(providerId));
+    newlyAddedProviderRef.current = providerId;
+
+    // Scroll to the newly added provider after render
+    setTimeout(() => {
+      const providerElement = document.getElementById(`provider-${providerId}`);
+      if (providerElement) {
+        providerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const getProviderForModel = (modelName: string): string => {
@@ -1480,12 +1520,13 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                 <div className="py-1">
                   {/* Map through provider types to create buttons */}
                   {Object.values(ProviderTypeEnum)
-                    // Filter out CustomOpenAI and already added providers
+                    // Allow Azure to appear multiple times, but filter out other already added providers
                     .filter(
                       type =>
-                        type !== ProviderTypeEnum.CustomOpenAI &&
-                        !providersFromStorage.has(type) &&
-                        !modifiedProviders.has(type),
+                        type === ProviderTypeEnum.AzureOpenAI || // Always show Azure
+                        (type !== ProviderTypeEnum.CustomOpenAI &&
+                          !providersFromStorage.has(type) &&
+                          !modifiedProviders.has(type)),
                     )
                     .map(type => (
                       <button

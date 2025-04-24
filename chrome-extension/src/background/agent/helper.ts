@@ -103,10 +103,18 @@ function extractInstanceNameFromUrl(url: string): string | null {
   return null;
 }
 
+// Function to check if a provider ID is an Azure provider
+function isAzureProvider(providerId: string): boolean {
+  return providerId === ProviderTypeEnum.AzureOpenAI || providerId.startsWith(`${ProviderTypeEnum.AzureOpenAI}_`);
+}
+
 // create a chat model based on the agent name, the model name and provider
 export function createChatModel(providerConfig: ProviderConfig, modelConfig: ModelConfig): BaseChatModel {
   const temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
   const topP = (modelConfig.parameters?.topP ?? 0.1) as number;
+
+  // Check if the provider is an Azure provider with a custom ID (e.g. azure_openai_2)
+  const isAzure = isAzureProvider(modelConfig.provider);
 
   switch (modelConfig.provider) {
     case ProviderTypeEnum.OpenAI: {
@@ -254,7 +262,73 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
       });
     }
     default: {
-      // Handles CustomOpenAI
+      // Check if this is a custom Azure provider (azure_openai_X)
+      if (isAzure) {
+        // Validate necessary fields first
+        if (
+          !providerConfig.baseUrl ||
+          !providerConfig.azureDeploymentNames ||
+          providerConfig.azureDeploymentNames.length === 0 ||
+          !providerConfig.azureApiVersion ||
+          !providerConfig.apiKey
+        ) {
+          throw new Error(
+            'Azure configuration is incomplete. Endpoint, Deployment Name, API Version, and API Key are required. Please check settings.',
+          );
+        }
+
+        // Instead of always using the first deployment name, use the model name from modelConfig
+        // which contains the actual model selected in the UI
+        const deploymentName = modelConfig.modelName;
+
+        // Validate that the selected model exists in the configured deployments
+        if (!providerConfig.azureDeploymentNames.includes(deploymentName)) {
+          console.warn(
+            `[createChatModel] Selected deployment "${deploymentName}" not found in available deployments. ` +
+              `Available: ${JSON.stringify(providerConfig.azureDeploymentNames)}. Using the model anyway.`,
+          );
+        }
+
+        // Extract instance name from the endpoint URL
+        const instanceName = extractInstanceNameFromUrl(providerConfig.baseUrl);
+        if (!instanceName) {
+          throw new Error(
+            `Could not extract Instance Name from Azure Endpoint URL: ${providerConfig.baseUrl}. Expected format like https://<your-instance-name>.openai.azure.com/`,
+          );
+        }
+
+        // Check if the Azure deployment is using an "o" series model (GPT-4o, etc.)
+        const isOSeriesModel = isOpenAIOModel(deploymentName);
+
+        // Use AzureChatOpenAI with specific parameters
+        const args = {
+          azureOpenAIApiInstanceName: instanceName, // Derived from endpoint
+          azureOpenAIApiDeploymentName: deploymentName,
+          azureOpenAIApiKey: providerConfig.apiKey,
+          azureOpenAIApiVersion: providerConfig.azureApiVersion,
+          // For Azure, the model name should be the deployment name itself
+          model: deploymentName, // Set model = deployment name to fix Azure requests
+          // For O series models, use modelKwargs instead of temperature/topP
+          ...(isOSeriesModel
+            ? {
+                modelKwargs: {
+                  max_completion_tokens: maxTokens,
+                  // Add reasoning_effort parameter for Azure o-series models if specified
+                  ...(modelConfig.reasoningEffort ? { reasoning_effort: modelConfig.reasoningEffort } : {}),
+                },
+              }
+            : {
+                temperature,
+                topP,
+                maxTokens,
+              }),
+          // DO NOT pass baseUrl or configuration here
+        };
+        console.log('[createChatModel] Azure args (custom ID) passed to AzureChatOpenAI:', args);
+        return new AzureChatOpenAI(args);
+      }
+
+      // If not Azure, handles CustomOpenAI
       // by default, we think it's a openai-compatible provider
       // Pass undefined for extraFetchOptions for default/custom cases
       console.log('[createChatModel] Calling createOpenAIChatModel for default/custom provider');
