@@ -141,7 +141,6 @@ export type WrappedActionResult = ActionResult & {
 };
 
 export const agentBrainSchema = z.object({
-  page_summary: z.string(),
   evaluation_previous_goal: z.string(),
   memory: z.string(),
   next_goal: z.string(),

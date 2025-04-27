@@ -2,7 +2,6 @@ import { ActionResult, type AgentContext } from '@src/background/agent/types';
 import {
   clickElementActionSchema,
   doneActionSchema,
-  extractContentActionSchema,
   goBackActionSchema,
   goToUrlActionSchema,
   inputTextActionSchema,
@@ -17,11 +16,11 @@ import {
   cacheContentActionSchema,
   selectDropdownOptionActionSchema,
   getDropdownOptionsActionSchema,
+  closeTabActionSchema,
+  waitActionSchema,
 } from './schemas';
 import { z } from 'zod';
 import { createLogger } from '@src/background/log';
-import { PromptTemplate } from '@langchain/core/prompts';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ExecutionState, Actors } from '../event/types';
 
 const logger = createLogger('Action');
@@ -140,10 +139,10 @@ export class ActionBuilder {
     }, doneActionSchema);
     actions.push(done);
 
-    const searchGoogle = new Action(async (input: { query: string }) => {
+    const searchGoogle = new Action(async (input: z.infer<typeof searchGoogleActionSchema.schema>) => {
       const context = this.context;
-      const msg = `Searching for "${input.query}" in Google`;
-      context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, msg);
+      const intent = input.intent || `Searching for "${input.query}" in Google`;
+      context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       await context.browserContext.navigateTo(`https://www.google.com/search?q=${input.query}`);
 
@@ -156,9 +155,9 @@ export class ActionBuilder {
     }, searchGoogleActionSchema);
     actions.push(searchGoogle);
 
-    const goToUrl = new Action(async (input: { url: string }) => {
-      const msg = `Navigating to ${input.url}`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, msg);
+    const goToUrl = new Action(async (input: z.infer<typeof goToUrlActionSchema.schema>) => {
+      const intent = input.intent || `Navigating to ${input.url}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       await this.context.browserContext.navigateTo(input.url);
       const msg2 = `Navigated to ${input.url}`;
@@ -171,9 +170,9 @@ export class ActionBuilder {
     actions.push(goToUrl);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const goBack = new Action(async (_input = {}) => {
-      const msg = 'Navigating back';
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, msg);
+    const goBack = new Action(async (input: z.infer<typeof goBackActionSchema.schema>) => {
+      const intent = input.intent || 'Navigating back';
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const page = await this.context.browserContext.getCurrentPage();
       await page.goBack();
@@ -186,11 +185,30 @@ export class ActionBuilder {
     }, goBackActionSchema);
     actions.push(goBack);
 
+    // # wait for x seconds
+    // @self.registry.action('Wait for x seconds default 3')
+    // async def wait(seconds: int = 3):
+    // 	msg = f'🕒  Waiting for {seconds} seconds'
+    // 	logger.info(msg)
+    // 	await asyncio.sleep(seconds)
+    // 	return ActionResult(extracted_content=msg, include_in_memory=True)
+
+    const wait = new Action(async (input: z.infer<typeof waitActionSchema.schema>) => {
+      const seconds = input.seconds || 3;
+      const intent = input.intent || `Waiting for ${seconds} seconds`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+      await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+      const msg = `${seconds} seconds elapsed`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+      return new ActionResult({ extractedContent: msg, includeInMemory: true });
+    }, waitActionSchema);
+    actions.push(wait);
+
     // Element Interaction Actions
     const clickElement = new Action(
       async (input: z.infer<typeof clickElementActionSchema.schema>) => {
-        const todo = input.desc || `Click element with index ${input.index}`;
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+        const intent = input.intent || `Click element with index ${input.index}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         const page = await this.context.browserContext.getCurrentPage();
         const state = await page.getState();
@@ -245,8 +263,8 @@ export class ActionBuilder {
 
     const inputText = new Action(
       async (input: z.infer<typeof inputTextActionSchema.schema>) => {
-        const todo = input.desc || `Input text into index ${input.index}`;
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+        const intent = input.intent || `Input text into index ${input.index}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         const page = await this.context.browserContext.getCurrentPage();
         const state = await page.getState();
@@ -268,7 +286,8 @@ export class ActionBuilder {
 
     // Tab Management Actions
     const switchTab = new Action(async (input: z.infer<typeof switchTabActionSchema.schema>) => {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, `Switching to tab ${input.tab_id}`);
+      const intent = input.intent || `Switching to tab ${input.tab_id}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
       await this.context.browserContext.switchTab(input.tab_id);
       const msg = `Switched to tab ${input.tab_id}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
@@ -277,7 +296,8 @@ export class ActionBuilder {
     actions.push(switchTab);
 
     const openTab = new Action(async (input: z.infer<typeof openTabActionSchema.schema>) => {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, `Opening ${input.url} in new tab`);
+      const intent = input.intent || `Opening ${input.url} in new tab`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
       await this.context.browserContext.openTab(input.url);
       const msg = `Opened ${input.url} in new tab`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
@@ -285,39 +305,52 @@ export class ActionBuilder {
     }, openTabActionSchema);
     actions.push(openTab);
 
+    const closeTab = new Action(async (input: z.infer<typeof closeTabActionSchema.schema>) => {
+      const intent = input.intent || `Closing tab ${input.tab_id}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+      await this.context.browserContext.closeTab(input.tab_id);
+      const msg = `Closed tab ${input.tab_id}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+      return new ActionResult({ extractedContent: msg, includeInMemory: true });
+    }, closeTabActionSchema);
+    actions.push(closeTab);
+
     // Content Actions
     // TODO: this is not used currently, need to improve on input size
-    const extractContent = new Action(async (input: z.infer<typeof extractContentActionSchema.schema>) => {
-      const goal = input.goal;
-      const page = await this.context.browserContext.getCurrentPage();
-      const content = await page.getReadabilityContent();
-      const promptTemplate = PromptTemplate.fromTemplate(
-        'Your task is to extract the content of the page. You will be given a page and a goal and you should extract all relevant information around this goal from the page. If the goal is vague, summarize the page. Respond in json format. Extraction goal: {goal}, Page: {page}',
-      );
-      const prompt = await promptTemplate.invoke({ goal, page: content.content });
+    // const extractContent = new Action(async (input: z.infer<typeof extractContentActionSchema.schema>) => {
+    //   const goal = input.goal;
+    //   const intent = input.intent || `Extracting content from page`;
+    //   this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+    //   const page = await this.context.browserContext.getCurrentPage();
+    //   const content = await page.getReadabilityContent();
+    //   const promptTemplate = PromptTemplate.fromTemplate(
+    //     'Your task is to extract the content of the page. You will be given a page and a goal and you should extract all relevant information around this goal from the page. If the goal is vague, summarize the page. Respond in json format. Extraction goal: {goal}, Page: {page}',
+    //   );
+    //   const prompt = await promptTemplate.invoke({ goal, page: content.content });
 
-      try {
-        const output = await this.extractorLLM.invoke(prompt);
-        const msg = `📄  Extracted from page\n: ${output.content}\n`;
-        return new ActionResult({
-          extractedContent: msg,
-          includeInMemory: true,
-        });
-      } catch (error) {
-        logger.error(`Error extracting content: ${error instanceof Error ? error.message : String(error)}`);
-        const msg =
-          'Failed to extract content from page, you need to extract content from the current state of the page and store it in the memory. Then scroll down if you still need more information.';
-        return new ActionResult({
-          extractedContent: msg,
-          includeInMemory: true,
-        });
-      }
-    }, extractContentActionSchema);
-    actions.push(extractContent);
+    //   try {
+    //     const output = await this.extractorLLM.invoke(prompt);
+    //     const msg = `📄  Extracted from page\n: ${output.content}\n`;
+    //     return new ActionResult({
+    //       extractedContent: msg,
+    //       includeInMemory: true,
+    //     });
+    //   } catch (error) {
+    //     logger.error(`Error extracting content: ${error instanceof Error ? error.message : String(error)}`);
+    //     const msg =
+    //       'Failed to extract content from page, you need to extract content from the current state of the page and store it in the memory. Then scroll down if you still need more information.';
+    //     return new ActionResult({
+    //       extractedContent: msg,
+    //       includeInMemory: true,
+    //     });
+    //   }
+    // }, extractContentActionSchema);
+    // actions.push(extractContent);
 
     // cache content for future use
     const cacheContent = new Action(async (input: z.infer<typeof cacheContentActionSchema.schema>) => {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, cacheContentActionSchema.name);
+      const intent = input.intent || `Caching findings: ${input.content}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const msg = `Cached findings: ${input.content}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
@@ -326,12 +359,13 @@ export class ActionBuilder {
     actions.push(cacheContent);
 
     const scrollDown = new Action(async (input: z.infer<typeof scrollDownActionSchema.schema>) => {
-      const todo = input.desc || 'Scroll down the page';
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+      const amount = input.amount !== undefined && input.amount !== null ? `${input.amount} pixels` : 'one page';
+      const intent = input.intent || `Scroll down the page by ${amount}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const page = await this.context.browserContext.getCurrentPage();
       await page.scrollDown(input.amount);
-      const amount = input.amount !== undefined ? `${input.amount} pixels` : 'one page';
+
       const msg = `Scrolled down the page by ${amount}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
@@ -339,12 +373,12 @@ export class ActionBuilder {
     actions.push(scrollDown);
 
     const scrollUp = new Action(async (input: z.infer<typeof scrollUpActionSchema.schema>) => {
-      const todo = input.desc || 'Scroll up the page';
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+      const amount = input.amount !== undefined && input.amount !== null ? `${input.amount} pixels` : 'one page';
+      const intent = input.intent || `Scroll up the page by ${amount}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const page = await this.context.browserContext.getCurrentPage();
       await page.scrollUp(input.amount);
-      const amount = input.amount !== undefined ? `${input.amount} pixels` : 'one page';
       const msg = `Scrolled up the page by ${amount}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
@@ -353,8 +387,8 @@ export class ActionBuilder {
 
     // Keyboard Actions
     const sendKeys = new Action(async (input: z.infer<typeof sendKeysActionSchema.schema>) => {
-      const todo = input.desc || `Send keys: ${input.keys}`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+      const intent = input.intent || `Send keys: ${input.keys}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const page = await this.context.browserContext.getCurrentPage();
       await page.sendKeys(input.keys);
@@ -365,8 +399,8 @@ export class ActionBuilder {
     actions.push(sendKeys);
 
     const scrollToText = new Action(async (input: z.infer<typeof scrollToTextActionSchema.schema>) => {
-      const todo = input.desc || `Scroll to text: ${input.text}`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+      const intent = input.intent || `Scroll to text: ${input.text}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const page = await this.context.browserContext.getCurrentPage();
       try {
@@ -387,8 +421,8 @@ export class ActionBuilder {
     // Get all options from a native dropdown
     const getDropdownOptions = new Action(
       async (input: z.infer<typeof getDropdownOptionsActionSchema.schema>) => {
-        const todo = `Getting options from dropdown with index ${input.index}`;
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+        const intent = input.intent || `Getting options from dropdown with index ${input.index}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         const page = await this.context.browserContext.getCurrentPage();
         const state = await page.getState();
@@ -457,8 +491,8 @@ export class ActionBuilder {
     // Select dropdown option for interactive element index by the text of the option you want to select'
     const selectDropdownOption = new Action(
       async (input: z.infer<typeof selectDropdownOptionActionSchema.schema>) => {
-        const todo = `Select option "${input.text}" from dropdown with index ${input.index}`;
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, todo);
+        const intent = input.intent || `Select option "${input.text}" from dropdown with index ${input.index}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         const page = await this.context.browserContext.getCurrentPage();
         const state = await page.getState();
@@ -514,8 +548,4 @@ export class ActionBuilder {
 
     return actions;
   }
-
-  // Get all options from a native dropdown
-
-  // Select dropdown option for interactive element index by the text of the option you want to select'
 }

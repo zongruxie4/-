@@ -240,3 +240,43 @@ function processProperty(property: JsonSchemaObject, definitions: Record<string,
 
   return result;
 }
+
+export type JSONSchemaType = JsonSchemaObject | JSONSchemaType[];
+// Custom stringify function
+export function stringifyCustom(value: JSONSchemaType, indent = '', baseIndent = '  '): string {
+  const currentIndent = indent + baseIndent;
+  if (value === null) {
+    return 'null';
+  }
+  switch (typeof value) {
+    case 'string':
+      // Escape single quotes within the string if necessary
+      return `'${value.replace(/'/g, "\\\\'")}'`;
+    case 'number':
+    case 'boolean':
+      return String(value);
+    case 'object': {
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          return '[]';
+        }
+        const items = value.map(item => `${currentIndent}${stringifyCustom(item, currentIndent, baseIndent)}`);
+        return `[\n${items.join(',\n')}\n${indent}]`;
+      }
+      const keys = Object.keys(value);
+      if (keys.length === 0) {
+        return '{}';
+      }
+      const properties = keys.map(key => {
+        // Assume keys are valid JS identifiers and don't need quotes
+        const formattedKey = key;
+        const formattedValue = stringifyCustom(value[key], currentIndent, baseIndent);
+        return `${currentIndent}${formattedKey}: ${formattedValue}`;
+      });
+      return `{\n${properties.join(',\n')}\n${indent}}`;
+    }
+    default:
+      // Handle undefined, etc.
+      return 'undefined';
+  }
+}

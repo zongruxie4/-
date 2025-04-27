@@ -245,6 +245,11 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     this.context.stateMessageAdded = false;
   }
 
+  private async addModelOutputToMemory(modelOutput: this['ModelOutput']) {
+    const messageManager = this.context.messageManager;
+    messageManager.addModelOutput(modelOutput);
+  }
+
   private async doMultiAction(response: this['ModelOutput']): Promise<ActionResult[]> {
     const results: ActionResult[] = [];
     let errCount = 0;
