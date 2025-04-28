@@ -41,6 +41,7 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
     'value',
     'alt',
     'aria-expanded',
+    'data-date-format',
   ],
   planningInterval: 3,
 };

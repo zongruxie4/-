@@ -82,6 +82,7 @@ export async function getClickableElements(
   highlightElements = true,
   focusElement = -1,
   viewportExpansion = 0,
+  debugMode = false,
 ): Promise<DOMState> {
   const [elementTree, selectorMap] = await _buildDomTree(
     tabId,
@@ -89,6 +90,7 @@ export async function getClickableElements(
     highlightElements,
     focusElement,
     viewportExpansion,
+    debugMode,
   );
   return { elementTree, selectorMap };
 }
@@ -243,7 +245,7 @@ export function _parse_node(nodeData: RawDomTreeNode): [DOMBaseNode | null, stri
     isInteractive: elementData.isInteractive ?? false,
     isTopElement: elementData.isTopElement ?? false,
     isInViewport: elementData.isInViewport ?? false,
-    highlightIndex: elementData.highlightIndex,
+    highlightIndex: elementData.highlightIndex ?? null,
     shadowRoot: elementData.shadowRoot ?? false,
     parent: null,
     viewportInfo: viewportInfo,

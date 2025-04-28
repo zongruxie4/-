@@ -185,14 +185,6 @@ export class ActionBuilder {
     }, goBackActionSchema);
     actions.push(goBack);
 
-    // # wait for x seconds
-    // @self.registry.action('Wait for x seconds default 3')
-    // async def wait(seconds: int = 3):
-    // 	msg = f'🕒  Waiting for {seconds} seconds'
-    // 	logger.info(msg)
-    // 	await asyncio.sleep(seconds)
-    // 	return ActionResult(extracted_content=msg, include_in_memory=True)
-
     const wait = new Action(async (input: z.infer<typeof waitActionSchema.schema>) => {
       const seconds = input.seconds || 3;
       const intent = input.intent || `Waiting for ${seconds} seconds`;
@@ -219,7 +211,7 @@ export class ActionBuilder {
         }
 
         // Check if element is a file uploader
-        if (await page.isFileUploader(elementNode)) {
+        if (page.isFileUploader(elementNode)) {
           const msg = `Index ${input.index} - has an element which opens file upload dialog. To upload files please use a specific function to upload files`;
           logger.info(msg);
           return new ActionResult({

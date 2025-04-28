@@ -800,7 +800,7 @@ export default class Page {
 
     try {
       // Highlight before typing
-      // if (elementNode.highlightIndex !== undefined && elementNode.highlightIndex !== null) {
+      // if (elementNode.highlightIndex != null) {
       //   await this._updateState(useVision, elementNode.highlightIndex);
       // }
 
@@ -983,7 +983,7 @@ export default class Page {
 
     try {
       // Highlight before clicking
-      // if (elementNode.highlightIndex !== undefined && elementNode.highlightIndex !== null) {
+      // if (elementNode.highlightIndex !== null) {
       //   await this._updateState(useVision, elementNode.highlightIndex);
       // }
 

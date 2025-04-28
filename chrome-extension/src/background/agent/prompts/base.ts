@@ -75,20 +75,22 @@ abstract class BasePrompt {
       }
     }
 
-    const stateDescription = `
-    [Task history memory ends]
-    [Current state starts here]
-    The following is one-time information - if you need to remember it write it to memory:
-    Current tab: {id: ${browserState.tabId}, url: ${browserState.url}, title: ${browserState.title}}
-    Other available tabs:
-    ${browserState.tabs
+    const currentTab = `{id: ${browserState.tabId}, url: ${browserState.url}, title: ${browserState.title}}`;
+    const otherTabs = browserState.tabs
       .filter(tab => tab.id !== browserState.tabId)
-      .map(tab => ` - {id: ${tab.id}, url: ${tab.url}, title: ${tab.title}}`)
-      .join('\n')}
-    Interactive elements from top layer of the current page inside the viewport:
-    ${formattedElementsText}
-    ${stepInfoDescription}
-    ${actionResultsDescription}`;
+      .map(tab => `- {id: ${tab.id}, url: ${tab.url}, title: ${tab.title}}`);
+    const stateDescription = `
+[Task history memory ends]
+[Current state starts here]
+The following is one-time information - if you need to remember it write it to memory:
+Current tab: ${currentTab}
+Other available tabs:
+  ${otherTabs.join('\n')}
+Interactive elements from top layer of the current page inside the viewport:
+${formattedElementsText}
+${stepInfoDescription}
+${actionResultsDescription}
+`;
 
     if (browserState.screenshot && context.options.useVision) {
       return new HumanMessage({

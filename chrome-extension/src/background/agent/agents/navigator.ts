@@ -139,6 +139,8 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
       // call the model to get the actions to take
       const inputMessages = messageManager.getMessages();
+      // logger.info('Navigator input messages', inputMessages);
+
       const modelOutput = await this.invoke(inputMessages);
 
       // check if the task is paused or stopped

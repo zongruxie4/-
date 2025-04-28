@@ -88,27 +88,24 @@ export const jsonNavigatorOutputSchema = {
             type: 'object',
             nullable: true,
           },
-          // wait: {
-          //   properties: {
-          //     intent: {
-          //       title: 'Intent',
-          //       type: 'string',
-          //       description: 'purpose of this action'
-          //     },
-          //     seconds: {
-          //       title: 'Seconds',
-          //       type: 'integer',
-          //       default: 3
-          //     }
-          //   },
-          //   required: [
-          //     'intent',
-          //     'seconds'
-          //   ],
-          //   title: 'WaitAction',
-          //   type: 'object',
-          //   nullable: true
-          // },
+          wait: {
+            properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
+              seconds: {
+                title: 'Seconds',
+                type: 'integer',
+                default: 3,
+              },
+            },
+            required: ['intent', 'seconds'],
+            title: 'WaitAction',
+            type: 'object',
+            nullable: true,
+          },
           click_element: {
             properties: {
               intent: {

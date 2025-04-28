@@ -24,7 +24,7 @@ export class DOMTextNode extends DOMBaseNode {
   hasParentWithHighlightIndex(): boolean {
     let current = this.parent;
     while (current != null) {
-      if (current.highlightIndex !== undefined) {
+      if (current.highlightIndex !== null) {
         return true;
       }
       current = current.parent;
@@ -172,7 +172,7 @@ export class DOMElementNode extends DOMBaseNode {
       }
 
       // Skip this branch if we hit a highlighted element (except for the current node)
-      if (node instanceof DOMElementNode && node !== this && node.highlightIndex != null) {
+      if (node instanceof DOMElementNode && node !== this && node.highlightIndex !== null) {
         return;
       }
 

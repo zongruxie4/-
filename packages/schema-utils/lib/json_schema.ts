@@ -56,17 +56,17 @@ export const jsonNavigatorOutputSchema = {
           ],
           description: 'Go back to previous page',
         },
-        // wait: {
-        //   anyOf: [
-        //     {
-        //       $ref: '#/$defs/WaitAction',
-        //     },
-        //     {
-        //       type: 'null',
-        //     },
-        //   ],
-        //   description: 'Wait for x seconds default 3',
-        // },
+        wait: {
+          anyOf: [
+            {
+              $ref: '#/$defs/WaitAction',
+            },
+            {
+              type: 'null',
+            },
+          ],
+          description: 'Wait for x seconds default 3',
+        },
         click_element: {
           anyOf: [
             {
