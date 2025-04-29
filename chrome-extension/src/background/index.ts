@@ -6,6 +6,7 @@ import { createLogger } from './log';
 import { ExecutionState } from './agent/event/types';
 import { createChatModel } from './agent/helper';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { DEFAULT_AGENT_OPTIONS } from './agent/types';
 
 const logger = createLogger('background');
 
@@ -126,14 +127,6 @@ chrome.runtime.onConnect.addListener(port => {
             break;
           }
 
-          case 'screenshot': {
-            if (!message.tabId) return port.postMessage({ type: 'error', error: 'No tab ID provided' });
-            const page = await browserContext.switchTab(message.tabId);
-            const screenshot = await page.takeScreenshot();
-            logger.info('screenshot', message.tabId, screenshot);
-            return port.postMessage({ type: 'success', screenshot });
-          }
-
           case 'resume_task': {
             if (!currentExecutor) return port.postMessage({ type: 'error', error: 'No task to resume' });
             await currentExecutor.resume();
@@ -145,6 +138,37 @@ chrome.runtime.onConnect.addListener(port => {
             await currentExecutor.pause();
             return port.postMessage({ type: 'success' });
           }
+
+          case 'screenshot': {
+            if (!message.tabId) return port.postMessage({ type: 'error', error: 'No tab ID provided' });
+            const page = await browserContext.switchTab(message.tabId);
+            const screenshot = await page.takeScreenshot();
+            logger.info('screenshot', message.tabId, screenshot);
+            return port.postMessage({ type: 'success', screenshot });
+          }
+
+          case 'state': {
+            try {
+              const browserState = await browserContext.getState();
+              const elementsText = browserState.elementTree.clickableElementsToString(
+                DEFAULT_AGENT_OPTIONS.includeAttributes,
+              );
+
+              logger.info('state', browserState);
+              logger.info('interactive elements', elementsText);
+              return port.postMessage({ type: 'success', msg: 'State printed to console' });
+            } catch (error) {
+              logger.error('Failed to get state:', error);
+              return port.postMessage({ type: 'error', error: 'Failed to get state' });
+            }
+          }
+
+          case 'nohighlight': {
+            const page = await browserContext.getCurrentPage();
+            await page.removeHighlight();
+            return port.postMessage({ type: 'success', msg: 'highlight removed' });
+          }
+
           default:
             return port.postMessage({ type: 'error', error: 'Unknown message type' });
         }
