@@ -1,5 +1,5 @@
 import 'webextension-polyfill';
-import { type BrowserContextConfig, type BrowserState, DEFAULT_BROWSER_CONTEXT_CONFIG, type TabInfo } from './types';
+import { type BrowserContextConfig, type BrowserState, DEFAULT_BROWSER_CONTEXT_CONFIG, type TabInfo } from './views';
 import Page, { build_initial_state } from './page';
 import { createLogger } from '@src/background/log';
 

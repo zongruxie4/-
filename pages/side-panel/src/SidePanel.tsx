@@ -302,10 +302,64 @@ const SidePanel = () => {
     [stopConnection],
   );
 
+  // Handle chat commands that start with /
+  const handleCommand = async (command: string): Promise<boolean> => {
+    try {
+      // Setup connection if not exists
+      if (!portRef.current) {
+        setupConnection();
+      }
+
+      // Handle different commands
+      if (command === '/state') {
+        // Send state command to background
+        portRef.current?.postMessage({
+          type: 'state',
+        });
+        return true;
+      }
+
+      if (command === '/nohighlight') {
+        // Send remove_highlight command to background
+        portRef.current?.postMessage({
+          type: 'nohighlight',
+        });
+        return true;
+      }
+
+      // Unsupported command
+      appendMessage({
+        actor: Actors.SYSTEM,
+        content: `Unsupported command: ${command}. Available commands: /state, /nohighlight`,
+        timestamp: Date.now(),
+      });
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error('Command error', errorMessage);
+      appendMessage({
+        actor: Actors.SYSTEM,
+        content: errorMessage,
+        timestamp: Date.now(),
+      });
+      return true;
+    }
+  };
+
   const handleSendMessage = async (text: string) => {
     console.log('handleSendMessage', text);
 
-    if (!text.trim()) return;
+    // Trim the input text first
+    const trimmedText = text.trim();
+
+    if (!trimmedText) return;
+
+    // Check if the input is a command (starts with /)
+    if (trimmedText.startsWith('/')) {
+      // Process command and return if it was handled
+      const wasHandled = await handleCommand(trimmedText);
+      if (wasHandled) return;
+    }
 
     // Block sending messages in historical sessions
     if (isHistoricalSession) {

@@ -5,12 +5,8 @@ export const jsonNavigatorOutputSchema = {
     current_state: {
       description: 'Current state of the agent',
       properties: {
-        page_summary: {
-          title: 'Page Summary',
-          type: 'string',
-        },
         evaluation_previous_goal: {
-          title: 'Evaluation Previous Goal',
+          title: 'Evaluation of previous goal',
           type: 'string',
         },
         memory: {
@@ -22,7 +18,7 @@ export const jsonNavigatorOutputSchema = {
           type: 'string',
         },
       },
-      required: ['page_summary', 'evaluation_previous_goal', 'memory', 'next_goal'],
+      required: ['evaluation_previous_goal', 'memory', 'next_goal'],
       title: 'AgentBrain',
       type: 'object',
     },
@@ -35,73 +31,108 @@ export const jsonNavigatorOutputSchema = {
                 title: 'Text',
                 type: 'string',
               },
+              success: {
+                title: 'Success',
+                type: 'boolean',
+              },
             },
-            required: ['text'],
+            required: ['text', 'success'],
             title: 'DoneAction',
             type: 'object',
             nullable: true,
           },
           search_google: {
             properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
               query: {
                 title: 'Query',
                 type: 'string',
               },
             },
-            required: ['query'],
+            required: ['intent', 'query'],
             title: 'SearchGoogleAction',
             type: 'object',
             nullable: true,
           },
           go_to_url: {
             properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
               url: {
                 title: 'Url',
                 type: 'string',
               },
             },
-            required: ['url'],
+            required: ['intent', 'url'],
             title: 'GoToUrlAction',
             type: 'object',
             nullable: true,
           },
           go_back: {
-            additionalProperties: true,
-            description:
-              'Accepts absolutely anything in the incoming data\nand discards it, so the final parsed model is empty.',
-            properties: {},
-            title: 'NoParamsAction',
+            properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
+            },
+            required: ['intent'],
+            title: 'GoBackAction',
+            type: 'object',
+            nullable: true,
+          },
+          wait: {
+            properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
+              seconds: {
+                title: 'Seconds',
+                type: 'integer',
+                default: 3,
+              },
+            },
+            required: ['intent', 'seconds'],
+            title: 'WaitAction',
             type: 'object',
             nullable: true,
           },
           click_element: {
             properties: {
-              desc: {
+              intent: {
                 title: 'Intent',
                 type: 'string',
-                description: 'Very short explanation of the intent or purpose for calling this action',
+                description: 'purpose of this action',
               },
               index: {
                 title: 'Index',
                 type: 'integer',
               },
               xpath: {
-                title: 'XPath',
                 type: 'string',
                 nullable: true,
               },
             },
-            required: ['desc', 'index'],
+            required: ['intent', 'index'],
             title: 'ClickElementAction',
             type: 'object',
             nullable: true,
           },
           input_text: {
             properties: {
-              desc: {
+              intent: {
                 title: 'Intent',
                 type: 'string',
-                description: 'Very short explanation of the intent or purpose for calling this action',
+                description: 'purpose of this action',
               },
               index: {
                 title: 'Index',
@@ -112,136 +143,175 @@ export const jsonNavigatorOutputSchema = {
                 type: 'string',
               },
               xpath: {
-                title: 'XPath',
                 type: 'string',
                 nullable: true,
               },
             },
-            required: ['desc', 'index', 'text'],
+            required: ['intent', 'index', 'text'],
             title: 'InputTextAction',
             type: 'object',
             nullable: true,
           },
           switch_tab: {
             properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
               tab_id: {
-                title: 'Page Id',
+                title: 'Tab Id',
                 type: 'integer',
               },
             },
-            required: ['tab_id'],
+            required: ['intent', 'tab_id'],
             title: 'SwitchTabAction',
             type: 'object',
             nullable: true,
           },
           open_tab: {
             properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
               url: {
                 title: 'Url',
                 type: 'string',
               },
             },
-            required: ['url'],
+            required: ['intent', 'url'],
             title: 'OpenTabAction',
+            type: 'object',
+            nullable: true,
+          },
+          close_tab: {
+            properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
+              tab_id: {
+                title: 'Tab Id',
+                type: 'integer',
+              },
+            },
+            required: ['intent', 'tab_id'],
+            title: 'CloseTabAction',
             type: 'object',
             nullable: true,
           },
           cache_content: {
             properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
               content: {
                 title: 'Content',
                 type: 'string',
               },
             },
-            required: ['content'],
+            required: ['intent', 'content'],
             title: 'cache_content_parameters',
             type: 'object',
             nullable: true,
           },
           scroll_down: {
             properties: {
-              desc: {
+              intent: {
                 title: 'Intent',
                 type: 'string',
-                description: 'Very short explanation of the intent or purpose for calling this action',
+                description: 'purpose of this action',
               },
               amount: {
-                title: 'Amount',
                 type: 'integer',
                 nullable: true,
               },
             },
-            required: ['desc'],
+            required: ['intent', 'amount'],
             title: 'ScrollAction',
             type: 'object',
             nullable: true,
           },
           scroll_up: {
             properties: {
-              desc: {
+              intent: {
                 title: 'Intent',
                 type: 'string',
-                description: 'Very short explanation of the intent or purpose for calling this action',
+                description: 'purpose of this action',
               },
               amount: {
-                title: 'Amount',
                 type: 'integer',
                 nullable: true,
               },
             },
-            required: ['desc'],
+            required: ['intent', 'amount'],
             title: 'ScrollAction',
             type: 'object',
             nullable: true,
           },
           send_keys: {
             properties: {
-              desc: {
+              intent: {
                 title: 'Intent',
                 type: 'string',
-                description: 'Very short explanation of the intent or purpose for calling this action',
+                description: 'purpose of this action',
               },
               keys: {
                 title: 'Keys',
                 type: 'string',
               },
             },
-            required: ['desc', 'keys'],
+            required: ['intent', 'keys'],
             title: 'SendKeysAction',
             type: 'object',
             nullable: true,
           },
           scroll_to_text: {
             properties: {
-              desc: {
+              intent: {
                 title: 'Intent',
                 type: 'string',
-                description: 'Very short explanation of the intent or purpose for calling this action',
+                description: 'purpose of this action',
               },
               text: {
                 title: 'Text',
                 type: 'string',
               },
             },
-            required: ['desc', 'text'],
+            required: ['intent', 'text'],
             title: 'scroll_to_text_parameters',
             type: 'object',
             nullable: true,
           },
           get_dropdown_options: {
             properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
               index: {
                 title: 'Index',
                 type: 'integer',
               },
             },
-            required: ['index'],
+            required: ['intent', 'index'],
             title: 'get_dropdown_options_parameters',
             type: 'object',
             nullable: true,
           },
           select_dropdown_option: {
             properties: {
+              intent: {
+                title: 'Intent',
+                type: 'string',
+                description: 'purpose of this action',
+              },
               index: {
                 title: 'Index',
                 type: 'integer',
@@ -251,7 +321,7 @@ export const jsonNavigatorOutputSchema = {
                 type: 'string',
               },
             },
-            required: ['index', 'text'],
+            required: ['intent', 'index', 'text'],
             title: 'select_dropdown_option_parameters',
             type: 'object',
             nullable: true,

@@ -1,4 +1,11 @@
-// This is the json schema exported from browser-use, change page_id to tab_id
+// This is the json schema exported from browser-use v0.1.41 with minor changes,
+//  - change page_id to tab_id
+//  - add intent to some actions which is used to describe the action's purpose
+//  - remove extract_content action, because it usually submit very long content to LLM
+//  - remove DragDropAction, it's not supported yet
+//  - remove save_pdf action, it's not supported yet
+//  - remove Position, not needed
+//  - remove NoParamsAction, not needed
 // TODO: don't know why zod can not generate the same schema, need to fix it
 export const jsonNavigatorOutputSchema = {
   $defs: {
@@ -41,13 +48,24 @@ export const jsonNavigatorOutputSchema = {
         go_back: {
           anyOf: [
             {
-              $ref: '#/$defs/NoParamsAction',
+              $ref: '#/$defs/GoBackAction',
             },
             {
               type: 'null',
             },
           ],
-          description: 'Go back',
+          description: 'Go back to previous page',
+        },
+        wait: {
+          anyOf: [
+            {
+              $ref: '#/$defs/WaitAction',
+            },
+            {
+              type: 'null',
+            },
+          ],
+          description: 'Wait for x seconds default 3',
         },
         click_element: {
           anyOf: [
@@ -58,7 +76,7 @@ export const jsonNavigatorOutputSchema = {
               type: 'null',
             },
           ],
-          description: 'Click element',
+          description: 'Click element by index',
         },
         input_text: {
           anyOf: [
@@ -69,7 +87,7 @@ export const jsonNavigatorOutputSchema = {
               type: 'null',
             },
           ],
-          description: 'Input text into a input interactive element',
+          description: 'Input text into an interactive input element',
         },
         switch_tab: {
           anyOf: [
@@ -93,6 +111,18 @@ export const jsonNavigatorOutputSchema = {
           ],
           description: 'Open url in new tab',
         },
+        close_tab: {
+          anyOf: [
+            {
+              $ref: '#/$defs/CloseTabAction',
+            },
+            {
+              type: 'null',
+            },
+          ],
+          description: 'Close tab by tab_id',
+        },
+
         cache_content: {
           anyOf: [
             {
@@ -102,7 +132,7 @@ export const jsonNavigatorOutputSchema = {
               type: 'null',
             },
           ],
-          description: 'Cache what you have found so far from the current page so that it can be used in future steps',
+          description: 'Cache what you have found so far from the current page for future use',
         },
         scroll_down: {
           anyOf: [
@@ -136,7 +166,7 @@ export const jsonNavigatorOutputSchema = {
             },
           ],
           description:
-            'Send strings of special keys like Backspace, Insert, PageDown, Delete, Enter, Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard.press. Be aware of different operating systems and their shortcuts',
+            'Send strings of special keys like Escape, Backspace, Insert, PageDown, Delete, Enter, Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard.press.',
         },
         scroll_to_text: {
           anyOf: [
@@ -179,12 +209,8 @@ export const jsonNavigatorOutputSchema = {
     AgentBrain: {
       description: 'Current state of the agent',
       properties: {
-        page_summary: {
-          title: 'Page Summary',
-          type: 'string',
-        },
         evaluation_previous_goal: {
-          title: 'Evaluation Previous Goal',
+          title: 'Evaluation of previous goal',
           type: 'string',
         },
         memory: {
@@ -196,16 +222,16 @@ export const jsonNavigatorOutputSchema = {
           type: 'string',
         },
       },
-      required: ['page_summary', 'evaluation_previous_goal', 'memory', 'next_goal'],
+      required: ['evaluation_previous_goal', 'memory', 'next_goal'],
       title: 'AgentBrain',
       type: 'object',
     },
     ClickElementAction: {
       properties: {
-        desc: {
+        intent: {
           title: 'Intent',
           type: 'string',
-          description: 'Very short explanation of the intent or purpose for calling this action',
+          description: 'purpose of this action',
         },
         index: {
           title: 'Index',
@@ -223,8 +249,24 @@ export const jsonNavigatorOutputSchema = {
           title: 'Xpath',
         },
       },
-      required: ['desc', 'index'],
+      required: ['intent', 'index'],
       title: 'ClickElementAction',
+      type: 'object',
+    },
+    CloseTabAction: {
+      properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
+        tab_id: {
+          title: 'Tab Id',
+          type: 'integer',
+        },
+      },
+      required: ['intent', 'tab_id'],
+      title: 'CloseTabAction',
       type: 'object',
     },
     DoneAction: {
@@ -233,28 +275,49 @@ export const jsonNavigatorOutputSchema = {
           title: 'Text',
           type: 'string',
         },
+        success: {
+          title: 'Success',
+          type: 'boolean',
+        },
       },
-      required: ['text'],
+      required: ['text', 'success'],
       title: 'DoneAction',
       type: 'object',
     },
     GoToUrlAction: {
       properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
         url: {
           title: 'Url',
           type: 'string',
         },
       },
-      required: ['url'],
+      required: ['intent', 'url'],
       title: 'GoToUrlAction',
+      type: 'object',
+    },
+    GoBackAction: {
+      properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
+      },
+      required: ['intent'],
+      title: 'GoBackAction',
       type: 'object',
     },
     InputTextAction: {
       properties: {
-        desc: {
+        intent: {
           title: 'Intent',
           type: 'string',
-          description: 'Very short explanation of the intent or purpose for calling this action',
+          description: 'purpose of this action',
         },
         index: {
           title: 'Index',
@@ -276,35 +339,32 @@ export const jsonNavigatorOutputSchema = {
           title: 'Xpath',
         },
       },
-      required: ['desc', 'index', 'text'],
+      required: ['intent', 'index', 'text'],
       title: 'InputTextAction',
-      type: 'object',
-    },
-    NoParamsAction: {
-      additionalProperties: true,
-      description:
-        'Accepts absolutely anything in the incoming data\nand discards it, so the final parsed model is empty.',
-      properties: {},
-      title: 'NoParamsAction',
       type: 'object',
     },
     OpenTabAction: {
       properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
         url: {
           title: 'Url',
           type: 'string',
         },
       },
-      required: ['url'],
+      required: ['intent', 'url'],
       title: 'OpenTabAction',
       type: 'object',
     },
     ScrollAction: {
       properties: {
-        desc: {
+        intent: {
           title: 'Intent',
           type: 'string',
-          description: 'Very short explanation of the intent or purpose for calling this action',
+          description: 'purpose of this action',
         },
         amount: {
           anyOf: [
@@ -318,88 +378,113 @@ export const jsonNavigatorOutputSchema = {
           title: 'Amount',
         },
       },
-      required: ['desc'],
+      required: ['intent', 'amount'],
       title: 'ScrollAction',
       type: 'object',
     },
     SearchGoogleAction: {
       properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
         query: {
           title: 'Query',
           type: 'string',
         },
       },
-      required: ['query'],
+      required: ['intent', 'query'],
       title: 'SearchGoogleAction',
       type: 'object',
     },
     SendKeysAction: {
       properties: {
-        desc: {
+        intent: {
           title: 'Intent',
           type: 'string',
-          description: 'Very short explanation of the intent or purpose for calling this action',
+          description: 'purpose of this action',
         },
         keys: {
           title: 'Keys',
           type: 'string',
         },
       },
-      required: ['desc', 'keys'],
+      required: ['intent', 'keys'],
       title: 'SendKeysAction',
       type: 'object',
     },
     SwitchTabAction: {
       properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
         tab_id: {
-          title: 'Page Id',
+          title: 'Tab Id',
           type: 'integer',
         },
       },
-      required: ['tab_id'],
+      required: ['intent', 'tab_id'],
       title: 'SwitchTabAction',
       type: 'object',
     },
     cache_content_parameters: {
       properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
         content: {
           title: 'Content',
           type: 'string',
         },
       },
-      required: ['content'],
+      required: ['intent', 'content'],
       title: 'cache_content_parameters',
       type: 'object',
     },
     get_dropdown_options_parameters: {
       properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
         index: {
           title: 'Index',
           type: 'integer',
         },
       },
-      required: ['index'],
+      required: ['intent', 'index'],
       title: 'get_dropdown_options_parameters',
       type: 'object',
     },
     scroll_to_text_parameters: {
       properties: {
-        desc: {
+        intent: {
           title: 'Intent',
           type: 'string',
-          description: 'Very short explanation of the intent or purpose for calling this action',
+          description: 'purpose of this action',
         },
         text: {
           title: 'Text',
           type: 'string',
         },
       },
-      required: ['desc', 'text'],
+      required: ['intent', 'text'],
       title: 'scroll_to_text_parameters',
       type: 'object',
     },
     select_dropdown_option_parameters: {
       properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
         index: {
           title: 'Index',
           type: 'integer',
@@ -409,8 +494,25 @@ export const jsonNavigatorOutputSchema = {
           type: 'string',
         },
       },
-      required: ['index', 'text'],
+      required: ['intent', 'index', 'text'],
       title: 'select_dropdown_option_parameters',
+      type: 'object',
+    },
+    WaitAction: {
+      properties: {
+        intent: {
+          title: 'Intent',
+          type: 'string',
+          description: 'purpose of this action',
+        },
+        seconds: {
+          title: 'Seconds',
+          type: 'integer',
+          default: 3,
+        },
+      },
+      required: ['intent', 'seconds'],
+      title: 'WaitAction',
       type: 'object',
     },
   },

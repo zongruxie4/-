@@ -139,6 +139,8 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
       // call the model to get the actions to take
       const inputMessages = messageManager.getMessages();
+      // logger.info('Navigator input messages', inputMessages);
+
       const modelOutput = await this.invoke(inputMessages);
 
       // check if the task is paused or stopped
@@ -201,7 +203,6 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     }
 
     const messageManager = this.context.messageManager;
-    const options = this.context.options;
     // Handle results that should be included in memory
     if (this.context.actionResults.length > 0) {
       let index = 0;
@@ -213,11 +214,18 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
             messageManager.addMessageWithTokens(msg);
           }
           if (r.error) {
-            const msg = new HumanMessage(`Action error: ${r.error.toString().slice(-options.maxErrorLength)}`);
+            // Get error text and convert to string
+            const errorText = r.error.toString().trim();
+
+            // Get only the last line of the error
+            const lastLine = errorText.split('\n').pop() || '';
+
+            const msg = new HumanMessage(`Action error: ${lastLine}`);
             logger.info('Adding action error to memory', msg.content);
             messageManager.addMessageWithTokens(msg);
           }
           // reset this action result to empty, we dont want to add it again in the state message
+          // NOTE: in python version, all action results are reset to empty, but in ts version, only those included in memory are reset to empty
           this.context.actionResults[index] = new ActionResult();
         }
         index++;
@@ -237,6 +245,11 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     const messageManager = this.context.messageManager;
     messageManager.removeLastStateMessage();
     this.context.stateMessageAdded = false;
+  }
+
+  private async addModelOutputToMemory(modelOutput: this['ModelOutput']) {
+    const messageManager = this.context.messageManager;
+    messageManager.addModelOutput(modelOutput);
   }
 
   private async doMultiAction(response: this['ModelOutput']): Promise<ActionResult[]> {

@@ -2,10 +2,10 @@ import type { z } from 'zod';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type { AgentContext, AgentOutput } from '../types';
 import type { BasePrompt } from '../prompts/base';
-import { type BaseMessage, AIMessage, ToolMessage, HumanMessage } from '@langchain/core/messages';
+import type { BaseMessage } from '@langchain/core/messages';
 import { createLogger } from '@src/background/log';
 import type { Action } from '../actions/builder';
-import { convertMessagesForNonFunctionCallingModels, mergeSuccessiveMessages } from '../messages/service';
+import { convertInputMessages, extractJsonFromModelOutput, removeThinkTags } from '../messages/utils';
 
 const logger = createLogger('agent');
 
@@ -23,8 +23,6 @@ export interface ExtraAgentOptions {
   toolCallingMethod?: string;
   callOptions?: CallOptions;
 }
-
-const THINK_TAGS = /<think>[\s\S]*?<\/think>/;
 
 /**
  * Base class for all agents
@@ -103,32 +101,6 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     return true;
   }
 
-  // Remove think tags from the model output
-  protected removeThinkTags(text: string): string {
-    return text.replace(THINK_TAGS, '');
-  }
-
-  /**
-   * Convert input messages to a format that is compatible with the model
-   * @param inputMessages - The input messages to convert
-   * @param modelName - The optional model name to determine conversion strategy
-   * @returns The converted input messages
-   */
-  protected convertInputMessages(inputMessages: BaseMessage[], modelName?: string): BaseMessage[] {
-    if (!modelName) {
-      return inputMessages;
-    }
-
-    if (modelName === 'deepseek-reasoner' || modelName.startsWith('deepseek-r1')) {
-      const convertedInputMessages = convertMessagesForNonFunctionCallingModels(inputMessages);
-      let mergedInputMessages = mergeSuccessiveMessages(convertedInputMessages, HumanMessage);
-      mergedInputMessages = mergeSuccessiveMessages(mergedInputMessages, AIMessage);
-      return mergedInputMessages;
-    }
-
-    return inputMessages;
-  }
-
   async invoke(inputMessages: BaseMessage[]): Promise<this['ModelOutput']> {
     // Use structured output
     if (this.withStructuredOutput) {
@@ -154,14 +126,14 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     }
 
     // Without structured output support, need to extract JSON from model output manually
-    const convertedInputMessages = this.convertInputMessages(inputMessages, this.modelName);
+    const convertedInputMessages = convertInputMessages(inputMessages, this.modelName);
     const response = await this.chatLLM.invoke(convertedInputMessages, {
       ...this.callOptions,
     });
     if (typeof response.content === 'string') {
-      response.content = this.removeThinkTags(response.content);
+      response.content = removeThinkTags(response.content);
       try {
-        const extractedJson = this.extractJsonFromModelOutput(response.content);
+        const extractedJson = extractJsonFromModelOutput(response.content);
         const parsed = this.validateModelOutput(extractedJson);
         if (parsed) {
           return parsed;
@@ -187,59 +159,6 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     } catch (error) {
       logger.error('validateModelOutput', error);
       throw new Error('Could not validate model output');
-    }
-  }
-
-  // Add the model output to the memory
-  protected addModelOutputToMemory(modelOutput: this['ModelOutput']): void {
-    const messageManager = this.context.messageManager;
-    const toolCallId = String(messageManager.nextToolId());
-    const toolCalls = [
-      {
-        name: this.modelOutputToolName,
-        args: modelOutput,
-        id: toolCallId,
-        type: 'tool_call' as const,
-      },
-    ];
-
-    const toolCallMessage = new AIMessage({
-      content: 'tool call',
-      tool_calls: toolCalls,
-    });
-    messageManager.addMessageWithTokens(toolCallMessage);
-
-    const toolMessage = new ToolMessage({
-      content: 'tool call response placeholder',
-      tool_call_id: toolCallId,
-    });
-    messageManager.addMessageWithTokens(toolMessage);
-  }
-
-  /**
-   * Extract JSON from raw string model output, handling both plain JSON and code-block-wrapped JSON.
-   *
-   * some models not supporting tool calls well like deepseek-reasoner, so we need to extract the JSON from the output
-   * @param content - The content of the model output
-   * @returns The JSON object
-   */
-  protected extractJsonFromModelOutput(content: string): unknown {
-    try {
-      let cleanedContent = content;
-      // If content is wrapped in code blocks, extract just the JSON part
-      if (content.includes('```')) {
-        // Find the JSON content between code blocks
-        cleanedContent = cleanedContent.split('```')[1];
-        // Remove language identifier if present (e.g., 'json\n')
-        if (cleanedContent.includes('json\n')) {
-          cleanedContent = cleanedContent.replace(/^json\s*/, '');
-        }
-      }
-      // Parse the cleaned content
-      return JSON.parse(cleanedContent);
-    } catch (e) {
-      logger.warning(`Failed to parse model output: ${content} ${e}`);
-      throw new Error('Failed to extract JSON from model output.');
     }
   }
 }

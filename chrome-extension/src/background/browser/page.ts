@@ -15,21 +15,13 @@ import {
   getClickableElements as _getClickableElements,
   removeHighlights as _removeHighlights,
   getScrollInfo as _getScrollInfo,
-  getMarkdownContent as _getMarkdownContent,
-  getReadabilityContent as _getReadabilityContent,
 } from '../dom/service';
 import { DOMElementNode, type DOMState } from '../dom/views';
-import { type BrowserContextConfig, DEFAULT_BROWSER_CONTEXT_CONFIG, type PageState } from './types';
+import { type BrowserContextConfig, DEFAULT_BROWSER_CONTEXT_CONFIG, type PageState, URLNotAllowedError } from './views';
 import { createLogger } from '@src/background/log';
-import { use } from 'react/ts5.0';
+import { ClickableElementProcessor } from '../dom/clickable/service';
 
 const logger = createLogger('Page');
-
-declare global {
-  interface Window {
-    turn2Markdown: (selector?: string) => string;
-  }
-}
 
 export function build_initial_state(tabId?: number, url?: string, title?: string): PageState {
   return {
@@ -51,6 +43,19 @@ export function build_initial_state(tabId?: number, url?: string, title?: string
   };
 }
 
+/**
+ * Cached clickable elements hashes for the last state
+ */
+export class CachedStateClickableElementsHashes {
+  url: string;
+  hashes: Set<string>;
+
+  constructor(url: string, hashes: Set<string>) {
+    this.url = url;
+    this.hashes = hashes;
+  }
+}
+
 export default class Page {
   private _tabId: number;
   private _browser: Browser | null = null;
@@ -58,6 +63,8 @@ export default class Page {
   private _config: BrowserContextConfig;
   private _state: PageState;
   private _validWebPage = false;
+  private _cachedState: PageState | null = null;
+  private _cachedStateClickableElementsHashes: CachedStateClickableElementsHashes | null = null;
 
   constructor(tabId: number, url: string, title: string, config: Partial<BrowserContextConfig> = {}) {
     this._tabId = tabId;
@@ -169,6 +176,7 @@ export default class Page {
     }
     return _getClickableElements(
       this._tabId,
+      this.url(),
       this._config.highlightElements,
       focusElement,
       this._config.viewportExpansion,
@@ -190,28 +198,41 @@ export default class Page {
     return await this._puppeteerPage.content();
   }
 
-  async getMarkdownContent(selector?: string): Promise<string> {
-    if (!this._validWebPage) {
-      return '';
-    }
-    return _getMarkdownContent(this._tabId, selector);
-  }
-
-  async getReadabilityContent(): Promise<ReadabilityResult> {
-    if (!this._validWebPage) {
-      return '';
-    }
-    return _getReadabilityContent(this._tabId);
-  }
-
-  async getState(): Promise<PageState> {
+  async getState(cacheClickableElementsHashes = false): Promise<PageState> {
     if (!this._validWebPage) {
       // return the initial state
       return build_initial_state(this._tabId);
     }
     await this.waitForPageAndFramesLoad();
-    const state = await this._updateState();
-    return state;
+    const updatedState = await this._updateState();
+
+    // Find out which elements are new
+    // Do this only if url has not changed
+    if (cacheClickableElementsHashes) {
+      // If we are on the same url as the last state, we can use the cached hashes
+      if (
+        this._cachedStateClickableElementsHashes &&
+        this._cachedStateClickableElementsHashes.url === updatedState.url
+      ) {
+        // Get clickable elements from the updated state
+        const updatedStateClickableElements = ClickableElementProcessor.getClickableElements(updatedState.elementTree);
+
+        // Mark elements as new if they weren't in the previous state
+        for (const domElement of updatedStateClickableElements) {
+          const hash = await ClickableElementProcessor.hashDomElement(domElement);
+          domElement.isNew = !this._cachedStateClickableElementsHashes.hashes.has(hash);
+        }
+      }
+
+      // In any case, we need to cache the new hashes
+      const newHashes = await ClickableElementProcessor.getClickableElementsHashes(updatedState.elementTree);
+      this._cachedStateClickableElementsHashes = new CachedStateClickableElementsHashes(updatedState.url, newHashes);
+    }
+
+    // Save the updated state as the cached state
+    this._cachedState = updatedState;
+
+    return updatedState;
   }
 
   async _updateState(useVision = true, focusElement = -1): Promise<PageState> {
@@ -339,18 +360,28 @@ export default class Page {
     }
     logger.info('navigateTo', url);
 
+    // Check if URL is allowed
+    if (!this._isUrlAllowed(url)) {
+      const errorMessage = `Navigation to URL: ${url} is not allowed. Only these domains are allowed: ${this._config.allowedDomains?.join(', ')}`;
+      logger.error(errorMessage);
+      throw new URLNotAllowedError(errorMessage);
+    }
+
     try {
       await Promise.all([this.waitForPageAndFramesLoad(), this._puppeteerPage.goto(url)]);
       logger.info('navigateTo complete');
     } catch (error) {
-      // Check if it's a timeout error
+      if (error instanceof URLNotAllowedError) {
+        throw error;
+      }
+
       if (error instanceof Error && error.message.includes('timeout')) {
         logger.warning('Navigation timeout, but page might still be usable:', error);
-        // You might want to check if the page is actually loaded despite the timeout
-      } else {
-        logger.error('Navigation failed:', error);
-        throw error; // Re-throw non-timeout errors
+        return;
       }
+
+      logger.error('Navigation failed:', error);
+      throw error;
     }
   }
 
@@ -361,12 +392,17 @@ export default class Page {
       await Promise.all([this.waitForPageAndFramesLoad(), this._puppeteerPage.reload()]);
       logger.info('Page refresh complete');
     } catch (error) {
-      if (error instanceof Error && error.message.includes('timeout')) {
-        logger.warning('Refresh timeout, but page might still be usable:', error);
-      } else {
-        logger.error('Page refresh failed:', error);
+      if (error instanceof URLNotAllowedError) {
         throw error;
       }
+
+      if (error instanceof Error && error.message.includes('timeout')) {
+        logger.warning('Refresh timeout, but page might still be usable:', error);
+        return;
+      }
+
+      logger.error('Page refresh failed:', error);
+      throw error;
     }
   }
 
@@ -377,12 +413,17 @@ export default class Page {
       await Promise.all([this.waitForPageAndFramesLoad(), this._puppeteerPage.goBack()]);
       logger.info('Navigation back completed');
     } catch (error) {
-      if (error instanceof Error && error.message.includes('timeout')) {
-        logger.warning('Back navigation timeout, but page might still be usable:', error);
-      } else {
-        logger.error('Could not navigate back:', error);
+      if (error instanceof URLNotAllowedError) {
         throw error;
       }
+
+      if (error instanceof Error && error.message.includes('timeout')) {
+        logger.warning('Back navigation timeout, but page might still be usable:', error);
+        return;
+      }
+
+      logger.error('Could not navigate back:', error);
+      throw error;
     }
   }
 
@@ -393,12 +434,17 @@ export default class Page {
       await Promise.all([this.waitForPageAndFramesLoad(), this._puppeteerPage.goForward()]);
       logger.info('Navigation forward completed');
     } catch (error) {
-      if (error instanceof Error && error.message.includes('timeout')) {
-        logger.warning('Forward navigation timeout, but page might still be usable:', error);
-      } else {
-        logger.error('Could not navigate forward:', error);
+      if (error instanceof URLNotAllowedError) {
         throw error;
       }
+
+      if (error instanceof Error && error.message.includes('timeout')) {
+        logger.warning('Forward navigation timeout, but page might still be usable:', error);
+        return;
+      }
+
+      logger.error('Could not navigate forward:', error);
+      throw error;
     }
   }
 
@@ -734,7 +780,10 @@ export default class Page {
       const elementHandle: ElementHandle | null = await currentFrame.$(cssSelector);
       if (elementHandle) {
         // Scroll element into view if needed
-        await this._scrollIntoViewIfNeeded(elementHandle);
+        const isHidden = await elementHandle.isHidden();
+        if (!isHidden) {
+          await this._scrollIntoViewIfNeeded(elementHandle);
+        }
         return elementHandle;
       }
     } catch (error) {
@@ -751,38 +800,133 @@ export default class Page {
 
     try {
       // Highlight before typing
-      if (elementNode.highlightIndex !== undefined) {
-        await this._updateState(useVision, elementNode.highlightIndex);
-      }
+      // if (elementNode.highlightIndex != null) {
+      //   await this._updateState(useVision, elementNode.highlightIndex);
+      // }
 
       const element = await this.locateElement(elementNode);
       if (!element) {
         throw new Error(`Element: ${elementNode} not found`);
       }
 
-      // Scroll element into view if needed
-      await this._scrollIntoViewIfNeeded(element);
+      // Ensure element is ready for input
+      try {
+        // First wait for element stability
+        await this._waitForElementStability(element, 1000);
 
-      // Clear the input field (equivalent to fill(''))
-      await element.evaluate(el => {
-        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-          el.value = '';
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-          el.dispatchEvent(new Event('change', { bubbles: true }));
+        // Then check visibility and scroll into view if needed
+        const isHidden = await element.isHidden();
+        if (!isHidden) {
+          await this._scrollIntoViewIfNeeded(element, 1000);
         }
+      } catch (e) {
+        // Continue even if these operations fail
+        logger.debug(`Non-critical error preparing element: ${e}`);
+      }
+
+      // Get element properties to determine input method
+      const tagName = await element.evaluate(el => el.tagName.toLowerCase());
+      const isContentEditable = await element.evaluate(el => {
+        if (el instanceof HTMLElement) {
+          return el.isContentEditable;
+        }
+        return false;
+      });
+      const isReadOnly = await element.evaluate(el => {
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+          return el.readOnly;
+        }
+        return false;
+      });
+      const isDisabled = await element.evaluate(el => {
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+          return el.disabled;
+        }
+        return false;
       });
 
-      // Type the text
-      await element.type(text);
-      // Wait for stable state ?
+      // Choose appropriate input method based on element properties
+      if ((isContentEditable || tagName === 'input') && !isReadOnly && !isDisabled) {
+        // Clear content and set value directly
+        await element.evaluate(el => {
+          if (el instanceof HTMLElement) {
+            el.textContent = '';
+          }
+          if ('value' in el) {
+            (el as HTMLInputElement).value = '';
+          }
+          // Dispatch events
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        // Type the text with a small delay between keypresses
+        await element.type(text, { delay: 5 });
+      } else {
+        // Use direct value setting for other types of elements
+        await element.evaluate((el, value) => {
+          if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+            el.value = value;
+          } else if (el instanceof HTMLElement && el.isContentEditable) {
+            el.textContent = value;
+          }
+          // Dispatch events
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }, text);
+      }
+
+      // Wait for page stability after input
+      await this.waitForPageAndFramesLoad();
     } catch (error) {
-      throw new Error(
-        `Failed to input text into element: ${elementNode}. Error: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMsg = `Failed to input text into element: ${elementNode}. Error: ${error instanceof Error ? error.message : String(error)}`;
+      logger.error(errorMsg);
+      throw new Error(errorMsg);
     }
   }
 
-  private async _scrollIntoViewIfNeeded(element: ElementHandle, timeout = 2500): Promise<void> {
+  /**
+   * Wait for an element to become stable (no position/size changes)
+   * Similar to Playwright's wait_for_element_state('stable')
+   */
+  private async _waitForElementStability(element: ElementHandle, timeout = 1000): Promise<void> {
+    const startTime = Date.now();
+    let lastRect = await element.boundingBox();
+
+    while (Date.now() - startTime < timeout) {
+      // Wait a short time
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Get current position and size
+      const currentRect = await element.boundingBox();
+
+      // If element is no longer in DOM or not visible
+      if (!currentRect) {
+        break;
+      }
+
+      // Compare with previous position/size
+      if (
+        lastRect &&
+        Math.abs(lastRect.x - currentRect.x) < 2 &&
+        Math.abs(lastRect.y - currentRect.y) < 2 &&
+        Math.abs(lastRect.width - currentRect.width) < 2 &&
+        Math.abs(lastRect.height - currentRect.height) < 2
+      ) {
+        // Position is stable - wait a bit more to be sure and then return
+        await new Promise(resolve => setTimeout(resolve, 50));
+        return;
+      }
+
+      // Update last position
+      lastRect = currentRect;
+    }
+
+    // If we got here, either the element stabilized or we timed out
+    logger.debug('Element stability check completed (timeout or stable)');
+  }
+
+  private async _scrollIntoViewIfNeeded(element: ElementHandle, timeout = 1000): Promise<void> {
     const startTime = Date.now();
 
     // eslint-disable-next-line no-constant-condition
@@ -839,9 +983,9 @@ export default class Page {
 
     try {
       // Highlight before clicking
-      if (elementNode.highlightIndex !== undefined) {
-        await this._updateState(useVision, elementNode.highlightIndex);
-      }
+      // if (elementNode.highlightIndex !== null) {
+      //   await this._updateState(useVision, elementNode.highlightIndex);
+      // }
 
       const element = await this.locateElement(elementNode);
       if (!element) {
@@ -857,12 +1001,21 @@ export default class Page {
           element.click(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Click timeout')), 2000)),
         ]);
+        await this._checkAndHandleNavigation();
       } catch (error) {
+        // if URLNotAllowedError, throw it
+        if (error instanceof URLNotAllowedError) {
+          throw error;
+        }
         // Second attempt: Use evaluate to perform a direct click
         logger.info('Failed to click element, trying again', error);
         try {
           await element.evaluate(el => (el as HTMLElement).click());
         } catch (secondError) {
+          // if URLNotAllowedError, throw it
+          if (secondError instanceof URLNotAllowedError) {
+            throw secondError;
+          }
           throw new Error(
             `Failed to click element: ${secondError instanceof Error ? secondError.message : String(secondError)}`,
           );
@@ -876,7 +1029,12 @@ export default class Page {
   }
 
   getSelectorMap(): Map<number, DOMElementNode> {
-    return this._state.selectorMap;
+    // If there is no cached state, return an empty map
+    if (this._cachedState === null) {
+      return new Map();
+    }
+    // Otherwise return the cached state's selector map
+    return this._cachedState.selectorMap;
   }
 
   async getElementByIndex(index: number): Promise<ElementHandle | null> {
@@ -1101,8 +1259,16 @@ export default class Page {
     // Wait for page load
     try {
       await this._waitForStableNetwork();
+
+      // Check if the loaded URL is allowed
+      if (this._puppeteerPage) {
+        await this._checkAndHandleNavigation();
+      }
     } catch (error) {
-      console.warn('Page load failed, continuing...');
+      if (error instanceof URLNotAllowedError) {
+        throw error;
+      }
+      console.warn('Page load failed, continuing...', error);
     }
 
     // Calculate remaining time to meet minimum wait time
@@ -1117,6 +1283,68 @@ export default class Page {
     // Sleep remaining time if needed
     if (remaining > 0) {
       await new Promise(resolve => setTimeout(resolve, remaining * 1000)); // Convert seconds to milliseconds
+    }
+  }
+
+  /**
+   * Check the current page URL and handle if it's not allowed
+   * @throws URLNotAllowedError if the current URL is not allowed
+   */
+  private async _checkAndHandleNavigation(): Promise<void> {
+    if (!this._puppeteerPage) {
+      return;
+    }
+
+    const currentUrl = this._puppeteerPage.url();
+    if (!this._isUrlAllowed(currentUrl)) {
+      const errorMessage = `Navigation to URL: ${currentUrl} is not allowed. Only these domains are allowed: ${this._config.allowedDomains?.join(', ')}`;
+      logger.error(errorMessage);
+
+      // Navigate to home page or about:blank
+      const safeUrl = this._config.homePageUrl || 'about:blank';
+      logger.info(`Redirecting to safe URL: ${safeUrl}`);
+
+      try {
+        await this._puppeteerPage.goto(safeUrl);
+      } catch (error) {
+        logger.error(`Failed to redirect to safe URL: ${error instanceof Error ? error.message : String(error)}`);
+      }
+
+      throw new URLNotAllowedError(errorMessage);
+    }
+  }
+
+  /**
+   * Check if a URL is allowed based on the allowlist configuration.
+   * @param url - The URL to check
+   * @returns True if the URL is allowed, false otherwise
+   */
+  _isUrlAllowed(url: string): boolean {
+    if (!this._config.allowedDomains || this._config.allowedDomains.length === 0) {
+      return true;
+    }
+
+    try {
+      // Special case: Allow 'about:blank' explicitly
+      if (url === 'about:blank') {
+        return true;
+      }
+
+      const parsedUrl = new URL(url);
+      let domain = parsedUrl.hostname.toLowerCase();
+
+      // Remove port number if present
+      if (domain.includes(':')) {
+        domain = domain.split(':')[0];
+      }
+
+      // Check if domain matches any allowed domain pattern
+      return this._config.allowedDomains.some(
+        allowedDomain => domain === allowedDomain.toLowerCase() || domain.endsWith(`.${allowedDomain.toLowerCase()}`),
+      );
+    } catch (error) {
+      logger.error(`⛔️ Error checking URL allowlist: ${error instanceof Error ? error.message : String(error)}`);
+      return false;
     }
   }
 }

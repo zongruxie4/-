@@ -41,6 +41,7 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
     'value',
     'alt',
     'aria-expanded',
+    'data-date-format',
   ],
   planningInterval: 3,
 };
@@ -141,7 +142,6 @@ export type WrappedActionResult = ActionResult & {
 };
 
 export const agentBrainSchema = z.object({
-  page_summary: z.string(),
   evaluation_previous_goal: z.string(),
   memory: z.string(),
   next_goal: z.string(),

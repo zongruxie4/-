@@ -36,12 +36,14 @@ abstract class BasePrompt {
     let formattedElementsText = '';
     if (elementsText !== '') {
       if (hasContentAbove) {
+        // formattedElementsText = `... ${browserState.pixelsAbove} pixels above - scroll up or extract content to see more ...\n${elementsText}`;
         formattedElementsText = `... ${browserState.pixelsAbove} pixels above - scroll up to see more ...\n${elementsText}`;
       } else {
         formattedElementsText = `[Start of page]\n${elementsText}`;
       }
 
       if (hasContentBelow) {
+        // formattedElementsText = `${formattedElementsText}\n... ${browserState.pixelsBelow} pixels below - scroll down or extract content to see more ...`;
         formattedElementsText = `${formattedElementsText}\n... ${browserState.pixelsBelow} pixels below - scroll down to see more ...`;
       } else {
         formattedElementsText = `${formattedElementsText}\n[End of page]`;
@@ -66,27 +68,29 @@ abstract class BasePrompt {
           actionResultsDescription += `\nAction result ${i + 1}/${context.actionResults.length}: ${result.extractedContent}`;
         }
         if (result.error) {
-          // only use last 300 characters of error
-          const error = result.error.slice(-300);
+          // only use last line of error
+          const error = result.error.split('\n').pop();
           actionResultsDescription += `\nAction error ${i + 1}/${context.actionResults.length}: ...${error}`;
         }
       }
     }
 
-    const stateDescription = `
-    [Task history memory ends here]
-    [Current state starts here]
-    You will see the following only once - if you need to remember it and you dont know it yet, write it down in the memory:
-    Current tab: {id: ${browserState.tabId}, url: ${browserState.url}, title: ${browserState.title}}
-    Other available tabs:
-    ${browserState.tabs
+    const currentTab = `{id: ${browserState.tabId}, url: ${browserState.url}, title: ${browserState.title}}`;
+    const otherTabs = browserState.tabs
       .filter(tab => tab.id !== browserState.tabId)
-      .map(tab => ` - {id: ${tab.id}, url: ${tab.url}, title: ${tab.title}}`)
-      .join('\n')}
-    Interactive elements from current page:
-    ${formattedElementsText}
-    ${stepInfoDescription}
-    ${actionResultsDescription}`;
+      .map(tab => `- {id: ${tab.id}, url: ${tab.url}, title: ${tab.title}}`);
+    const stateDescription = `
+[Task history memory ends]
+[Current state starts here]
+The following is one-time information - if you need to remember it write it to memory:
+Current tab: ${currentTab}
+Other available tabs:
+  ${otherTabs.join('\n')}
+Interactive elements from top layer of the current page inside the viewport:
+${formattedElementsText}
+${stepInfoDescription}
+${actionResultsDescription}
+`;
 
     if (browserState.screenshot && context.options.useVision) {
       return new HumanMessage({
