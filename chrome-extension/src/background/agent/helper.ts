@@ -10,7 +10,10 @@ import { ChatDeepSeek } from '@langchain/deepseek';
 const maxTokens = 1024 * 4;
 
 function isOpenAIOModel(modelName: string): boolean {
-  return modelName.startsWith('openai/o') || modelName.startsWith('o');
+  if (modelName.startsWith('openai/')) {
+    return modelName.startsWith('openai/o');
+  }
+  return modelName.startsWith('o');
 }
 
 function createOpenAIChatModel(

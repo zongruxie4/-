@@ -20,12 +20,13 @@ import {
   getDefaultAgentModelParams,
   type ProviderConfig,
 } from '@extension/storage';
-// Import chrome for messaging
-const IS_CHROME = typeof chrome !== 'undefined' && typeof chrome.runtime !== 'undefined';
 
 // Helper function to check if a model is an O-series model
 function isOpenAIOModel(modelName: string): boolean {
-  return modelName.startsWith('openai/o') || modelName.startsWith('o');
+  if (modelName.startsWith('openai/')) {
+    return modelName.startsWith('openai/o');
+  }
+  return modelName.startsWith('o');
 }
 
 interface ModelSettingsProps {
