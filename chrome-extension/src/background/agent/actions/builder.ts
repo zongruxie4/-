@@ -22,6 +22,7 @@ import {
 import { z } from 'zod';
 import { createLogger } from '@src/background/log';
 import { ExecutionState, Actors } from '../event/types';
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 
 const logger = createLogger('Action');
 

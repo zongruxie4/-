@@ -58,6 +58,8 @@ export class ValidatorAgent extends BaseAgent<typeof validatorOutputSchema, Vali
         const mergedMessage = new HumanMessage(`${stateMessage.content}\n\nThe current plan is: \n${this.plan}`);
         stateMessage = mergedMessage;
       }
+      // logger.info('validator input', stateMessage);
+
       const systemMessage = this.prompt.getSystemMessage();
       const inputMessages = [systemMessage, stateMessage];
 

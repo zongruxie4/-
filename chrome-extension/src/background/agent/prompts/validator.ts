@@ -48,12 +48,13 @@ RULES of ANSWERING THE TASK:
 
 SPECIAL CASES:
 1. If the task is unclear defined, you can let it pass. But if something is missing or the image does not show what was requested, do NOT let it pass
-2. Try to understand the page and help the model with suggestions like scroll, do x, ... to get the solution right
-3. If the webpage is asking for username or password, you should respond with:
+2. If the task is required to consolidate information from multiple pages, focus on the last Action Result. The current page is not important for validation but the last Action Result is.
+3. Try to understand the page and help the model with suggestions like scroll, do x, ... to get the solution right
+4. If the webpage is asking for username or password, you should respond with:
   - is_valid: true
   - reason: describe the reason why it is valid although the task is not completed yet
   - answer: ask the user to sign in by themselves
-4. If the output is correct and the task is completed, you should respond with 
+5. If the output is correct and the task is completed, you should respond with 
   - is_valid: true
   - reason: "Task completed"
   - answer: The final answer to the task
