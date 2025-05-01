@@ -147,6 +147,7 @@ Nanobrowser te permite configurar distintos modelos LLM para cada agente para eq
   - Sin costos de API y con privacidad total, sin datos que salgan de tu máquina
 
 - **Modelos Recomendados**:
+  - **Qwen3 14B**
   - **Falcon3 10B**
   - **Qwen 2.5 Coder 14B**
   - **Mistral Small 24B**

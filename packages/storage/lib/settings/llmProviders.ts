@@ -117,7 +117,7 @@ export function getDefaultProviderConfig(providerId: string): ProviderConfig {
         apiKey: 'ollama', // Set default API key for Ollama
         name: getDefaultDisplayNameFromProviderId(ProviderTypeEnum.Ollama),
         type: ProviderTypeEnum.Ollama,
-        modelNames: [], // Ollama uses modelNames (user adds them)
+        modelNames: llmProviderModelNames[providerId],
         baseUrl: 'http://localhost:11434',
         createdAt: Date.now(),
       };

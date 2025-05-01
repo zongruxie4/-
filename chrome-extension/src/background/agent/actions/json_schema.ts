@@ -26,6 +26,7 @@ export const jsonNavigatorOutputSchema = {
       items: {
         properties: {
           done: {
+            description: 'Complete task',
             properties: {
               text: {
                 title: 'Text',
@@ -42,6 +43,8 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           search_google: {
+            description:
+              'Search the query in Google in the current tab, the query should be a search query like humans search in Google, concrete and not vague or super long. More the single most important items. ',
             properties: {
               intent: {
                 title: 'Intent',
@@ -59,6 +62,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           go_to_url: {
+            description: 'Navigate to URL in the current tab',
             properties: {
               intent: {
                 title: 'Intent',
@@ -76,6 +80,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           go_back: {
+            description: 'Go back to previous page',
             properties: {
               intent: {
                 title: 'Intent',
@@ -89,6 +94,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           wait: {
+            description: 'Wait for x seconds default 3',
             properties: {
               intent: {
                 title: 'Intent',
@@ -107,6 +113,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           click_element: {
+            description: 'Click element by index',
             properties: {
               intent: {
                 title: 'Intent',
@@ -118,6 +125,7 @@ export const jsonNavigatorOutputSchema = {
                 type: 'integer',
               },
               xpath: {
+                title: 'Xpath',
                 type: 'string',
                 nullable: true,
               },
@@ -128,6 +136,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           input_text: {
+            description: 'Input text into an interactive input element',
             properties: {
               intent: {
                 title: 'Intent',
@@ -143,6 +152,7 @@ export const jsonNavigatorOutputSchema = {
                 type: 'string',
               },
               xpath: {
+                title: 'Xpath',
                 type: 'string',
                 nullable: true,
               },
@@ -153,6 +163,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           switch_tab: {
+            description: 'Switch tab',
             properties: {
               intent: {
                 title: 'Intent',
@@ -170,6 +181,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           open_tab: {
+            description: 'Open url in new tab',
             properties: {
               intent: {
                 title: 'Intent',
@@ -187,6 +199,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           close_tab: {
+            description: 'Close tab by tab_id',
             properties: {
               intent: {
                 title: 'Intent',
@@ -204,6 +217,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           cache_content: {
+            description: 'Cache what you have found so far from the current page for future use',
             properties: {
               intent: {
                 title: 'Intent',
@@ -221,6 +235,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           scroll_down: {
+            description: 'Scroll down the page by pixel amount - if no amount is specified, scroll down one page',
             properties: {
               intent: {
                 title: 'Intent',
@@ -228,6 +243,7 @@ export const jsonNavigatorOutputSchema = {
                 description: 'purpose of this action',
               },
               amount: {
+                title: 'Amount',
                 type: 'integer',
                 nullable: true,
               },
@@ -238,6 +254,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           scroll_up: {
+            description: 'Scroll up the page by pixel amount - if no amount is specified, scroll up one page',
             properties: {
               intent: {
                 title: 'Intent',
@@ -245,6 +262,7 @@ export const jsonNavigatorOutputSchema = {
                 description: 'purpose of this action',
               },
               amount: {
+                title: 'Amount',
                 type: 'integer',
                 nullable: true,
               },
@@ -255,6 +273,8 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           send_keys: {
+            description:
+              'Send strings of special keys like Escape, Backspace, Insert, PageDown, Delete, Enter, Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard.press.',
             properties: {
               intent: {
                 title: 'Intent',
@@ -272,6 +292,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           scroll_to_text: {
+            description: 'If you dont find something which you want to interact with, scroll to it',
             properties: {
               intent: {
                 title: 'Intent',
@@ -289,6 +310,7 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           get_dropdown_options: {
+            description: 'Get all options from a native dropdown',
             properties: {
               intent: {
                 title: 'Intent',
@@ -306,6 +328,8 @@ export const jsonNavigatorOutputSchema = {
             nullable: true,
           },
           select_dropdown_option: {
+            description:
+              'Select dropdown option for interactive element index by the text of the option you want to select',
             properties: {
               intent: {
                 title: 'Intent',

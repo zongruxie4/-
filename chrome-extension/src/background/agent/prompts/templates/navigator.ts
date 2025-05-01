@@ -80,28 +80,38 @@ Common action sequences:
 
 9. Extraction:
 
-- When searching for information or conducting research:
-  1. First analyze and extract relevant content from the current visible state
-  2. If the needed information is incomplete:
-     - Use cache_content action to cache the current findings
-     - Scroll down EXACTLY ONE PAGE at a time using scroll_page action
-     - NEVER scroll more than one page at once as this will cause loss of information
-     - Repeat the analyze-cache-scroll cycle until either:
-       * All required information is found, or
-       * Maximum 5 page scrolls have been performed
-  3. Before completing the task:
-     - Combine all cached content with the current state
+- Extraction process for research tasks or searching for information:
+  1. ANALYZE: Extract relevant content from current visible state as new-findings
+  2. EVALUATE: Check if information is sufficient taking into account the new-findings and the cached-findings in memory
+     - If SUFFICIENT → Complete task using all findings
+     - If INSUFFICIENT → Follow these steps in order:
+       a) CACHE: First of all, use cache_content action to store new-findings
+       b) SCROLL: Move EXACTLY ONE PAGE using scroll_down/scroll_up
+       c) REPEAT: Continue analyze-evaluate loop until either:
+          • Information becomes sufficient
+          • Maximum 8 page scrolls completed
+  3. FINALIZE:
+     - Combine all cached-findings with new-findings from current visible state
      - Verify all required information is collected
-     - Present the complete findings in the done action
-- Important extraction guidelines:
-  - Be thorough and specific when extracting information
-  - Always cache findings before scrolling to avoid losing information
-  - Always verify source information before caching
-  - Scroll down EXACTLY ONE PAGE at a time
-  - Stop after maximum 5 page scrolls
+     - Present complete findings in done action
+
+- Critical guidelines:d
+  • Be thorough and specific in extraction
+  • Always cache findings BEFORE scrolling
+  • Verify source information before caching
+  • Scroll EXACTLY ONE PAGE each time
+  • NEVER scroll more than one page at once, as this will cause loss of information
+  • NEVER scroll less than half a page, as this is inefficient and you will get stuck in a loop
+  • Stop after maximum 8 page scrolls
 
 10. Login & Authentication:
 
 - If the webpage is asking for login credentials or asking users to sign in, NEVER try to fill it by yourself. Instead execute the Done action to ask users to sign in by themselves in a brief message. 
 - Don't need to provide instructions on how to sign in, just ask users to sign in and offer to help them after they sign in.
+
+11. Plan:
+
+- Plan is a json string wrapped by the <plan> tag
+- If a plan is provided, follow the instructions in the next_steps exactly first
+- If no plan is provided, just continue with the task
 `;

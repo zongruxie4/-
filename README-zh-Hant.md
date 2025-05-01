@@ -147,6 +147,7 @@ Nanobrowser 允許您為每個代理配置不同的 LLM 模型，以平衡性能
   - 零 API 成本且完全隱私，所有資料都在您的電腦上
 
 - **推薦模型**：
+  - **Qwen3 14B**
   - **Falcon3 10B**
   - **Qwen 2.5 Coder 14B**
   - **Mistral Small 24B**

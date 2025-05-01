@@ -167,7 +167,7 @@ export default class MessageManager {
    */
   public addPlan(plan?: string, position?: number): void {
     if (plan) {
-      const msg = new AIMessage({ content: plan });
+      const msg = new AIMessage({ content: `<plan>${plan}</plan>` });
       this.addMessageWithTokens(msg, null, position);
     }
   }

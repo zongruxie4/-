@@ -137,17 +137,19 @@ export class Executor {
         if (this.planner && (context.nSteps % context.options.planningInterval === 0 || validatorFailed)) {
           validatorFailed = false;
           // The first planning step is special, we don't want to add the browser state message to memory
+          let positionForPlan = 0;
           if (this.tasks.length > 1 || step > 0) {
             await this.navigator.addStateMessageToMemory();
+            positionForPlan = this.context.messageManager.length() - 1;
+          } else {
+            positionForPlan = this.context.messageManager.length();
           }
 
           const planOutput = await this.planner.execute();
           if (planOutput.result) {
             logger.info(`🔄 Planner output: ${JSON.stringify(planOutput.result, null, 2)}`);
-            this.context.messageManager.addPlan(
-              JSON.stringify(planOutput.result),
-              this.context.messageManager.length() - 1,
-            );
+            this.context.messageManager.addPlan(JSON.stringify(planOutput.result), positionForPlan);
+
             if (planOutput.result.done) {
               // task is complete, skip navigation
               done = true;
