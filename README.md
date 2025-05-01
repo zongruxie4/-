@@ -147,6 +147,7 @@ Nanobrowser allows you to configure different LLM models for each agent to balan
   - Zero API costs and complete privacy with no data leaving your machine
 
 - **Recommended Models**:
+  - **Qwen3 14B**
   - **Falcon3 10B**
   - **Qwen 2.5 Coder 14B**
   - **Mistral Small 24B**
