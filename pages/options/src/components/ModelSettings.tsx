@@ -426,7 +426,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
       if (providers[provider].type === ProviderTypeEnum.AzureOpenAI) {
         // Ensure modelNames is NOT included for Azure
-        delete configToSave.modelNames;
+        configToSave.modelNames = undefined;
       } else {
         // Ensure modelNames IS included for non-Azure
         // Use existing modelNames from state, or default if somehow missing
@@ -538,7 +538,6 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         // For Azure, verify the model is in the deployment names list
         if (providerConfig && providerConfig.type === ProviderTypeEnum.AzureOpenAI) {
           console.log(`[handleModelChange] Azure model selected: ${model}`);
-          console.log(`[handleModelChange] Available deployments:`, providerConfig.azureDeploymentNames || []);
         }
 
         // Reset reasoning effort if switching models
@@ -965,7 +964,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   const addAzureProvider = () => {
     // Count existing Azure providers
     const azureProviders = Object.keys(providers).filter(
-      key => key === ProviderTypeEnum.AzureOpenAI || key.startsWith(ProviderTypeEnum.AzureOpenAI + '_'),
+      key => key === ProviderTypeEnum.AzureOpenAI || key.startsWith(`${ProviderTypeEnum.AzureOpenAI}_`),
     );
     const nextNumber = azureProviders.length + 1;
 
