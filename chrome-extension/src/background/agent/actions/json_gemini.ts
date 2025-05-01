@@ -25,6 +25,8 @@ export const geminiNavigatorOutputSchema = {
         properties: {
           done: {
             type: 'object',
+            description: 'Complete task',
+            nullable: true,
             properties: {
               text: {
                 type: 'string',
@@ -34,10 +36,12 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['text', 'success'],
-            nullable: true,
           },
           search_google: {
             type: 'object',
+            description:
+              'Search the query in Google in the current tab, the query should be a search query like humans search in Google, concrete and not vague or super long. More the single most important items. ',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -48,10 +52,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'query'],
-            nullable: true,
           },
           go_to_url: {
             type: 'object',
+            description: 'Navigate to URL in the current tab',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -62,10 +67,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'url'],
-            nullable: true,
           },
           go_back: {
             type: 'object',
+            description: 'Go back to previous page',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -73,10 +79,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent'],
-            nullable: true,
           },
           wait: {
             type: 'object',
+            description: 'Wait for x seconds default 3',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -87,10 +94,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'seconds'],
-            nullable: true,
           },
           click_element: {
             type: 'object',
+            description: 'Click element by index',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -105,10 +113,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'index'],
-            nullable: true,
           },
           input_text: {
             type: 'object',
+            description: 'Input text into an interactive input element',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -126,10 +135,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'index', 'text'],
-            nullable: true,
           },
           switch_tab: {
             type: 'object',
+            description: 'Switch tab',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -140,10 +150,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'tab_id'],
-            nullable: true,
           },
           open_tab: {
             type: 'object',
+            description: 'Open url in new tab',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -154,10 +165,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'url'],
-            nullable: true,
           },
           close_tab: {
             type: 'object',
+            description: 'Close tab by tab_id',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -168,10 +180,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'tab_id'],
-            nullable: true,
           },
           cache_content: {
             type: 'object',
+            description: 'Cache what you have found so far from the current page for future use',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -182,10 +195,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'content'],
-            nullable: true,
           },
           scroll_down: {
             type: 'object',
+            description: 'Scroll down the page by pixel amount - if no amount is specified, scroll down one page',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -197,10 +211,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'amount'],
-            nullable: true,
           },
           scroll_up: {
             type: 'object',
+            description: 'Scroll up the page by pixel amount - if no amount is specified, scroll up one page',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -212,10 +227,12 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'amount'],
-            nullable: true,
           },
           send_keys: {
             type: 'object',
+            description:
+              'Send strings of special keys like Escape, Backspace, Insert, PageDown, Delete, Enter, Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard.press.',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -226,10 +243,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'keys'],
-            nullable: true,
           },
           scroll_to_text: {
             type: 'object',
+            description: 'If you dont find something which you want to interact with, scroll to it',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -240,10 +258,11 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'text'],
-            nullable: true,
           },
           get_dropdown_options: {
             type: 'object',
+            description: 'Get all options from a native dropdown',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -254,10 +273,12 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'index'],
-            nullable: true,
           },
           select_dropdown_option: {
             type: 'object',
+            description:
+              'Select dropdown option for interactive element index by the text of the option you want to select',
+            nullable: true,
             properties: {
               intent: {
                 type: 'string',
@@ -271,10 +292,8 @@ export const geminiNavigatorOutputSchema = {
               },
             },
             required: ['intent', 'index', 'text'],
-            nullable: true,
           },
         },
-        required: [],
       },
     },
   },

@@ -60,7 +60,27 @@ function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, J
     const definition = definitions[refPath];
     if (definition) {
       // Process the definition to resolve any nested references
-      return processSchemaNode(definition, definitions);
+      const processedDefinition = processSchemaNode(definition, definitions);
+
+      // Create a new object that preserves properties from the original node (except $ref)
+      const result: JsonSchemaObject = {};
+
+      // First copy properties from the original node except $ref
+      for (const [key, value] of Object.entries(node)) {
+        if (key !== '$ref') {
+          result[key] = value;
+        }
+      }
+
+      // Then copy properties from the processed definition
+      // Don't override any existing properties in the original node
+      for (const [key, value] of Object.entries(processedDefinition)) {
+        if (result[key] === undefined) {
+          result[key] = value;
+        }
+      }
+
+      return result;
     }
   }
 
@@ -74,7 +94,24 @@ function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, J
     const hasNullType = processedAnyOf.some(item => item.type === 'null');
 
     if (nonNullTypes.length === 1 && hasNullType) {
-      const result = { ...nonNullTypes[0] };
+      // Create a result that preserves all properties from the original node
+      const result: JsonSchemaObject = {};
+
+      // Copy all properties from original node except anyOf
+      for (const [key, value] of Object.entries(node)) {
+        if (key !== 'anyOf') {
+          result[key] = value;
+        }
+      }
+
+      // Merge in properties from the non-null type
+      for (const [key, value] of Object.entries(nonNullTypes[0])) {
+        // Don't override properties that were in the original node
+        if (result[key] === undefined) {
+          result[key] = value;
+        }
+      }
+
       result.nullable = true;
       return result;
     }
@@ -115,93 +152,95 @@ function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, J
  * Converts an OpenAI format JSON schema to a Google Gemini compatible schema
  *
  * Key differences handled:
- * 1. OpenAI uses $defs and $ref for references, Gemini uses inline definitions
+ * 1. OpenAI accepts $defs and $ref for references, Gemini only accepts inline definitions
  * 2. Different structure for nullable properties
  * 3. Gemini has a flatter structure for defining properties
+ * 4. https://ai.google.dev/api/caching#Schema
+ * 5. https://ai.google.dev/gemini-api/docs/structured-output?lang=node#json-schemas
  *
  * @param openaiSchema The OpenAI format JSON schema to convert
+ * @param ensureOrder If true, adds the propertyOrdering field for consistent ordering
  * @returns A Google Gemini compatible JSON schema
  */
-export function convertOpenAISchemaToGemini(openaiSchema: JsonSchemaObject): JsonSchemaObject {
+export function convertOpenAISchemaToGemini(openaiSchema: JsonSchemaObject, ensureOrder = false): JsonSchemaObject {
+  // First flatten the schema with dereferenceJsonSchema
+  const flattenedSchema = dereferenceJsonSchema(openaiSchema);
+
   // Create a new schema object
   const geminiSchema: JsonSchemaObject = {
-    type: openaiSchema.type,
+    type: flattenedSchema.type,
     properties: {},
-    required: openaiSchema.required || [],
+    required: flattenedSchema.required || [],
   };
 
-  // Process definitions to use for resolving references
-  const definitions = openaiSchema.$defs || {};
-
   // Process properties
-  if (openaiSchema.properties) {
-    geminiSchema.properties = processProperties(openaiSchema.properties, definitions);
+  if (flattenedSchema.properties) {
+    geminiSchema.properties = processPropertiesForGemini(flattenedSchema.properties, ensureOrder);
+
+    // Add propertyOrdering for top-level properties if ensureOrder is true
+    if (ensureOrder && geminiSchema.properties) {
+      geminiSchema.propertyOrdering = Object.keys(flattenedSchema.properties);
+    }
+  }
+
+  // Copy other Gemini-compatible fields
+  if (flattenedSchema.description) {
+    geminiSchema.description = flattenedSchema.description;
+  }
+
+  if (flattenedSchema.format) {
+    geminiSchema.format = flattenedSchema.format;
+  }
+
+  if (flattenedSchema.enum) {
+    geminiSchema.enum = flattenedSchema.enum;
+  }
+
+  if (flattenedSchema.nullable) {
+    geminiSchema.nullable = flattenedSchema.nullable;
+  }
+
+  // Handle array items
+  if (flattenedSchema.type === 'array' && flattenedSchema.items) {
+    geminiSchema.items = processPropertyForGemini(flattenedSchema.items);
+
+    if (flattenedSchema.minItems !== undefined) {
+      geminiSchema.minItems = flattenedSchema.minItems;
+    }
+
+    if (flattenedSchema.maxItems !== undefined) {
+      geminiSchema.maxItems = flattenedSchema.maxItems;
+    }
   }
 
   return geminiSchema;
 }
 
 /**
- * Process properties recursively, resolving references and converting to Gemini format
+ * Process properties recursively, converting to Gemini format
  */
-function processProperties(
+function processPropertiesForGemini(
   properties: Record<string, JsonSchemaObject>,
-  definitions: Record<string, JsonSchemaObject>,
+  addPropertyOrdering: boolean = false,
 ): Record<string, JsonSchemaObject> {
   const result: Record<string, JsonSchemaObject> = {};
 
   for (const [key, value] of Object.entries(properties)) {
     if (typeof value !== 'object' || value === null) continue;
 
-    result[key] = processProperty(value, definitions);
+    result[key] = processPropertyForGemini(value, addPropertyOrdering);
   }
 
   return result;
 }
 
 /**
- * Process a single property, resolving references and converting to Gemini format
+ * Process a single property, converting to Gemini format
+ *
+ * @param property The property to process
+ * @param addPropertyOrdering Whether to add property ordering for object properties
  */
-function processProperty(property: JsonSchemaObject, definitions: Record<string, JsonSchemaObject>): JsonSchemaObject {
-  // If it's a reference, resolve it
-  if (property.$ref) {
-    const refPath = property.$ref.replace('#/$defs/', '');
-    const definition = definitions[refPath];
-    if (definition) {
-      return processProperty(definition, definitions);
-    }
-  }
-
-  // Handle anyOf for nullable properties
-  if (property.anyOf) {
-    const nonNullType = property.anyOf.find(item => item.type !== 'null' && !item.$ref);
-
-    const refType = property.anyOf.find(item => item.$ref);
-
-    const isNullable = property.anyOf.some(item => item.type === 'null');
-
-    if (refType?.$ref) {
-      const refPath = refType.$ref.replace('#/$defs/', '');
-      const definition = definitions[refPath];
-
-      if (definition) {
-        const processed = processProperty(definition, definitions);
-        if (isNullable) {
-          processed.nullable = true;
-        }
-        return processed;
-      }
-    }
-
-    if (nonNullType) {
-      const processed = processProperty(nonNullType, definitions);
-      if (isNullable) {
-        processed.nullable = true;
-      }
-      return processed;
-    }
-  }
-
+function processPropertyForGemini(property: JsonSchemaObject, addPropertyOrdering = false): JsonSchemaObject {
   // Create a new property object
   const result: JsonSchemaObject = {
     type: property.type,
@@ -212,30 +251,51 @@ function processProperty(property: JsonSchemaObject, definitions: Record<string,
     result.description = property.description;
   }
 
-  // Process nested properties
-  if (property.properties) {
-    result.properties = processProperties(property.properties, definitions);
+  // Copy format if it exists
+  if (property.format) {
+    result.format = property.format;
+  }
+
+  // Copy enum if it exists
+  if (property.enum) {
+    result.enum = property.enum;
+  }
+
+  // Copy nullable if it exists
+  if (property.nullable) {
+    result.nullable = property.nullable;
+  }
+
+  // Process nested properties for objects
+  if (property.type === 'object' && property.properties) {
+    result.properties = processPropertiesForGemini(property.properties, addPropertyOrdering);
 
     // Copy required fields
     if (property.required) {
       result.required = property.required;
-    } else {
-      result.required = [];
+    }
+
+    // Add propertyOrdering for nested object if needed
+    if (addPropertyOrdering && property.properties) {
+      result.propertyOrdering = Object.keys(property.properties);
+    }
+    // Copy propertyOrdering if it already exists
+    else if (property.propertyOrdering) {
+      result.propertyOrdering = property.propertyOrdering;
     }
   }
 
   // Handle arrays
-  if (property.items) {
-    result.items = processProperty(property.items, definitions);
-  }
+  if (property.type === 'array' && property.items) {
+    result.items = processPropertyForGemini(property.items, addPropertyOrdering);
 
-  // Handle special case for NoParamsAction which is an object in OpenAI but a string in Gemini
-  if (property.additionalProperties === true && property.title === 'NoParamsAction' && property.description) {
-    return {
-      type: 'string',
-      nullable: true,
-      description: property.description,
-    };
+    if (property.minItems !== undefined) {
+      result.minItems = property.minItems;
+    }
+
+    if (property.maxItems !== undefined) {
+      result.maxItems = property.maxItems;
+    }
   }
 
   return result;
@@ -251,7 +311,7 @@ export function stringifyCustom(value: JSONSchemaType, indent = '', baseIndent =
   switch (typeof value) {
     case 'string':
       // Escape single quotes within the string if necessary
-      return `'${value.replace(/'/g, "\\\\'")}'`;
+      return `'${(value as string).replace(/'/g, "\\\\'")}'`;
     case 'number':
     case 'boolean':
       return String(value);
@@ -270,7 +330,7 @@ export function stringifyCustom(value: JSONSchemaType, indent = '', baseIndent =
       const properties = keys.map(key => {
         // Assume keys are valid JS identifiers and don't need quotes
         const formattedKey = key;
-        const formattedValue = stringifyCustom(value[key], currentIndent, baseIndent);
+        const formattedValue = stringifyCustom(value[key] as JSONSchemaType, currentIndent, baseIndent);
         return `${currentIndent}${formattedKey}: ${formattedValue}`;
       });
       return `{\n${properties.join(',\n')}\n${indent}}`;
