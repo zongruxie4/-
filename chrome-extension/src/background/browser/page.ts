@@ -20,6 +20,7 @@ import { DOMElementNode, type DOMState } from '../dom/views';
 import { type BrowserContextConfig, DEFAULT_BROWSER_CONTEXT_CONFIG, type PageState, URLNotAllowedError } from './views';
 import { createLogger } from '@src/background/log';
 import { ClickableElementProcessor } from '../dom/clickable/service';
+import { isUrlAllowed } from './util';
 
 const logger = createLogger('Page');
 
@@ -361,7 +362,7 @@ export default class Page {
     logger.info('navigateTo', url);
 
     // Check if URL is allowed
-    if (!this._isUrlAllowed(url)) {
+    if (!isUrlAllowed(url, this._config)) {
       const errorMessage = `Navigation to URL: ${url} is not allowed. Only these domains are allowed: ${this._config.allowedDomains?.join(', ')}`;
       logger.error(errorMessage);
       throw new URLNotAllowedError(errorMessage);
@@ -1296,7 +1297,7 @@ export default class Page {
     }
 
     const currentUrl = this._puppeteerPage.url();
-    if (!this._isUrlAllowed(currentUrl)) {
+    if (!isUrlAllowed(currentUrl, this._config)) {
       const errorMessage = `Navigation to URL: ${currentUrl} is not allowed. Only these domains are allowed: ${this._config.allowedDomains?.join(', ')}`;
       logger.error(errorMessage);
 
@@ -1311,40 +1312,6 @@ export default class Page {
       }
 
       throw new URLNotAllowedError(errorMessage);
-    }
-  }
-
-  /**
-   * Check if a URL is allowed based on the allowlist configuration.
-   * @param url - The URL to check
-   * @returns True if the URL is allowed, false otherwise
-   */
-  _isUrlAllowed(url: string): boolean {
-    if (!this._config.allowedDomains || this._config.allowedDomains.length === 0) {
-      return true;
-    }
-
-    try {
-      // Special case: Allow 'about:blank' explicitly
-      if (url === 'about:blank') {
-        return true;
-      }
-
-      const parsedUrl = new URL(url);
-      let domain = parsedUrl.hostname.toLowerCase();
-
-      // Remove port number if present
-      if (domain.includes(':')) {
-        domain = domain.split(':')[0];
-      }
-
-      // Check if domain matches any allowed domain pattern
-      return this._config.allowedDomains.some(
-        allowedDomain => domain === allowedDomain.toLowerCase() || domain.endsWith(`.${allowedDomain.toLowerCase()}`),
-      );
-    } catch (error) {
-      logger.error(`⛔️ Error checking URL allowlist: ${error instanceof Error ? error.message : String(error)}`);
-      return false;
     }
   }
 }

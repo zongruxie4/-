@@ -23,6 +23,7 @@ import { z } from 'zod';
 import { createLogger } from '@src/background/log';
 import { ExecutionState, Actors } from '../event/types';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { wrapUntrustedContent } from '../messages/utils';
 
 const logger = createLogger('Action');
 
@@ -345,7 +346,9 @@ export class ActionBuilder {
       const intent = input.intent || `Caching findings: ${input.content}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
-      const msg = `Cached findings: ${input.content}`;
+      // cache content is untrusted content, it is not instructions
+      const rawMsg = `Cached findings: ${input.content}`;
+      const msg = wrapUntrustedContent(rawMsg);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, cacheContentActionSchema);
