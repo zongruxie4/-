@@ -6,6 +6,9 @@
  * @returns True if the URL is allowed, false otherwise
  */
 export function isUrlAllowed(url: string, allowList: string[], denyList: string[]): boolean {
+  console.log('allowList', allowList);
+  console.log('denyList', denyList);
+
   // Normalize and validate input
   const trimmedUrl = url.trim();
   if (trimmedUrl.length === 0) {
@@ -42,6 +45,25 @@ export function isUrlAllowed(url: string, allowList: string[], denyList: string[
 
   try {
     const parsedUrl = new URL(trimmedUrl);
+
+    // 1. Remove protocol prefix for further comparisons
+    const urlWithoutProtocol = lowerCaseUrl.replace(/^https?:\/\//, '');
+
+    // 2. First check full URL against deny list
+    for (const deniedEntry of denyList) {
+      if (urlWithoutProtocol === deniedEntry) {
+        return false;
+      }
+    }
+
+    // 3. Check full URL against allow list
+    for (const allowedEntry of allowList) {
+      if (urlWithoutProtocol === allowedEntry) {
+        return true;
+      }
+    }
+
+    // 4. Extract domain for domain-based checks
     let domain = parsedUrl.hostname.toLowerCase();
 
     // Remove port number if present
@@ -50,26 +72,16 @@ export function isUrlAllowed(url: string, allowList: string[], denyList: string[
       domain = domain.substring(0, portIndex);
     }
 
-    // Handle IP addresses and localhost
-    if (domain === 'localhost' || domain === '127.0.0.1' || domain === '[::1]') {
-      // Check deny list first for consistency with security priority
-      if (denyList.includes(domain)) {
-        return false;
-      }
-      // Then check allow list
-      return allowList.includes(domain) || allowList.length === 0;
-    }
-
-    // Check deny list first (security priority)
+    // 5. Check domain against deny list
     for (const deniedEntry of denyList) {
-      if (lowerCaseUrl === deniedEntry || domain === deniedEntry || domain.endsWith(`.${deniedEntry}`)) {
+      if (domain === deniedEntry || domain.endsWith(`.${deniedEntry}`)) {
         return false;
       }
     }
 
-    // Check allow list
+    // 6. Check domain against allow list
     for (const allowedEntry of allowList) {
-      if (lowerCaseUrl === allowedEntry || domain === allowedEntry || domain.endsWith(`.${allowedEntry}`)) {
+      if (domain === allowedEntry || domain.endsWith(`.${allowedEntry}`)) {
         return true;
       }
     }

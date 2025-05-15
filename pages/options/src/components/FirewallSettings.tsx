@@ -30,12 +30,14 @@ export const FirewallSettings = ({ isDarkMode }: FirewallSettingsProps) => {
   };
 
   const handleAddUrl = async () => {
-    if (!newUrl.trim()) return;
+    // Remove http:// or https:// prefixes
+    const cleanUrl = newUrl.trim().replace(/^https?:\/\//, '');
+    if (!cleanUrl) return;
 
     if (activeList === 'allow') {
-      await firewallStore.addToAllowList(newUrl);
+      await firewallStore.addToAllowList(cleanUrl);
     } else {
-      await firewallStore.addToDenyList(newUrl);
+      await firewallStore.addToDenyList(cleanUrl);
     }
     await loadFirewallSettings();
     setNewUrl('');
@@ -58,7 +60,7 @@ export const FirewallSettings = ({ isDarkMode }: FirewallSettingsProps) => {
 
         <div className="space-y-6">
           <div
-            className={`rounded-lg border my-6 p-4 ${isDarkMode ? 'border-slate-700 bg-slate-700' : 'border-gray-200 bg-gray-100'}`}>
+            className={`my-6 rounded-lg border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-700' : 'border-gray-200 bg-gray-100'}`}>
             <div className="flex items-center justify-between">
               <label
                 htmlFor="toggle-firewall"
@@ -126,7 +128,12 @@ export const FirewallSettings = ({ isDarkMode }: FirewallSettingsProps) => {
               type="text"
               value={newUrl}
               onChange={e => setNewUrl(e.target.value)}
-              placeholder="Enter domain or URL (e.g. example.com, 127.0.0.1. Wildcards not supported)"
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  handleAddUrl();
+                }
+              }}
+              placeholder="Enter domain or URL (e.g. example.com, localhost, 127.0.0.1)"
               className={`flex-1 rounded-md border px-3 py-2 text-sm ${
                 isDarkMode ? 'border-gray-600 bg-slate-700 text-white' : 'border-gray-300 bg-white text-gray-700'
               }`}
@@ -207,6 +214,7 @@ export const FirewallSettings = ({ isDarkMode }: FirewallSettingsProps) => {
           <li>Deny list takes priority - if a URL matches any deny list entry, it&apos;s blocked</li>
           <li>When allow list is empty, all non-denied URLs are allowed</li>
           <li>When allow list has entries, only matching URLs are allowed</li>
+          <li>Port numbers are not supported yet</li>
           <li>Wildcards are not supported yet</li>
         </ul>
       </div>

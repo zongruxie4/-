@@ -15,7 +15,10 @@ export interface FirewallConfig {
  * @returns The normalized URL
  */
 function normalizeUrl(url: string): string {
-  return url.trim().toLowerCase();
+  return url
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '');
 }
 
 export type FirewallStorage = BaseStorage<FirewallConfig> & {
