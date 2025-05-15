@@ -363,9 +363,7 @@ export default class Page {
 
     // Check if URL is allowed
     if (!isUrlAllowed(url, this._config.allowedUrls, this._config.deniedUrls)) {
-      const errorMessage = `URL: ${url} is not allowed`;
-      logger.error(errorMessage);
-      throw new URLNotAllowedError(errorMessage);
+      throw new URLNotAllowedError(`URL: ${url} is not allowed`);
     }
 
     try {

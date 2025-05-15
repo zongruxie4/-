@@ -17,6 +17,7 @@ import {
 import { jsonNavigatorOutputSchema } from '../actions/json_schema';
 import { geminiNavigatorOutputSchema } from '../actions/json_gemini';
 import { calcBranchPathHashSet } from '@src/background/dom/views';
+import { URLNotAllowedError } from '@src/background/browser/views';
 const logger = createLogger('NavigatorAgent');
 
 export class NavigatorActionRegistry {
@@ -178,6 +179,9 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
       }
+      if (error instanceof URLNotAllowedError) {
+        throw error;
+      }
 
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorString = `Navigation failed: ${errorMessage}`;
@@ -329,6 +333,9 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         // TODO: wait for 1 second for now, need to optimize this to avoid unnecessary waiting
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
+        if (error instanceof URLNotAllowedError) {
+          throw error;
+        }
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('doAction error', actionName, actionArgs, errorMessage);
         // unexpected error, emit event
