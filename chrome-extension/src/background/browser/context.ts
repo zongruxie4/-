@@ -2,6 +2,7 @@ import 'webextension-polyfill';
 import { type BrowserContextConfig, type BrowserState, DEFAULT_BROWSER_CONTEXT_CONFIG, type TabInfo } from './views';
 import Page, { build_initial_state } from './page';
 import { createLogger } from '@src/background/log';
+import { isUrlAllowed } from './util';
 
 const logger = createLogger('BrowserContext');
 export default class BrowserContext {
@@ -219,6 +220,10 @@ export default class BrowserContext {
   }
 
   public async navigateTo(url: string): Promise<void> {
+    if (!isUrlAllowed(url, this._config)) {
+      throw new Error(`Navigation to URL: ${url} is not allowed`);
+    }
+
     const page = await this.getCurrentPage();
     if (!page) {
       await this.openTab(url);
@@ -242,6 +247,10 @@ export default class BrowserContext {
   }
 
   public async openTab(url: string): Promise<Page> {
+    if (!isUrlAllowed(url, this._config)) {
+      throw new Error(`Open tab failed. URL: ${url} is not allowed`);
+    }
+
     // Create the new tab
     const tab = await chrome.tabs.create({ url, active: true });
     if (!tab.id) {

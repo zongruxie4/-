@@ -1,7 +1,7 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { AgentContext, type AgentOptions } from './types';
 import { NavigatorAgent, NavigatorActionRegistry } from './agents/navigator';
-import { PlannerAgent } from './agents/planner';
+import { PlannerAgent, PlannerOutput } from './agents/planner';
 import { ValidatorAgent } from './agents/validator';
 import { NavigatorPrompt } from './prompts/navigator';
 import { PlannerPrompt } from './prompts/planner';
@@ -13,6 +13,7 @@ import { ActionBuilder } from './actions/builder';
 import { EventManager } from './event/manager';
 import { Actors, type EventCallback, EventType, ExecutionState } from './event/types';
 import { ChatModelAuthError, ChatModelForbiddenError } from './agents/errors';
+import { wrapUntrustedContent } from './messages/utils';
 const logger = createLogger('Executor');
 
 export interface ExecutorExtraArgs {
@@ -38,7 +39,7 @@ export class Executor {
     navigatorLLM: BaseChatModel,
     extraArgs?: Partial<ExecutorExtraArgs>,
   ) {
-    const messageManager = new MessageManager({});
+    const messageManager = new MessageManager();
 
     const plannerLLM = extraArgs?.plannerLLM ?? navigatorLLM;
     const validatorLLM = extraArgs?.validatorLLM ?? navigatorLLM;
@@ -148,7 +149,13 @@ export class Executor {
           const planOutput = await this.planner.execute();
           if (planOutput.result) {
             logger.info(`🔄 Planner output: ${JSON.stringify(planOutput.result, null, 2)}`);
-            this.context.messageManager.addPlan(JSON.stringify(planOutput.result), positionForPlan);
+            // observation in planner is untrusted content, they are not instructions
+            const observation = wrapUntrustedContent(planOutput.result.observation);
+            const plan: PlannerOutput = {
+              ...planOutput.result,
+              observation,
+            };
+            this.context.messageManager.addPlan(JSON.stringify(plan), positionForPlan);
 
             if (planOutput.result.done) {
               // task is complete, skip navigation

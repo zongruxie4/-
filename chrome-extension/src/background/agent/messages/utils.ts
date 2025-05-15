@@ -1,5 +1,17 @@
 import { type BaseMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
 
+/**
+ * Tag for untrusted content
+ */
+export const UNTRUSTED_CONTENT_TAG_START = '<untrusted_content>';
+export const UNTRUSTED_CONTENT_TAG_END = '</untrusted_content>';
+
+/**
+ * Tag for user request
+ */
+export const USER_REQUEST_TAG_START = '<user_request>';
+export const USER_REQUEST_TAG_END = '</user_request>';
+
 export function removeThinkTags(text: string): string {
   // Step 1: Remove well-formed <think>...</think>
   const thinkTagsRegex = /<think>[\s\S]*?<\/think>/g;
@@ -136,4 +148,51 @@ function mergeSuccessiveMessages(
   }
 
   return mergedMessages;
+}
+
+/**
+ * Escape untrusted content to prevent prompt injection
+ * @param rawContent - The raw string of untrusted content
+ * @returns Escaped content string
+ */
+export function escapeUntrustedContent(rawContent: string): string {
+  // Define regex patterns that account for whitespace variations within tags
+  const tagPatterns = [
+    {
+      // Match both <untrusted_content> and </untrusted_content> with any amount of whitespace
+      pattern: /<\s*\/?\s*untrusted_content\s*>/g,
+      replacement: (match: string) =>
+        match.includes('/') ? '&lt;/untrusted_content&gt;' : '&lt;untrusted_content&gt;',
+    },
+    {
+      // Match both <user_request> and </user_request> with any amount of whitespace
+      pattern: /<\s*\/?\s*user_request\s*>/g,
+      replacement: (match: string) => (match.includes('/') ? '&lt;/user_request&gt;' : '&lt;user_request&gt;'),
+    },
+  ];
+
+  let escapedContent = rawContent;
+
+  // Replace each tag pattern with its escaped version
+  for (const { pattern, replacement } of tagPatterns) {
+    escapedContent = escapedContent.replace(pattern, replacement);
+  }
+
+  return escapedContent;
+}
+
+export function wrapUntrustedContent(rawContent: string, escapeFirst = true): string {
+  if (escapeFirst) {
+    const escapedContent = escapeUntrustedContent(rawContent);
+    return `${UNTRUSTED_CONTENT_TAG_START}\n${escapedContent}\n${UNTRUSTED_CONTENT_TAG_END}`;
+  }
+  return `${UNTRUSTED_CONTENT_TAG_START}\n${rawContent}\n${UNTRUSTED_CONTENT_TAG_END}`;
+}
+
+export function wrapUserRequest(rawContent: string, escapeFirst = true): string {
+  if (escapeFirst) {
+    const escapedContent = escapeUntrustedContent(rawContent);
+    return `${USER_REQUEST_TAG_START}\n${escapedContent}\n${USER_REQUEST_TAG_END}`;
+  }
+  return `${USER_REQUEST_TAG_START}\n${rawContent}\n${USER_REQUEST_TAG_END}`;
 }

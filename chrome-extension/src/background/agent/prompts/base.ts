@@ -1,6 +1,7 @@
 import { HumanMessage, type SystemMessage } from '@langchain/core/messages';
 import type { AgentContext } from '@src/background/agent/types';
 import { createLogger } from '@src/background/log';
+import { wrapUntrustedContent } from '../messages/utils';
 
 const logger = createLogger('agent/prompts/base');
 
@@ -28,13 +29,14 @@ abstract class BasePrompt {
    */
   async buildBrowserStateUserMessage(context: AgentContext): Promise<HumanMessage> {
     const browserState = await context.browserContext.getState();
-    const elementsText = browserState.elementTree.clickableElementsToString(context.options.includeAttributes);
-
+    const rawElementsText = browserState.elementTree.clickableElementsToString(context.options.includeAttributes);
     const hasContentAbove = (browserState.pixelsAbove || 0) > 0;
     const hasContentBelow = (browserState.pixelsBelow || 0) > 0;
 
     let formattedElementsText = '';
-    if (elementsText !== '') {
+    if (rawElementsText !== '') {
+      const elementsText = wrapUntrustedContent(rawElementsText);
+
       if (hasContentAbove) {
         // formattedElementsText = `... ${browserState.pixelsAbove} pixels above - scroll up or extract content to see more ...\n${elementsText}`;
         formattedElementsText = `... ${browserState.pixelsAbove} pixels above - scroll up to see more ...\n${elementsText}`;
@@ -46,7 +48,7 @@ abstract class BasePrompt {
         // formattedElementsText = `${formattedElementsText}\n... ${browserState.pixelsBelow} pixels below - scroll down or extract content to see more ...`;
         formattedElementsText = `${formattedElementsText}\n... ${browserState.pixelsBelow} pixels below - scroll down to see more ...`;
       } else {
-        formattedElementsText = `${formattedElementsText}\n[End of page]`;
+        formattedElementsText = `${formattedElementsText}\n[End of page]\n`;
       }
     } else {
       formattedElementsText = 'empty page';
