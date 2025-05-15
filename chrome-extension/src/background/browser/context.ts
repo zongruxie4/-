@@ -6,7 +6,7 @@ import { isUrlAllowed } from './util';
 
 const logger = createLogger('BrowserContext');
 export default class BrowserContext {
-  private readonly _config: BrowserContextConfig;
+  private _config: BrowserContextConfig;
   private _currentTabId: number | null = null;
   private _attachedPages: Map<number, Page> = new Map();
 
@@ -16,6 +16,10 @@ export default class BrowserContext {
 
   public getConfig(): BrowserContextConfig {
     return this._config;
+  }
+
+  public updateConfig(config: Partial<BrowserContextConfig>): void {
+    this._config = { ...this._config, ...config };
   }
 
   public updateCurrentTabId(tabId: number): void {
@@ -220,8 +224,8 @@ export default class BrowserContext {
   }
 
   public async navigateTo(url: string): Promise<void> {
-    if (!isUrlAllowed(url, this._config)) {
-      throw new Error(`Navigation to URL: ${url} is not allowed`);
+    if (!isUrlAllowed(url, this._config.allowedUrls, this._config.deniedUrls)) {
+      throw new Error(`URL: ${url} is not allowed`);
     }
 
     const page = await this.getCurrentPage();
@@ -247,7 +251,7 @@ export default class BrowserContext {
   }
 
   public async openTab(url: string): Promise<Page> {
-    if (!isUrlAllowed(url, this._config)) {
+    if (!isUrlAllowed(url, this._config.allowedUrls, this._config.deniedUrls)) {
       throw new Error(`Open tab failed. URL: ${url} is not allowed`);
     }
 
@@ -314,6 +318,7 @@ export default class BrowserContext {
     const browserState: BrowserState = {
       ...pageState,
       tabs: tabInfos,
+      browser_errors: [],
     };
     return browserState;
   }

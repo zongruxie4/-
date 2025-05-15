@@ -362,8 +362,8 @@ export default class Page {
     logger.info('navigateTo', url);
 
     // Check if URL is allowed
-    if (!isUrlAllowed(url, this._config)) {
-      const errorMessage = `Navigation to URL: ${url} is not allowed. Only these domains are allowed: ${this._config.allowedDomains?.join(', ')}`;
+    if (!isUrlAllowed(url, this._config.allowedUrls, this._config.deniedUrls)) {
+      const errorMessage = `URL: ${url} is not allowed`;
       logger.error(errorMessage);
       throw new URLNotAllowedError(errorMessage);
     }
@@ -1297,8 +1297,8 @@ export default class Page {
     }
 
     const currentUrl = this._puppeteerPage.url();
-    if (!isUrlAllowed(currentUrl, this._config)) {
-      const errorMessage = `Navigation to URL: ${currentUrl} is not allowed. Only these domains are allowed: ${this._config.allowedDomains?.join(', ')}`;
+    if (!isUrlAllowed(currentUrl, this._config.allowedUrls, this._config.deniedUrls)) {
+      const errorMessage = `URL: ${currentUrl} is not allowed`;
       logger.error(errorMessage);
 
       // Navigate to home page or about:blank
