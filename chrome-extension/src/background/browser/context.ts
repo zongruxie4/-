@@ -1,12 +1,18 @@
 import 'webextension-polyfill';
-import { type BrowserContextConfig, type BrowserState, DEFAULT_BROWSER_CONTEXT_CONFIG, type TabInfo } from './views';
+import {
+  type BrowserContextConfig,
+  type BrowserState,
+  DEFAULT_BROWSER_CONTEXT_CONFIG,
+  type TabInfo,
+  URLNotAllowedError,
+} from './views';
 import Page, { build_initial_state } from './page';
 import { createLogger } from '@src/background/log';
 import { isUrlAllowed } from './util';
 
 const logger = createLogger('BrowserContext');
 export default class BrowserContext {
-  private readonly _config: BrowserContextConfig;
+  private _config: BrowserContextConfig;
   private _currentTabId: number | null = null;
   private _attachedPages: Map<number, Page> = new Map();
 
@@ -16,6 +22,10 @@ export default class BrowserContext {
 
   public getConfig(): BrowserContextConfig {
     return this._config;
+  }
+
+  public updateConfig(config: Partial<BrowserContextConfig>): void {
+    this._config = { ...this._config, ...config };
   }
 
   public updateCurrentTabId(tabId: number): void {
@@ -220,8 +230,8 @@ export default class BrowserContext {
   }
 
   public async navigateTo(url: string): Promise<void> {
-    if (!isUrlAllowed(url, this._config)) {
-      throw new Error(`Navigation to URL: ${url} is not allowed`);
+    if (!isUrlAllowed(url, this._config.allowedUrls, this._config.deniedUrls)) {
+      throw new URLNotAllowedError(`URL: ${url} is not allowed`);
     }
 
     const page = await this.getCurrentPage();
@@ -247,8 +257,8 @@ export default class BrowserContext {
   }
 
   public async openTab(url: string): Promise<Page> {
-    if (!isUrlAllowed(url, this._config)) {
-      throw new Error(`Open tab failed. URL: ${url} is not allowed`);
+    if (!isUrlAllowed(url, this._config.allowedUrls, this._config.deniedUrls)) {
+      throw new URLNotAllowedError(`Open tab failed. URL: ${url} is not allowed`);
     }
 
     // Create the new tab
@@ -314,6 +324,7 @@ export default class BrowserContext {
     const browserState: BrowserState = {
       ...pageState,
       tabs: tabInfos,
+      browser_errors: [],
     };
     return browserState;
   }

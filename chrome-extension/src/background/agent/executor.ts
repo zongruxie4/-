@@ -1,7 +1,7 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { AgentContext, type AgentOptions } from './types';
 import { NavigatorAgent, NavigatorActionRegistry } from './agents/navigator';
-import { PlannerAgent, PlannerOutput } from './agents/planner';
+import { PlannerAgent, type PlannerOutput } from './agents/planner';
 import { ValidatorAgent } from './agents/validator';
 import { NavigatorPrompt } from './prompts/navigator';
 import { PlannerPrompt } from './prompts/planner';
@@ -14,6 +14,7 @@ import { EventManager } from './event/manager';
 import { Actors, type EventCallback, EventType, ExecutionState } from './event/types';
 import { ChatModelAuthError, ChatModelForbiddenError } from './agents/errors';
 import { wrapUntrustedContent } from './messages/utils';
+import { URLNotAllowedError } from '../browser/views';
 const logger = createLogger('Executor');
 
 export interface ExecutorExtraArgs {
@@ -232,7 +233,12 @@ export class Executor {
         return true;
       }
     } catch (error) {
-      if (error instanceof ChatModelAuthError || error instanceof ChatModelForbiddenError) {
+      logger.error(`Failed to execute step: ${error}`);
+      if (
+        error instanceof ChatModelAuthError ||
+        error instanceof ChatModelForbiddenError ||
+        error instanceof URLNotAllowedError
+      ) {
         throw error;
       }
       context.consecutiveFailures++;
