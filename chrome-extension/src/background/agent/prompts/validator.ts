@@ -24,7 +24,7 @@ export class ValidatorPrompt extends BasePrompt {
     const tasksString = `
 ${lastTask}
 
-The above task is a follow up task of the following tasks, please take the previous context into account when validating the task.
+The above task is the ultimate task to validate. It is a follow up task of the following previous tasks, please take the previous tasks into account when validating the ultimate task.
 
 Previous tasks:
 ${previousTasks}
