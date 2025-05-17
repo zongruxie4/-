@@ -1,9 +1,6 @@
 import { HumanMessage, type SystemMessage } from '@langchain/core/messages';
 import type { AgentContext } from '@src/background/agent/types';
-import { createLogger } from '@src/background/log';
 import { wrapUntrustedContent } from '../messages/utils';
-
-const logger = createLogger('agent/prompts/base');
 
 /**
  * Abstract base class for all prompt types
@@ -95,7 +92,6 @@ ${actionResultsDescription}
 `;
 
     if (browserState.screenshot && context.options.useVision) {
-      logger.info('state with screenshot', context.options.useVision);
       return new HumanMessage({
         content: [
           { type: 'text', text: stateDescription },
@@ -106,7 +102,6 @@ ${actionResultsDescription}
         ],
       });
     }
-    logger.info('state without screenshot', context.options.useVision);
 
     return new HumanMessage(stateDescription);
   }
