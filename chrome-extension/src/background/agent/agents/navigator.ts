@@ -284,7 +284,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     }
 
     const browserContext = this.context.browserContext;
-    const browserState = await browserContext.getState();
+    const browserState = await browserContext.getState(this.context.options.useVision);
     const cachedPathHashes = await calcBranchPathHashSet(browserState);
 
     await browserContext.removeHighlight();
@@ -305,7 +305,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
         const indexArg = actionInstance.getIndexArg(actionArgs);
         if (i > 0 && indexArg !== null) {
-          const newState = await browserContext.getState();
+          const newState = await browserContext.getState(this.context.options.useVision);
           const newPathHashes = await calcBranchPathHashSet(newState);
           // next action requires index but there are new elements on the page
           if (!newPathHashes.isSubsetOf(cachedPathHashes)) {

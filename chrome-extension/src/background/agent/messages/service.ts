@@ -1,7 +1,7 @@
 import { type BaseMessage, AIMessage, HumanMessage, type SystemMessage, ToolMessage } from '@langchain/core/messages';
 import { MessageHistory, MessageMetadata } from '@src/background/agent/messages/views';
 import { createLogger } from '@src/background/log';
-import { USER_REQUEST_TAG_START, USER_REQUEST_TAG_END, wrapUserRequest } from '@src/background/agent/messages/utils';
+import { wrapUserRequest } from '@src/background/agent/messages/utils';
 
 const logger = createLogger('MessageManager');
 

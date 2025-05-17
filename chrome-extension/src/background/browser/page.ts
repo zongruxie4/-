@@ -171,14 +171,14 @@ export default class Page {
     }
   }
 
-  async getClickableElements(focusElement: number): Promise<DOMState | null> {
+  async getClickableElements(showHighlightElements: boolean, focusElement: number): Promise<DOMState | null> {
     if (!this._validWebPage) {
       return null;
     }
     return _getClickableElements(
       this._tabId,
       this.url(),
-      this._config.highlightElements,
+      showHighlightElements,
       focusElement,
       this._config.viewportExpansion,
     );
@@ -199,13 +199,13 @@ export default class Page {
     return await this._puppeteerPage.content();
   }
 
-  async getState(cacheClickableElementsHashes = false): Promise<PageState> {
+  async getState(useVision = false, cacheClickableElementsHashes = false): Promise<PageState> {
     if (!this._validWebPage) {
       // return the initial state
       return build_initial_state(this._tabId);
     }
     await this.waitForPageAndFramesLoad();
-    const updatedState = await this._updateState();
+    const updatedState = await this._updateState(useVision);
 
     // Find out which elements are new
     // Do this only if url has not changed
@@ -258,7 +258,8 @@ export default class Page {
 
       // Get DOM content (equivalent to dom_service.get_clickable_elements)
       // This part would need to be implemented based on your DomService logic
-      const content = await this.getClickableElements(focusElement);
+      // showHighlightElements is true if useVision is true, otherwise false
+      const content = await this.getClickableElements(useVision, focusElement);
       if (!content) {
         logger.warning('Failed to get clickable elements');
         // Return last known good state if available

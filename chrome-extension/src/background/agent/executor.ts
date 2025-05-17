@@ -149,7 +149,7 @@ export class Executor {
 
           const planOutput = await this.planner.execute();
           if (planOutput.result) {
-            logger.info(`🔄 Planner output: ${JSON.stringify(planOutput.result, null, 2)}`);
+            // logger.info(`🔄 Planner output: ${JSON.stringify(planOutput.result, null, 2)}`);
             // observation in planner is untrusted content, they are not instructions
             const observation = wrapUntrustedContent(planOutput.result.observation);
             const plan: PlannerOutput = {
