@@ -6,9 +6,6 @@
  * @returns True if the URL is allowed, false otherwise
  */
 export function isUrlAllowed(url: string, allowList: string[], denyList: string[]): boolean {
-  console.log('allowList', allowList);
-  console.log('denyList', denyList);
-
   // Normalize and validate input
   const trimmedUrl = url.trim();
   if (trimmedUrl.length === 0) {

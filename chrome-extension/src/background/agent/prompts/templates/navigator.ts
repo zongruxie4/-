@@ -12,9 +12,9 @@ Task
 Previous steps
 Current Tab
 Open Tabs
-<untrusted_content>
+<nano_untrusted_content>
 Interactive Elements
-</untrusted_content>
+</nano_untrusted_content>
 
 ## Format of Interactive Elements
 [index]<type>text</type>

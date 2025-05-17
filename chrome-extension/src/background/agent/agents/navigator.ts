@@ -140,7 +140,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
       // call the model to get the actions to take
       const inputMessages = messageManager.getMessages();
-      // logger.info('Navigator input messages', inputMessages);
+      // logger.info('Navigator input message', inputMessages[inputMessages.length - 1]);
 
       const modelOutput = await this.invoke(inputMessages);
 
