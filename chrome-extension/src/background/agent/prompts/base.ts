@@ -28,7 +28,7 @@ abstract class BasePrompt {
    * @returns HumanMessage from LangChain
    */
   async buildBrowserStateUserMessage(context: AgentContext): Promise<HumanMessage> {
-    const browserState = await context.browserContext.getState();
+    const browserState = await context.browserContext.getState(context.options.useVision);
     const rawElementsText = browserState.elementTree.clickableElementsToString(context.options.includeAttributes);
     const hasContentAbove = (browserState.pixelsAbove || 0) > 0;
     const hasContentBelow = (browserState.pixelsBelow || 0) > 0;
@@ -95,6 +95,7 @@ ${actionResultsDescription}
 `;
 
     if (browserState.screenshot && context.options.useVision) {
+      logger.info('state with screenshot', context.options.useVision);
       return new HumanMessage({
         content: [
           { type: 'text', text: stateDescription },
@@ -105,6 +106,7 @@ ${actionResultsDescription}
         ],
       });
     }
+    logger.info('state without screenshot', context.options.useVision);
 
     return new HumanMessage(stateDescription);
   }
