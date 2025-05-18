@@ -9,7 +9,7 @@ import favoritesStorage, { type FavoritePrompt } from '@extension/storage/lib/pr
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
 import ChatHistoryList from './components/ChatHistoryList';
-import TemplateList from './components/TemplateList';
+import BookmarkList from './components/BookmarkList';
 import { EventType, type AgentEvent, ExecutionState } from './types/event';
 import './SidePanel.css';
 
@@ -545,8 +545,8 @@ const SidePanel = () => {
     }
   };
 
-  const handleTemplateSelect = (content: string) => {
-    console.log('handleTemplateSelect', content);
+  const handleBookmarkSelect = (content: string) => {
+    console.log('handleBookmarkSelect', content);
     if (setInputTextRef.current) {
       setInputTextRef.current(content);
     }
@@ -667,9 +667,9 @@ const SidePanel = () => {
                   />
                 </div>
                 <div>
-                  <TemplateList
-                    templates={favoritePrompts}
-                    onTemplateSelect={handleTemplateSelect}
+                  <BookmarkList
+                    bookmarks={favoritePrompts}
+                    onBookmarkSelect={handleBookmarkSelect}
                     isDarkMode={isDarkMode}
                   />
                 </div>
