@@ -42,9 +42,8 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
       processedContent = parts[1];
 
       // Remove language identifier if present (e.g., 'json\n')
-      if (processedContent.includes('\\n')) {
-        const newlineIndex = processedContent.indexOf('\\n');
-        processedContent = processedContent.substring(newlineIndex + 1);
+      if (processedContent.startsWith('json')) {
+        processedContent = processedContent.substring(4).trim();
       }
     }
 
