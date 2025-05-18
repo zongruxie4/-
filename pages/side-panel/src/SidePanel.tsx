@@ -5,12 +5,12 @@ import { FiSettings } from 'react-icons/fi';
 import { PiPlusBold } from 'react-icons/pi';
 import { GrHistory } from 'react-icons/gr';
 import { type Message, Actors, chatHistoryStore } from '@extension/storage';
+import favoritesStorage, { type FavoritePrompt } from '@extension/storage/lib/prompt/favorites';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
 import ChatHistoryList from './components/ChatHistoryList';
 import TemplateList from './components/TemplateList';
 import { EventType, type AgentEvent, ExecutionState } from './types/event';
-import { defaultTemplates } from './templates';
 import './SidePanel.css';
 
 const SidePanel = () => {
@@ -23,6 +23,7 @@ const SidePanel = () => {
   const [isFollowUpMode, setIsFollowUpMode] = useState(false);
   const [isHistoricalSession, setIsHistoricalSession] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [favoritePrompts, setFavoritePrompts] = useState<FavoritePrompt[]>([]);
   const sessionIdRef = useRef<string | null>(null);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const heartbeatIntervalRef = useRef<number | null>(null);
@@ -516,12 +517,54 @@ const SidePanel = () => {
     }
   };
 
+  const handleSessionBookmark = async (sessionId: string) => {
+    try {
+      const fullSession = await chatHistoryStore.getSession(sessionId);
+
+      if (fullSession && fullSession.messages.length > 0) {
+        // Get the session title
+        const sessionTitle = fullSession.title;
+        // Get the first 5 words of the title
+        const title = sessionTitle.split(' ').slice(0, 5).join(' ');
+
+        // Get the first message content (the task)
+        const taskContent = fullSession.messages[0]?.content || '';
+
+        // Add to favorites storage
+        await favoritesStorage.addPrompt(title, taskContent);
+
+        // Update favorites in the UI
+        const prompts = await favoritesStorage.getAllPrompts();
+        setFavoritePrompts(prompts);
+
+        // Return to chat view after pinning
+        handleBackToChat();
+      }
+    } catch (error) {
+      console.error('Failed to pin session to favorites:', error);
+    }
+  };
+
   const handleTemplateSelect = (content: string) => {
     console.log('handleTemplateSelect', content);
     if (setInputTextRef.current) {
       setInputTextRef.current(content);
     }
   };
+
+  // Load favorite prompts from storage
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const prompts = await favoritesStorage.getAllPrompts();
+        setFavoritePrompts(prompts);
+      } catch (error) {
+        console.error('Failed to load favorite prompts:', error);
+      }
+    };
+
+    loadFavorites();
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -601,6 +644,7 @@ const SidePanel = () => {
               sessions={chatSessions}
               onSessionSelect={handleSessionSelect}
               onSessionDelete={handleSessionDelete}
+              onSessionBookmark={handleSessionBookmark}
               visible={true}
               isDarkMode={isDarkMode}
             />
@@ -624,7 +668,7 @@ const SidePanel = () => {
                 </div>
                 <div>
                   <TemplateList
-                    templates={defaultTemplates}
+                    templates={favoritePrompts}
                     onTemplateSelect={handleTemplateSelect}
                     isDarkMode={isDarkMode}
                   />

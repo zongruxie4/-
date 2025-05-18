@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 interface Template {
-  id: string;
+  id: number;
   title: string;
   content: string;
 }
