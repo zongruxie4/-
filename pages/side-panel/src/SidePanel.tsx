@@ -552,6 +552,30 @@ const SidePanel = () => {
     }
   };
 
+  const handleBookmarkUpdateTitle = async (id: number, title: string) => {
+    try {
+      await favoritesStorage.updatePromptTitle(id, title);
+
+      // Update favorites in the UI
+      const prompts = await favoritesStorage.getAllPrompts();
+      setFavoritePrompts(prompts);
+    } catch (error) {
+      console.error('Failed to update favorite prompt title:', error);
+    }
+  };
+
+  const handleBookmarkDelete = async (id: number) => {
+    try {
+      await favoritesStorage.removePrompt(id);
+
+      // Update favorites in the UI
+      const prompts = await favoritesStorage.getAllPrompts();
+      setFavoritePrompts(prompts);
+    } catch (error) {
+      console.error('Failed to delete favorite prompt:', error);
+    }
+  };
+
   // Load favorite prompts from storage
   useEffect(() => {
     const loadFavorites = async () => {
@@ -670,6 +694,8 @@ const SidePanel = () => {
                   <BookmarkList
                     bookmarks={favoritePrompts}
                     onBookmarkSelect={handleBookmarkSelect}
+                    onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
+                    onBookmarkDelete={handleBookmarkDelete}
                     isDarkMode={isDarkMode}
                   />
                 </div>
