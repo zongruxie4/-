@@ -12,7 +12,7 @@ import type BrowserContext from '../browser/context';
 import { ActionBuilder } from './actions/builder';
 import { EventManager } from './event/manager';
 import { Actors, type EventCallback, EventType, ExecutionState } from './event/types';
-import { ChatModelAuthError, ChatModelForbiddenError } from './agents/errors';
+import { ChatModelAuthError, ChatModelForbiddenError, isAbortedError, RequestCancelledError } from './agents/errors';
 import { wrapUntrustedContent } from './messages/utils';
 import { URLNotAllowedError } from '../browser/views';
 const logger = createLogger('Executor');
@@ -206,8 +206,12 @@ export class Executor {
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_PAUSE, 'Task paused');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, `Task failed: ${errorMessage}`);
+      if (error instanceof RequestCancelledError) {
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, 'Task cancelled');
+      } else {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, `Task failed: ${errorMessage}`);
+      }
     }
   }
 
@@ -237,7 +241,8 @@ export class Executor {
       if (
         error instanceof ChatModelAuthError ||
         error instanceof ChatModelForbiddenError ||
-        error instanceof URLNotAllowedError
+        error instanceof URLNotAllowedError ||
+        error instanceof RequestCancelledError
       ) {
         throw error;
       }

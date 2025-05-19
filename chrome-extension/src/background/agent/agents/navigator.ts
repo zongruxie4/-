@@ -10,9 +10,11 @@ import { Actors, ExecutionState } from '../event/types';
 import {
   ChatModelAuthError,
   ChatModelForbiddenError,
+  isAbortedError,
   isAuthenticationError,
   isForbiddenError,
   LLM_FORBIDDEN_ERROR_MESSAGE,
+  RequestCancelledError,
 } from './errors';
 import { jsonNavigatorOutputSchema } from '../actions/json_schema';
 import { geminiNavigatorOutputSchema } from '../actions/json_gemini';
@@ -83,6 +85,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       let response = undefined;
       try {
         response = await structuredLlm.invoke(inputMessages, {
+          signal: this.context.controller.signal,
           ...this.callOptions,
         });
 
@@ -90,6 +93,9 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
           return response.parsed;
         }
       } catch (error) {
+        if (isAbortedError(error)) {
+          throw error;
+        }
         const errorMessage = `Failed to invoke ${this.modelName} with structured output: ${error}`;
         throw new Error(errorMessage);
       }
@@ -178,6 +184,9 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       }
       if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
+      }
+      if (isAbortedError(error)) {
+        throw new RequestCancelledError((error as Error).message);
       }
       if (error instanceof URLNotAllowedError) {
         throw error;
