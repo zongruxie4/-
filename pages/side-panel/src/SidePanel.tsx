@@ -485,8 +485,14 @@ const SidePanel = () => {
     setShowHistory(true);
   };
 
-  const handleBackToChat = () => {
+  const handleBackToChat = (reset = false) => {
     setShowHistory(false);
+    if (reset) {
+      setCurrentSessionId(null);
+      setMessages([]);
+      setIsFollowUpMode(false);
+      setIsHistoricalSession(false);
+    }
   };
 
   const handleSessionSelect = async (sessionId: string) => {
@@ -524,8 +530,8 @@ const SidePanel = () => {
       if (fullSession && fullSession.messages.length > 0) {
         // Get the session title
         const sessionTitle = fullSession.title;
-        // Get the first 5 words of the title
-        const title = sessionTitle.split(' ').slice(0, 5).join(' ');
+        // Get the first 8 words of the title
+        const title = sessionTitle.split(' ').slice(0, 8).join(' ');
 
         // Get the first message content (the task)
         const taskContent = fullSession.messages[0]?.content || '';
@@ -538,7 +544,7 @@ const SidePanel = () => {
         setFavoritePrompts(prompts);
 
         // Return to chat view after pinning
-        handleBackToChat();
+        handleBackToChat(true);
       }
     } catch (error) {
       console.error('Failed to pin session to favorites:', error);
@@ -573,6 +579,19 @@ const SidePanel = () => {
       setFavoritePrompts(prompts);
     } catch (error) {
       console.error('Failed to delete favorite prompt:', error);
+    }
+  };
+
+  const handleBookmarkReorder = async (draggedId: number, targetId: number) => {
+    try {
+      // Directly pass IDs to storage function - it now handles the reordering logic
+      await favoritesStorage.reorderPrompts(draggedId, targetId);
+
+      // Fetch the updated list from storage to get the new IDs and reflect the authoritative order
+      const updatedPromptsFromStorage = await favoritesStorage.getAllPrompts();
+      setFavoritePrompts(updatedPromptsFromStorage);
+    } catch (error) {
+      console.error('Failed to reorder favorite prompts:', error);
     }
   };
 
@@ -612,7 +631,7 @@ const SidePanel = () => {
             {showHistory ? (
               <button
                 type="button"
-                onClick={handleBackToChat}
+                onClick={() => handleBackToChat(false)}
                 className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
                 aria-label="Back to chat">
                 ← Back
@@ -690,22 +709,25 @@ const SidePanel = () => {
                     isDarkMode={isDarkMode}
                   />
                 </div>
-                <div>
+                <div className="flex-1 overflow-y-auto">
                   <BookmarkList
                     bookmarks={favoritePrompts}
                     onBookmarkSelect={handleBookmarkSelect}
                     onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
                     onBookmarkDelete={handleBookmarkDelete}
+                    onBookmarkReorder={handleBookmarkReorder}
                     isDarkMode={isDarkMode}
                   />
                 </div>
               </>
             )}
-            <div
-              className={`scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth p-2 ${isDarkMode ? 'bg-slate-900/80' : ''}`}>
-              <MessageList messages={messages} isDarkMode={isDarkMode} />
-              <div ref={messagesEndRef} />
-            </div>
+            {messages.length > 0 && (
+              <div
+                className={`scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth p-2 ${isDarkMode ? 'bg-slate-900/80' : ''}`}>
+                <MessageList messages={messages} isDarkMode={isDarkMode} />
+                <div ref={messagesEndRef} />
+              </div>
+            )}
             {messages.length > 0 && (
               <div
                 className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} p-2 shadow-sm backdrop-blur-sm`}>

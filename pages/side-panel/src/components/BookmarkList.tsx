@@ -13,6 +13,7 @@ interface BookmarkListProps {
   onBookmarkSelect: (content: string) => void;
   onBookmarkUpdateTitle?: (id: number, title: string) => void;
   onBookmarkDelete?: (id: number) => void;
+  onBookmarkReorder?: (draggedId: number, targetId: number) => void;
   isDarkMode?: boolean;
 }
 
@@ -21,10 +22,12 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
   onBookmarkSelect,
   onBookmarkUpdateTitle,
   onBookmarkDelete,
+  onBookmarkReorder,
   isDarkMode = false,
 }) => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState<string>('');
+  const [draggedId, setDraggedId] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleEditClick = (bookmark: Bookmark) => {
@@ -43,6 +46,32 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
     setEditingId(null);
   };
 
+  // Drag handlers
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    setDraggedId(id);
+    e.dataTransfer.setData('text/plain', id.toString());
+    // Add more transparent effect
+    e.currentTarget.classList.add('opacity-25');
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('opacity-25');
+    setDraggedId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    if (draggedId === null || draggedId === targetId) return;
+
+    if (onBookmarkReorder) {
+      onBookmarkReorder(draggedId, targetId);
+    }
+  };
+
   // Focus the input field when entering edit mode
   useEffect(() => {
     if (editingId !== null && inputRef.current) {
@@ -57,6 +86,11 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
         {bookmarks.map(bookmark => (
           <div
             key={bookmark.id}
+            draggable={editingId !== bookmark.id}
+            onDragStart={e => handleDragStart(e, bookmark.id)}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            onDrop={e => handleDrop(e, bookmark.id)}
             className={`group relative rounded-lg p-3 ${
               isDarkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-sky-50'
             } border ${isDarkMode ? 'border-slate-700' : 'border-sky-100'}`}>
@@ -95,19 +129,24 @@ const BookmarkList: React.FC<BookmarkListProps> = ({
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => onBookmarkSelect(bookmark.content)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    onBookmarkSelect(bookmark.content);
-                  }
-                }}
-                className="w-full text-left">
-                <div className={`truncate pr-10 text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                  {bookmark.title}
+              <>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => onBookmarkSelect(bookmark.content)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        onBookmarkSelect(bookmark.content);
+                      }
+                    }}
+                    className="w-full text-left">
+                    <div
+                      className={`truncate pr-10 text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                      {bookmark.title}
+                    </div>
+                  </button>
                 </div>
-              </button>
+              </>
             )}
 
             {editingId !== bookmark.id && (
