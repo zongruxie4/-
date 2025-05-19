@@ -3,7 +3,7 @@ import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
 
 // Template data
-const defaultFavoritesPrompts = [
+const defaultFavoritePrompts = [
   {
     title: '📚 Explore AI Papers',
     content:
@@ -37,6 +37,7 @@ export interface FavoritesStorage {
 export interface FavoritePromptsStorage {
   addPrompt: (title: string, content: string) => Promise<FavoritePrompt>;
   updatePrompt: (id: number, title: string, content: string) => Promise<FavoritePrompt | undefined>;
+  updatePromptTitle: (id: number, title: string) => Promise<FavoritePrompt | undefined>;
   removePrompt: (id: number) => Promise<void>;
   getAllPrompts: () => Promise<FavoritePrompt[]>;
   getPromptById: (id: number) => Promise<FavoritePrompt | undefined>;
@@ -65,7 +66,7 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
     // Check if storage is in initial state (empty prompts array and nextId=1)
     if (currentState.prompts.length === 0 && currentState.nextId === 1) {
       // Initialize with default prompts
-      for (const prompt of defaultFavoritesPrompts) {
+      for (const prompt of defaultFavoritePrompts) {
         await favoritesStorage.set(prev => {
           const id = prev.nextId;
           const newPrompt: FavoritePrompt = { id, title: prompt.title, content: prompt.content };
@@ -97,6 +98,32 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
         const updatedPrompts = prev.prompts.map(prompt => {
           if (prompt.id === id) {
             updatedPrompt = { ...prompt, title, content };
+            return updatedPrompt;
+          }
+          return prompt;
+        });
+
+        // If prompt wasn't found, leave the storage unchanged
+        if (!updatedPrompt) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          prompts: updatedPrompts,
+        };
+      });
+
+      return updatedPrompt;
+    },
+
+    updatePromptTitle: async (id: number, title: string): Promise<FavoritePrompt | undefined> => {
+      let updatedPrompt: FavoritePrompt | undefined;
+
+      await favoritesStorage.set(prev => {
+        const updatedPrompts = prev.prompts.map(prompt => {
+          if (prompt.id === id) {
+            updatedPrompt = { ...prompt, title };
             return updatedPrompt;
           }
           return prompt;

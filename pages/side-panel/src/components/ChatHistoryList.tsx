@@ -83,8 +83,8 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
                 }}
                 className={`absolute bottom-2 right-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 ${
                   isDarkMode
-                    ? 'bg-slate-700 text-red-400 hover:bg-slate-600'
-                    : 'bg-white text-red-500 hover:bg-gray-100'
+                    ? 'bg-slate-700 text-gray-400 hover:bg-slate-600'
+                    : 'bg-white text-gray-500 hover:bg-gray-100'
                 }`}
                 aria-label="Delete session"
                 type="button">
