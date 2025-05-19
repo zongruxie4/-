@@ -485,8 +485,14 @@ const SidePanel = () => {
     setShowHistory(true);
   };
 
-  const handleBackToChat = () => {
+  const handleBackToChat = (reset = false) => {
     setShowHistory(false);
+    if (reset) {
+      setCurrentSessionId(null);
+      setMessages([]);
+      setIsFollowUpMode(false);
+      setIsHistoricalSession(false);
+    }
   };
 
   const handleSessionSelect = async (sessionId: string) => {
@@ -538,7 +544,7 @@ const SidePanel = () => {
         setFavoritePrompts(prompts);
 
         // Return to chat view after pinning
-        handleBackToChat();
+        handleBackToChat(true);
       }
     } catch (error) {
       console.error('Failed to pin session to favorites:', error);
@@ -573,6 +579,19 @@ const SidePanel = () => {
       setFavoritePrompts(prompts);
     } catch (error) {
       console.error('Failed to delete favorite prompt:', error);
+    }
+  };
+
+  const handleBookmarkReorder = async (draggedId: number, targetId: number) => {
+    try {
+      // Directly pass IDs to storage function - it now handles the reordering logic
+      await favoritesStorage.reorderPrompts(draggedId, targetId);
+
+      // Fetch the updated list from storage to get the new IDs and reflect the authoritative order
+      const updatedPromptsFromStorage = await favoritesStorage.getAllPrompts();
+      setFavoritePrompts(updatedPromptsFromStorage);
+    } catch (error) {
+      console.error('Failed to reorder favorite prompts:', error);
     }
   };
 
@@ -612,7 +631,7 @@ const SidePanel = () => {
             {showHistory ? (
               <button
                 type="button"
-                onClick={handleBackToChat}
+                onClick={() => handleBackToChat(false)}
                 className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
                 aria-label="Back to chat">
                 ← Back
@@ -696,6 +715,7 @@ const SidePanel = () => {
                     onBookmarkSelect={handleBookmarkSelect}
                     onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
                     onBookmarkDelete={handleBookmarkDelete}
+                    onBookmarkReorder={handleBookmarkReorder}
                     isDarkMode={isDarkMode}
                   />
                 </div>

@@ -41,6 +41,7 @@ export interface FavoritePromptsStorage {
   removePrompt: (id: number) => Promise<void>;
   getAllPrompts: () => Promise<FavoritePrompt[]>;
   getPromptById: (id: number) => Promise<FavoritePrompt | undefined>;
+  reorderPrompts: (draggedId: number, targetId: number) => Promise<void>;
 }
 
 // Initial state with proper typing
@@ -168,6 +169,39 @@ export function createFavoritesStorage(): FavoritePromptsStorage {
     getPromptById: async (id: number): Promise<FavoritePrompt | undefined> => {
       const { prompts } = await favoritesStorage.get();
       return prompts.find(prompt => prompt.id === id);
+    },
+
+    reorderPrompts: async (draggedId: number, targetId: number): Promise<void> => {
+      await favoritesStorage.set(prev => {
+        // Create a copy of the current prompts
+        const promptsCopy = [...prev.prompts];
+
+        // Find indexes
+        const sourceIndex = promptsCopy.findIndex(prompt => prompt.id === draggedId);
+        const targetIndex = promptsCopy.findIndex(prompt => prompt.id === targetId);
+
+        // Ensure both indexes are valid
+        if (sourceIndex === -1 || targetIndex === -1) {
+          return prev; // No changes if either index is invalid
+        }
+
+        // Reorder by removing dragged item and inserting at target position
+        const [movedItem] = promptsCopy.splice(sourceIndex, 1);
+        promptsCopy.splice(targetIndex, 0, movedItem);
+
+        // Assign new IDs based on the order
+        const numPrompts = promptsCopy.length;
+        const updatedPromptsWithNewIds = promptsCopy.map((prompt, index) => ({
+          ...prompt,
+          id: numPrompts - index, // Assigns IDs: numPrompts, numPrompts-1, ..., 1
+        }));
+
+        return {
+          ...prev,
+          prompts: updatedPromptsWithNewIds,
+          nextId: numPrompts + 1, // Update nextId accordingly
+        };
+      });
     },
   };
 }
