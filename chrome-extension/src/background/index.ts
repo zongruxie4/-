@@ -69,6 +69,7 @@ chrome.debugger.onDetach.addListener(async (source, reason) => {
   console.log('Debugger detached:', source, reason);
   if (reason === 'canceled_by_user') {
     if (source.tabId) {
+      currentExecutor?.cancel();
       await browserContext.cleanup();
     }
   }
@@ -195,7 +196,7 @@ chrome.runtime.onConnect.addListener(port => {
     });
 
     port.onDisconnect.addListener(() => {
-      // this event is also triggered when the side panel is closed besides the port being closed
+      // this event is also triggered when the side panel is closed, so we need to cancel the task
       console.log('Side panel disconnected');
       currentPort = null;
       currentExecutor?.cancel();
