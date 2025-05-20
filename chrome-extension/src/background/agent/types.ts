@@ -48,6 +48,7 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
 };
 
 export class AgentContext {
+  controller: AbortController;
   taskId: string;
   browserContext: BrowserContext;
   messageManager: MessageManager;
@@ -68,6 +69,7 @@ export class AgentContext {
     eventManager: EventManager,
     options: Partial<AgentOptions>,
   ) {
+    this.controller = new AbortController();
     this.taskId = taskId;
     this.browserContext = browserContext;
     this.messageManager = messageManager;
@@ -104,6 +106,7 @@ export class AgentContext {
 
   async stop() {
     this.stopped = true;
+    setTimeout(() => this.controller.abort(), 300);
   }
 }
 
