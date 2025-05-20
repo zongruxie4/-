@@ -195,8 +195,10 @@ chrome.runtime.onConnect.addListener(port => {
     });
 
     port.onDisconnect.addListener(() => {
+      // this event is also triggered when the side panel is closed besides the port being closed
       console.log('Side panel disconnected');
       currentPort = null;
+      currentExecutor?.cancel();
     });
   }
 });
