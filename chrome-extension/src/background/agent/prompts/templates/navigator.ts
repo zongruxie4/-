@@ -109,7 +109,7 @@ Common action sequences:
   • Scroll EXACTLY ONE PAGE in most cases
   • Scroll less than one page only if you are sure you have to
   • NEVER scroll more than one page at once, as this will cause loss of information
-  • NEVER scroll very little, as this is inefficient and you will get stuck in a loop
+  • NEVER scroll less than 1/4 page, as this is inefficient and you will get stuck in a loop
   • Stop after maximum 8 page scrolls
 
 10. Login & Authentication:
