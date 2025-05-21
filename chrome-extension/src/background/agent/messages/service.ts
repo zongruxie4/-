@@ -157,7 +157,7 @@ export default class MessageManager {
    * @param newTask - The raw description of the new task
    */
   public addNewTask(newTask: string): void {
-    const content = `Your new ultimate task is: """${newTask}""". Take the previous context into account and finish your new ultimate task.`;
+    const content = `Your new ultimate task is: """${newTask}""". This is a follow-up of the previous tasks. Make sure to take all of the previous context into account and finish your new ultimate task.`;
     const wrappedContent = wrapUserRequest(content);
     const msg = new HumanMessage({ content: wrappedContent });
     this.addMessageWithTokens(msg);

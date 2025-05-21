@@ -78,6 +78,7 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
         throw new Error('Failed to validate planner output');
       }
       this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_OK, modelOutput.next_steps);
+      logger.info('Planner output', JSON.stringify(modelOutput, null, 2));
 
       return {
         id: this.id,

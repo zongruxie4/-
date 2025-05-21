@@ -355,27 +355,66 @@ export class ActionBuilder {
     actions.push(cacheContent);
 
     const scrollDown = new Action(async (input: z.infer<typeof scrollDownActionSchema.schema>) => {
-      const amount = input.amount !== undefined && input.amount !== null ? `${input.amount} pixels` : 'one page';
-      const intent = input.intent || `Scroll down the page by ${amount}`;
+      const requestedAmount =
+        input.amount !== undefined && input.amount !== null ? `${input.amount} pixels` : 'one page';
+      const intent = input.intent || `Scroll down the page by ${requestedAmount}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const page = await this.context.browserContext.getCurrentPage();
+
+      // Get initial scroll position
+      const [initialPixelsAbove, initialPixelsBelow] = await page.getScrollInfo();
+
+      // Check if already at bottom of page
+      if (initialPixelsBelow === 0) {
+        const msg = 'Already at bottom of page, cannot scroll down further';
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      }
+
+      // Perform scrolling
       await page.scrollDown(input.amount);
 
-      const msg = `Scrolled down the page by ${amount}`;
+      // Get final scroll position
+      const [finalPixelsAbove] = await page.getScrollInfo();
+
+      // Calculate actual scroll amount
+      const actualScrolled = finalPixelsAbove - initialPixelsAbove;
+
+      const msg = `Scrolled down the page by ${actualScrolled} pixels${input.amount !== undefined && actualScrolled !== input.amount ? ` (requested ${input.amount} pixels)` : ''}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, scrollDownActionSchema);
     actions.push(scrollDown);
 
     const scrollUp = new Action(async (input: z.infer<typeof scrollUpActionSchema.schema>) => {
-      const amount = input.amount !== undefined && input.amount !== null ? `${input.amount} pixels` : 'one page';
-      const intent = input.intent || `Scroll up the page by ${amount}`;
+      const requestedAmount =
+        input.amount !== undefined && input.amount !== null ? `${input.amount} pixels` : 'one page';
+      const intent = input.intent || `Scroll up the page by ${requestedAmount}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
       const page = await this.context.browserContext.getCurrentPage();
+
+      // Get initial scroll position
+      const [initialPixelsAbove] = await page.getScrollInfo();
+
+      // Check if already at top of page
+      if (initialPixelsAbove === 0) {
+        const msg = 'Already at top of page, cannot scroll up further';
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      }
+
+      // Perform scrolling
       await page.scrollUp(input.amount);
-      const msg = `Scrolled up the page by ${amount}`;
+
+      // Get final scroll position
+      const [finalPixelsAbove] = await page.getScrollInfo();
+
+      // Calculate actual scroll amount (absolute value since scrolling up decreases pixels from top)
+      const actualScrolled = Math.abs(initialPixelsAbove - finalPixelsAbove);
+
+      const msg = `Scrolled up the page by ${actualScrolled} pixels${input.amount !== undefined && actualScrolled !== input.amount ? ` (requested ${input.amount} pixels)` : ''}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, scrollUpActionSchema);

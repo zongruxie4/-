@@ -812,12 +812,12 @@ export default class Page {
       // Ensure element is ready for input
       try {
         // First wait for element stability
-        await this._waitForElementStability(element, 1000);
+        await this._waitForElementStability(element, 1500);
 
         // Then check visibility and scroll into view if needed
         const isHidden = await element.isHidden();
         if (!isHidden) {
-          await this._scrollIntoViewIfNeeded(element, 1000);
+          await this._scrollIntoViewIfNeeded(element, 1500);
         }
       } catch (e) {
         // Continue even if these operations fail
@@ -861,7 +861,7 @@ export default class Page {
         });
 
         // Type the text with a small delay between keypresses
-        await element.type(text, { delay: 5 });
+        await element.type(text, { delay: 50 });
       } else {
         // Use direct value setting for other types of elements
         await element.evaluate((el, value) => {

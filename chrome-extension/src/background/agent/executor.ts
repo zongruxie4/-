@@ -12,7 +12,7 @@ import type BrowserContext from '../browser/context';
 import { ActionBuilder } from './actions/builder';
 import { EventManager } from './event/manager';
 import { Actors, type EventCallback, EventType, ExecutionState } from './event/types';
-import { ChatModelAuthError, ChatModelForbiddenError, isAbortedError, RequestCancelledError } from './agents/errors';
+import { ChatModelAuthError, ChatModelForbiddenError, RequestCancelledError } from './agents/errors';
 import { wrapUntrustedContent } from './messages/utils';
 import { URLNotAllowedError } from '../browser/views';
 const logger = createLogger('Executor');
@@ -123,7 +123,7 @@ export class Executor {
       let done = false;
       let step = 0;
       let validatorFailed = false;
-
+      let webTask = undefined;
       for (step = 0; step < allowedMaxSteps; step++) {
         context.stepInfo = {
           stepNumber: context.nSteps,
@@ -158,6 +158,11 @@ export class Executor {
             };
             this.context.messageManager.addPlan(JSON.stringify(plan), positionForPlan);
 
+            if (webTask === undefined) {
+              // set the web task, and keep it not change from now on
+              webTask = planOutput.result.web_task;
+            }
+
             if (planOutput.result.done) {
               // task is complete, skip navigation
               done = true;
@@ -168,7 +173,7 @@ export class Executor {
               done = false;
             }
 
-            if (!planOutput.result.web_task && planOutput.result.done) {
+            if (!webTask && planOutput.result.done) {
               break;
             }
           }
