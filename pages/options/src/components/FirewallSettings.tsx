@@ -213,9 +213,8 @@ export const FirewallSettings = ({ isDarkMode }: FirewallSettingsProps) => {
           <li>If both lists are empty, all URLs are allowed</li>
           <li>Deny list takes priority - if a URL matches any deny list entry, it&apos;s blocked</li>
           <li>When allow list is empty, all non-denied URLs are allowed</li>
-          <li>When allow list has entries, only matching URLs are allowed</li>
-          <li>Port numbers are not supported yet</li>
-          <li>Wildcards are not supported yet</li>
+          <li className="font-bold">When allow list is not empty, only matching URLs are allowed</li>
+          <li>Wildcards are NOT supported yet</li>
         </ul>
       </div>
     </section>
