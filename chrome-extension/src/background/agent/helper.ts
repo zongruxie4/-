@@ -3,6 +3,7 @@ import { ChatOpenAI, AzureChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatXAI } from '@langchain/xai';
+import { ChatGroq } from '@langchain/groq';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOllama } from '@langchain/ollama';
 import { ChatDeepSeek } from '@langchain/deepseek';
@@ -217,6 +218,16 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         configuration: {},
       };
       return new ChatXAI(args) as BaseChatModel;
+    }
+    case ProviderTypeEnum.Groq: {
+      const args = {
+        model: modelConfig.modelName,
+        apiKey: providerConfig.apiKey,
+        temperature,
+        topP,
+        maxTokens,
+      };
+      return new ChatGroq(args);
     }
     case ProviderTypeEnum.Ollama: {
       const args: {

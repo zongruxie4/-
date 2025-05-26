@@ -17,6 +17,7 @@ export enum ProviderTypeEnum {
   Ollama = 'ollama',
   AzureOpenAI = 'azure_openai',
   OpenRouter = 'openrouter',
+  Groq = 'groq',
   CustomOpenAI = 'custom_openai',
 }
 
@@ -40,6 +41,11 @@ export const llmProviderModelNames = {
     'openai/o4-mini',
     'openai/gpt-4o-2024-11-20',
     'google/gemini-2.5-flash-preview',
+  ],
+  [ProviderTypeEnum.Groq]: [
+    'llama-3.3-70b-versatile',
+    'meta-llama/llama-4-scout-17b-16e-instruct',
+    'meta-llama/llama-4-maverick-17b-128e-instruct',
   ],
   // Custom OpenAI providers don't have predefined models as they are user-defined
 };
@@ -131,6 +137,20 @@ export const llmProviderParameters = {
     },
   },
   [ProviderTypeEnum.OpenRouter]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.7,
+      topP: 0.9,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.3,
+      topP: 0.85,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.1,
+      topP: 0.8,
+    },
+  },
+  [ProviderTypeEnum.Groq]: {
     [AgentNameEnum.Planner]: {
       temperature: 0.7,
       topP: 0.9,
