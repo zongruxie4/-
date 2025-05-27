@@ -63,6 +63,7 @@ export function getProviderTypeByProviderId(providerId: string): ProviderTypeEnu
     case ProviderTypeEnum.Grok:
     case ProviderTypeEnum.Ollama:
     case ProviderTypeEnum.OpenRouter:
+    case ProviderTypeEnum.Groq:
       return providerId;
     default:
       return ProviderTypeEnum.CustomOpenAI;
@@ -89,6 +90,8 @@ export function getDefaultDisplayNameFromProviderId(providerId: string): string 
       return 'Azure OpenAI';
     case ProviderTypeEnum.OpenRouter:
       return 'OpenRouter';
+    case ProviderTypeEnum.Groq:
+      return 'Groq';
     default:
       return providerId; // Use the provider id as display name for custom providers by default
   }
@@ -103,6 +106,7 @@ export function getDefaultProviderConfig(providerId: string): ProviderConfig {
     case ProviderTypeEnum.Gemini:
     case ProviderTypeEnum.Grok:
     case ProviderTypeEnum.OpenRouter: // OpenRouter uses modelNames
+    case ProviderTypeEnum.Groq: // Groq uses modelNames
       return {
         apiKey: '',
         name: getDefaultDisplayNameFromProviderId(providerId),
