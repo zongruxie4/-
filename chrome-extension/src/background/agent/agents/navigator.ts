@@ -16,10 +16,10 @@ import {
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
 } from './errors';
-import { jsonNavigatorOutputSchema } from '../actions/json_schema';
-import { geminiNavigatorOutputSchema } from '../actions/json_gemini';
 import { calcBranchPathHashSet } from '@src/background/dom/views';
 import { URLNotAllowedError } from '@src/background/browser/views';
+import { convertZodToJsonSchema, repairJsonString } from '@src/background/utils';
+
 const logger = createLogger('NavigatorAgent');
 
 export class NavigatorActionRegistry {
@@ -69,8 +69,10 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
     this.actionRegistry = actionRegistry;
 
-    this.jsonSchema = this.modelName.startsWith('gemini') ? geminiNavigatorOutputSchema : jsonNavigatorOutputSchema;
+    // The zod object is too complex to be used directly, so we need to convert it to json schema first for the model to use
+    this.jsonSchema = convertZodToJsonSchema(this.modelOutputSchema, 'NavigatorAgentOutput', true);
 
+    logger.info('Navigator model name', this.modelName);
     // logger.info('Navigator zod schema', JSON.stringify(zodToJsonSchema(this.modelOutputSchema), null, 2));
   }
 
@@ -281,11 +283,18 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     } else if (typeof response.action === 'string') {
       try {
         logger.warning('Unexpected action format', response.action);
-        // try to parse the action as an JSON object
+        // First try to parse the action string directly
         actions = JSON.parse(response.action);
-      } catch (error) {
-        logger.error('Invalid action format', response.action);
-        throw new Error('Invalid action output format');
+      } catch (parseError) {
+        try {
+          // If direct parsing fails, try to fix the JSON first
+          const fixedAction = repairJsonString(response.action);
+          logger.info('Fixed action string', fixedAction);
+          actions = JSON.parse(fixedAction);
+        } catch (error) {
+          logger.error('Invalid action format even after repair attempt', response.action);
+          throw new Error('Invalid action output format');
+        }
       }
     } else {
       // if the action is neither an array nor a string, it should be an object
@@ -346,7 +355,12 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
           throw error;
         }
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('doAction error', actionName, actionArgs, errorMessage);
+        logger.error(
+          'doAction error',
+          actionName,
+          JSON.stringify(actionArgs, null, 2),
+          JSON.stringify(errorMessage, null, 2),
+        );
         // unexpected error, emit event
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMessage);
         errCount++;

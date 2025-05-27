@@ -18,9 +18,10 @@ export const doneActionSchema: ActionSchema = {
 // Basic Navigation Actions
 export const searchGoogleActionSchema: ActionSchema = {
   name: 'search_google',
-  description: 'Search Google in the current tab',
+  description:
+    'Search the query in Google in the current tab, the query should be a search query like humans search in Google, concrete and not vague or super long. More the single most important items.',
   schema: z.object({
-    intent: z.string().optional(),
+    intent: z.string().default('').describe('purpose of this action'),
     query: z.string(),
   }),
 };
@@ -29,7 +30,7 @@ export const goToUrlActionSchema: ActionSchema = {
   name: 'go_to_url',
   description: 'Navigate to URL in the current tab',
   schema: z.object({
-    intent: z.string().optional(),
+    intent: z.string().default('').describe('purpose of this action'),
     url: z.string(),
   }),
 };
@@ -38,7 +39,7 @@ export const goBackActionSchema: ActionSchema = {
   name: 'go_back',
   description: 'Go back to the previous page',
   schema: z.object({
-    intent: z.string().optional(),
+    intent: z.string().default('').describe('purpose of this action'),
   }),
 };
 
@@ -46,9 +47,9 @@ export const clickElementActionSchema: ActionSchema = {
   name: 'click_element',
   description: 'Click element by index',
   schema: z.object({
-    intent: z.string().optional(), // some small LLM can not generate a intent, so let it be optional (but it's still makred as required in json schema)
-    index: z.number(),
-    xpath: z.string().nullable().optional(),
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().describe('index of the element'),
+    xpath: z.string().nullable().optional().describe('xpath of the element'),
   }),
 };
 
@@ -56,20 +57,20 @@ export const inputTextActionSchema: ActionSchema = {
   name: 'input_text',
   description: 'Input text into an interactive input element',
   schema: z.object({
-    intent: z.string().optional(),
-    index: z.number(),
-    text: z.string(),
-    xpath: z.string().nullable().optional(),
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().describe('index of the element'),
+    text: z.string().describe('text to input'),
+    xpath: z.string().nullable().optional().describe('xpath of the element'),
   }),
 };
 
 // Tab Management Actions
 export const switchTabActionSchema: ActionSchema = {
   name: 'switch_tab',
-  description: 'Switch to tab by id',
+  description: 'Switch to tab by tab id',
   schema: z.object({
-    intent: z.string().optional(),
-    tab_id: z.number(),
+    intent: z.string().default('').describe('purpose of this action'),
+    tab_id: z.number().int().describe('id of the tab to switch to'),
   }),
 };
 
@@ -77,17 +78,17 @@ export const openTabActionSchema: ActionSchema = {
   name: 'open_tab',
   description: 'Open URL in new tab',
   schema: z.object({
-    intent: z.string().optional(),
-    url: z.string(),
+    intent: z.string().default('').describe('purpose of this action'),
+    url: z.string().describe('url to open'),
   }),
 };
 
 export const closeTabActionSchema: ActionSchema = {
   name: 'close_tab',
-  description: 'Close tab by id',
+  description: 'Close tab by tab id',
   schema: z.object({
-    intent: z.string().optional(),
-    tab_id: z.number(),
+    intent: z.string().default('').describe('purpose of this action'),
+    tab_id: z.number().int().describe('id of the tab'),
   }),
 };
 
@@ -106,8 +107,8 @@ export const cacheContentActionSchema: ActionSchema = {
   name: 'cache_content',
   description: 'Cache what you have found so far from the current page for future use',
   schema: z.object({
-    intent: z.string().optional(),
-    content: z.string(),
+    intent: z.string().default('').describe('purpose of this action'),
+    content: z.string().describe('content to cache'),
   }),
 };
 
@@ -115,8 +116,8 @@ export const scrollDownActionSchema: ActionSchema = {
   name: 'scroll_down',
   description: 'Scroll down the page by pixel amount - if no amount is specified, scroll down one page',
   schema: z.object({
-    intent: z.string().optional(),
-    amount: z.number().nullable().optional(),
+    intent: z.string().default('').describe('purpose of this action'),
+    amount: z.number().int().nullable().optional().describe('amount of pixels'),
   }),
 };
 
@@ -124,8 +125,8 @@ export const scrollUpActionSchema: ActionSchema = {
   name: 'scroll_up',
   description: 'Scroll up the page by pixel amount - if no amount is specified, scroll up one page',
   schema: z.object({
-    intent: z.string().optional(),
-    amount: z.number().nullable().optional(),
+    intent: z.string().default('').describe('purpose of this action'),
+    amount: z.number().int().nullable().optional().describe('amount of pixels'),
   }),
 };
 
@@ -134,8 +135,8 @@ export const sendKeysActionSchema: ActionSchema = {
   description:
     'Send strings of special keys like Backspace, Insert, PageDown, Delete, Enter. Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard press. Be aware of different operating systems and their shortcuts',
   schema: z.object({
-    intent: z.string().optional(),
-    keys: z.string(),
+    intent: z.string().default('').describe('purpose of this action'),
+    keys: z.string().describe('keys to send'),
   }),
 };
 
@@ -143,8 +144,8 @@ export const scrollToTextActionSchema: ActionSchema = {
   name: 'scroll_to_text',
   description: 'If you dont find something which you want to interact with, scroll to it',
   schema: z.object({
-    intent: z.string().optional(),
-    text: z.string(),
+    intent: z.string().default('').describe('purpose of this action'),
+    text: z.string().describe('text to scroll to'),
   }),
 };
 
@@ -152,8 +153,8 @@ export const getDropdownOptionsActionSchema: ActionSchema = {
   name: 'get_dropdown_options',
   description: 'Get all options from a native dropdown',
   schema: z.object({
-    intent: z.string().optional(),
-    index: z.number(),
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().describe('index of the dropdown element'),
   }),
 };
 
@@ -161,17 +162,17 @@ export const selectDropdownOptionActionSchema: ActionSchema = {
   name: 'select_dropdown_option',
   description: 'Select dropdown option for interactive element index by the text of the option you want to select',
   schema: z.object({
-    intent: z.string().optional(),
-    index: z.number(),
-    text: z.string(),
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().describe('index of the dropdown element'),
+    text: z.string().describe('text of the option'),
   }),
 };
 
 export const waitActionSchema: ActionSchema = {
   name: 'wait',
-  description: 'Wait for x seconds default 3, do not use this action unless user asks for it',
+  description: 'Wait for x seconds default 3, do NOT use this action unless user asks to wait explicitly',
   schema: z.object({
-    intent: z.string().optional(),
-    seconds: z.number().nullable().optional(),
+    intent: z.string().default('').describe('purpose of this action'),
+    seconds: z.number().int().default(3).describe('amount of seconds'),
   }),
 };
