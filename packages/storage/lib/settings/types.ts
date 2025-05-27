@@ -42,11 +42,7 @@ export const llmProviderModelNames = {
     'openai/gpt-4o-2024-11-20',
     'google/gemini-2.5-flash-preview',
   ],
-  [ProviderTypeEnum.Groq]: [
-    'llama-3.3-70b-versatile',
-    'meta-llama/llama-4-scout-17b-16e-instruct',
-    'meta-llama/llama-4-maverick-17b-128e-instruct',
-  ],
+  [ProviderTypeEnum.Groq]: ['llama-3.3-70b-versatile', 'meta-llama/llama-4-scout-17b-16e-instruct'],
   // Custom OpenAI providers don't have predefined models as they are user-defined
 };
 
