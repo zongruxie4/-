@@ -394,6 +394,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       }
 
       // Check if base URL is required but missing for custom_openai, ollama, azure_openai or openrouter
+      // Note: Groq does not require base URL as it uses the default endpoint
       if (
         (providers[provider].type === ProviderTypeEnum.CustomOpenAI ||
           providers[provider].type === ProviderTypeEnum.Ollama ||
