@@ -23,8 +23,13 @@ export enum ProviderTypeEnum {
 
 // Default supported models for each built-in provider
 export const llmProviderModelNames = {
-  [ProviderTypeEnum.OpenAI]: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o', 'gpt-4o-mini', 'o4-mini', 'o3'],
-  [ProviderTypeEnum.Anthropic]: ['claude-3-7-sonnet-latest', 'claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
+  [ProviderTypeEnum.OpenAI]: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini', 'o4-mini', 'o3'],
+  [ProviderTypeEnum.Anthropic]: [
+    'claude-sonnet-4-20250514',
+    'claude-3-7-sonnet-latest',
+    'claude-3-5-sonnet-latest',
+    'claude-3-5-haiku-latest',
+  ],
   [ProviderTypeEnum.DeepSeek]: ['deepseek-chat', 'deepseek-reasoner'],
   [ProviderTypeEnum.Gemini]: [
     'gemini-2.5-flash-preview-05-20',
