@@ -166,7 +166,7 @@ export default class Page {
   }
 
   async removeHighlight(): Promise<void> {
-    if (this._config.highlightElements && this._validWebPage) {
+    if (this._config.displayHighlights && this._validWebPage) {
       await _removeHighlights(this._tabId);
     }
   }
@@ -258,8 +258,9 @@ export default class Page {
 
       // Get DOM content (equivalent to dom_service.get_clickable_elements)
       // This part would need to be implemented based on your DomService logic
-      // showHighlightElements is true if useVision is true, otherwise false
-      const content = await this.getClickableElements(useVision, focusElement);
+      // showHighlightElements is true if either useVision or displayHighlights is true
+      const displayHighlights = this._config.displayHighlights || useVision;
+      const content = await this.getClickableElements(displayHighlights, focusElement);
       if (!content) {
         logger.warning('Failed to get clickable elements');
         // Return last known good state if available
