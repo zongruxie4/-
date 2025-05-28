@@ -145,11 +145,13 @@ export type WrappedActionResult = ActionResult & {
   toolCallId: string;
 };
 
-export const agentBrainSchema = z.object({
-  evaluation_previous_goal: z.string(),
-  memory: z.string(),
-  next_goal: z.string(),
-});
+export const agentBrainSchema = z
+  .object({
+    evaluation_previous_goal: z.string(),
+    memory: z.string(),
+    next_goal: z.string(),
+  })
+  .describe('Current state of the agent');
 
 export type AgentBrain = z.infer<typeof agentBrainSchema>;
 
