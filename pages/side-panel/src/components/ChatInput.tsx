@@ -94,7 +94,7 @@ export default function ChatInput({
                 ? 'bg-slate-800 text-gray-200'
                 : 'bg-white'
           }`}
-          placeholder="What can I help with?"
+          placeholder="What can I help you with?"
           aria-label="Message input"
         />
 
