@@ -4,6 +4,7 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatXAI } from '@langchain/xai';
 import { ChatGroq } from '@langchain/groq';
+import { ChatCerebras } from '@langchain/cerebras';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOllama } from '@langchain/ollama';
 import { ChatDeepSeek } from '@langchain/deepseek';
@@ -228,6 +229,16 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
         maxTokens,
       };
       return new ChatGroq(args);
+    }
+    case ProviderTypeEnum.Cerebras: {
+      const args = {
+        model: modelConfig.modelName,
+        apiKey: providerConfig.apiKey,
+        temperature,
+        topP,
+        maxTokens,
+      };
+      return new ChatCerebras(args);
     }
     case ProviderTypeEnum.Ollama: {
       const args: {
