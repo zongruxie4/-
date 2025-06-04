@@ -20,6 +20,7 @@
     "@extension/storage": "workspace:*",
     "@langchain/anthropic": "0.3.20",
     "@langchain/core": "0.3.56",
+    "@langchain/cerebras": "^0.0.1",
     "@langchain/deepseek": "^0.0.1",
     "@langchain/google-genai": "0.2.9",
     "@langchain/groq": "^0.2.2",
