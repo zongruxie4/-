@@ -13,7 +13,7 @@ import { ExecutionState } from './agent/event/types';
 import { createChatModel } from './agent/helper';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { DEFAULT_AGENT_OPTIONS } from './agent/types';
-import { SpeechToTextService } from './speechToText/service';
+import { SpeechToTextService } from './services/speechToText';
 import { ProviderTypeEnum } from '@extension/storage';
 
 const logger = createLogger('background');
@@ -196,24 +196,11 @@ chrome.runtime.onConnect.addListener(port => {
 
               logger.info('Processing speech-to-text request...');
 
-              // Get Google provider config for speech-to-text
+              // Get all providers for speech-to-text service
               const providers = await llmProviderStore.getAllProviders();
 
-              // Find a Gemini provider (look for provider with type 'gemini')
-              const googleProvider = Object.values(providers).find(
-                provider => provider.type === ProviderTypeEnum.Gemini,
-              );
-
-              if (!googleProvider) {
-                return port.postMessage({
-                  type: 'speech_to_text_error',
-                  error:
-                    'Google provider not configured. Please add Google API key in settings to use the speech to text feature.',
-                });
-              }
-
-              // Create speech-to-text service
-              const speechToTextService = new SpeechToTextService(googleProvider);
+              // Create speech-to-text service with all providers
+              const speechToTextService = await SpeechToTextService.create(providers);
 
               // Extract base64 audio data (remove data URL prefix if present)
               let base64Audio = message.audio;

@@ -40,6 +40,7 @@ const SidePanel = () => {
   const setInputTextRef = useRef<((text: string) => void) | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<number | null>(null);
 
   // Check for dark mode preference
   useEffect(() => {
@@ -255,7 +256,6 @@ const SidePanel = () => {
           if (message.text && setInputTextRef.current) {
             setInputTextRef.current(message.text);
           }
-          setIsRecording(false);
           setIsProcessingSpeech(false);
         } else if (message && message.type === 'speech_to_text_error') {
           // Handle speech-to-text error
@@ -264,7 +264,6 @@ const SidePanel = () => {
             content: message.error || 'Speech recognition failed',
             timestamp: Date.now(),
           });
-          setIsRecording(false);
           setIsProcessingSpeech(false);
         } else if (message && message.type === 'heartbeat_ack') {
           console.log('Heartbeat acknowledged');
@@ -441,7 +440,6 @@ const SidePanel = () => {
           taskId: sessionIdRef.current,
           tabId,
         });
-        console.log('follow_up_task sent', text, tabId, sessionIdRef.current);
       } else {
         // Send as new task
         await sendMessage({
@@ -450,7 +448,6 @@ const SidePanel = () => {
           taskId: sessionIdRef.current,
           tabId,
         });
-        console.log('new_task sent', text, tabId, sessionIdRef.current);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -640,12 +637,17 @@ const SidePanel = () => {
   useEffect(() => {
     return () => {
       // Stop recording if active
-      if (isRecording && mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
+      }
+      // Clear recording timer
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+        recordingTimerRef.current = null;
       }
       stopConnection();
     };
-  }, [stopConnection, isRecording]);
+  }, [stopConnection]);
 
   // Scroll to bottom when new messages arrive
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -658,6 +660,11 @@ const SidePanel = () => {
       // Stop recording
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
+      }
+      // Clear the timer
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+        recordingTimerRef.current = null;
       }
       setIsRecording(false);
       return;
@@ -774,6 +781,17 @@ const SidePanel = () => {
           reader.readAsDataURL(audioBlob);
         }
       };
+
+      // Set up 2-minute duration limit
+      const maxDuration = 2 * 60 * 1000;
+      recordingTimerRef.current = window.setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+        setIsRecording(false);
+        setIsProcessingSpeech(true);
+        recordingTimerRef.current = null;
+      }, maxDuration);
 
       // Start recording
       mediaRecorder.start();
