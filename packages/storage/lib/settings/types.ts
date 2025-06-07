@@ -18,6 +18,7 @@ export enum ProviderTypeEnum {
   AzureOpenAI = 'azure_openai',
   OpenRouter = 'openrouter',
   Groq = 'groq',
+  Cerebras = 'cerebras',
   CustomOpenAI = 'custom_openai',
 }
 
@@ -48,6 +49,7 @@ export const llmProviderModelNames = {
     'google/gemini-2.5-flash-preview',
   ],
   [ProviderTypeEnum.Groq]: ['llama-3.3-70b-versatile'],
+  [ProviderTypeEnum.Cerebras]: ['llama-3.3-70b'],
   // Custom OpenAI providers don't have predefined models as they are user-defined
 };
 
@@ -152,6 +154,20 @@ export const llmProviderParameters = {
     },
   },
   [ProviderTypeEnum.Groq]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.7,
+      topP: 0.9,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.3,
+      topP: 0.85,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.1,
+      topP: 0.8,
+    },
+  },
+  [ProviderTypeEnum.Cerebras]: {
     [AgentNameEnum.Planner]: {
       temperature: 0.7,
       topP: 0.9,

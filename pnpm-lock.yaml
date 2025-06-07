@@ -119,6 +119,9 @@ importers:
       '@langchain/anthropic':
         specifier: 0.3.20
         version: 0.3.20(@langchain/core@0.3.56(openai@4.103.0(ws@8.18.2)(zod@3.25.32)))
+      '@langchain/cerebras':
+        specifier: ^0.0.1
+        version: 0.0.1(@langchain/core@0.3.56(openai@4.103.0(ws@8.18.2)(zod@3.25.32)))
       '@langchain/core':
         specifier: 0.3.56
         version: 0.3.56(openai@4.103.0(ws@8.18.2)(zod@3.25.32))
@@ -396,6 +399,9 @@ packages:
   '@anthropic-ai/sdk@0.39.0':
     resolution: {integrity: sha512-eMyDIPRZbt1CCLErRCi3exlAvNkBtRe+kW5vvJyef93PmNr/clstYgHhtvmkxN82nlKgzyGPCyGxrm0JQ1ZIdg==}
 
+  '@cerebras/cerebras_cloud_sdk@1.35.0':
+    resolution: {integrity: sha512-bQ6KYHmcvudHJ1aLzqkeETn3Y071/8/zpcZho6g4pKZ+VluHvLmIG0buhrwF9qJY5WSLmXR/s4pruxVRmfV7yQ==}
+
   '@cfworker/json-schema@4.1.1':
     resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
 
@@ -621,6 +627,12 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       '@langchain/core': '>=0.3.48 <0.4.0'
+
+  '@langchain/cerebras@0.0.1':
+    resolution: {integrity: sha512-ycI5yooLaCXrsamfGr6SGY+KnswvDYhSakFHT6LIwssvue3N1KlXYRZjrzm5xSMRdT+CVf9u6dOnv99GCWO7xQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.3.0 <0.4.0'
 
   '@langchain/core@0.3.56':
     resolution: {integrity: sha512-eF9MyInM9RLNisAygiCrzHnqzOnuzGWy4f1SAqAis+XIMhcA98WuZDNWxyX9pP3aKQGc47FAJ/9XWJwv5KiquA==}
@@ -3404,6 +3416,18 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  '@cerebras/cerebras_cloud_sdk@1.35.0':
+    dependencies:
+      '@types/node': 18.19.104
+      '@types/node-fetch': 2.6.12
+      abort-controller: 3.0.0
+      agentkeepalive: 4.6.0
+      form-data-encoder: 1.7.2
+      formdata-node: 4.4.1
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - encoding
+
   '@cfworker/json-schema@4.1.1': {}
 
   '@cspotcode/source-map-support@0.8.1':
@@ -3563,6 +3587,16 @@ snapshots:
       '@anthropic-ai/sdk': 0.39.0
       '@langchain/core': 0.3.56(openai@4.103.0(ws@8.18.2)(zod@3.25.32))
       fast-xml-parser: 4.5.3
+      zod: 3.25.32
+      zod-to-json-schema: 3.24.5(zod@3.25.32)
+    transitivePeerDependencies:
+      - encoding
+
+  '@langchain/cerebras@0.0.1(@langchain/core@0.3.56(openai@4.103.0(ws@8.18.2)(zod@3.25.32)))':
+    dependencies:
+      '@cerebras/cerebras_cloud_sdk': 1.35.0
+      '@langchain/core': 0.3.56(openai@4.103.0(ws@8.18.2)(zod@3.25.32))
+      uuid: 10.0.0
       zod: 3.25.32
       zod-to-json-schema: 3.24.5(zod@3.25.32)
     transitivePeerDependencies:
