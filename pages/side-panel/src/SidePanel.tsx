@@ -4,7 +4,7 @@ import { RxDiscordLogo } from 'react-icons/rx';
 import { FiSettings } from 'react-icons/fi';
 import { PiPlusBold } from 'react-icons/pi';
 import { GrHistory } from 'react-icons/gr';
-import { type Message, Actors, chatHistoryStore } from '@extension/storage';
+import { type Message, Actors, chatHistoryStore, agentModelStore, AgentNameEnum } from '@extension/storage';
 import favoritesStorage, { type FavoritePrompt } from '@extension/storage/lib/prompt/favorites';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
@@ -24,6 +24,7 @@ const SidePanel = () => {
   const [isHistoricalSession, setIsHistoricalSession] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [favoritePrompts, setFavoritePrompts] = useState<FavoritePrompt[]>([]);
+  const [hasConfiguredModels, setHasConfiguredModels] = useState<boolean | null>(null); // null = loading, false = no models, true = has models
   const sessionIdRef = useRef<string | null>(null);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const heartbeatIntervalRef = useRef<number | null>(null);
@@ -42,6 +43,55 @@ const SidePanel = () => {
     darkModeMediaQuery.addEventListener('change', handleChange);
     return () => darkModeMediaQuery.removeEventListener('change', handleChange);
   }, []);
+
+  // Check if models are configured
+  const checkModelConfiguration = useCallback(async () => {
+    try {
+      const configuredAgents = await agentModelStore.getConfiguredAgents();
+      console.log('Configured agents:', configuredAgents);
+
+      // Check if at least one agent (preferably Navigator) is configured
+      const hasAtLeastOneModel = configuredAgents.length > 0;
+      setHasConfiguredModels(hasAtLeastOneModel);
+
+      // If no models configured, automatically open settings
+      if (!hasAtLeastOneModel) {
+        console.log('No models configured, opening settings page');
+        chrome.runtime.openOptionsPage();
+      }
+    } catch (error) {
+      console.error('Error checking model configuration:', error);
+      setHasConfiguredModels(false);
+    }
+  }, []);
+
+  // Check model configuration on mount
+  useEffect(() => {
+    checkModelConfiguration();
+  }, [checkModelConfiguration]);
+
+  // Re-check model configuration when the side panel becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Panel became visible, re-check configuration
+        checkModelConfiguration();
+      }
+    };
+
+    const handleFocus = () => {
+      // Panel gained focus, re-check configuration
+      checkModelConfiguration();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [checkModelConfiguration]);
 
   useEffect(() => {
     sessionIdRef.current = currentSessionId;
@@ -694,54 +744,104 @@ const SidePanel = () => {
           </div>
         ) : (
           <>
-            {messages.length === 0 && (
+            {/* Show loading state while checking model configuration */}
+            {hasConfiguredModels === null && (
+              <div
+                className={`flex-1 flex items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
+                <div className="text-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p>Checking configuration...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Show setup message when no models are configured */}
+            {hasConfiguredModels === false && (
+              <div
+                className={`flex-1 flex items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
+                <div className="text-center max-w-md">
+                  <FiSettings size={48} className={`mx-auto mb-4 ${isDarkMode ? 'text-sky-400' : 'text-sky-500'}`} />
+                  <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-sky-200' : 'text-sky-700'}`}>
+                    Welcome to Nanobrowser!
+                  </h3>
+                  <p className="mb-4">
+                    To get started, you need to configure your AI models. The settings page should have opened
+                    automatically.
+                  </p>
+                  <button
+                    onClick={() => chrome.runtime.openOptionsPage()}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      isDarkMode ? 'bg-sky-600 hover:bg-sky-700 text-white' : 'bg-sky-500 hover:bg-sky-600 text-white'
+                    }`}>
+                    Open Settings
+                  </button>
+                  <div className="mt-4 text-sm opacity-75">
+                    <p>Need help? Check our:</p>
+                    <a
+                      href="https://github.com/nanobrowser/nanobrowser#quick-start"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sky-400 hover:text-sky-300 underline">
+                      Quick Start Guide
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Show normal chat interface when models are configured */}
+            {hasConfiguredModels === true && (
               <>
-                <div
-                  className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} mb-2 p-2 shadow-sm backdrop-blur-sm`}>
-                  <ChatInput
-                    onSendMessage={handleSendMessage}
-                    onStopTask={handleStopTask}
-                    disabled={!inputEnabled || isHistoricalSession}
-                    showStopButton={showStopButton}
-                    setContent={setter => {
-                      setInputTextRef.current = setter;
-                    }}
-                    isDarkMode={isDarkMode}
-                  />
-                </div>
-                <div className="flex-1 overflow-y-auto">
-                  <BookmarkList
-                    bookmarks={favoritePrompts}
-                    onBookmarkSelect={handleBookmarkSelect}
-                    onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
-                    onBookmarkDelete={handleBookmarkDelete}
-                    onBookmarkReorder={handleBookmarkReorder}
-                    isDarkMode={isDarkMode}
-                  />
-                </div>
+                {messages.length === 0 && (
+                  <>
+                    <div
+                      className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} mb-2 p-2 shadow-sm backdrop-blur-sm`}>
+                      <ChatInput
+                        onSendMessage={handleSendMessage}
+                        onStopTask={handleStopTask}
+                        disabled={!inputEnabled || isHistoricalSession}
+                        showStopButton={showStopButton}
+                        setContent={setter => {
+                          setInputTextRef.current = setter;
+                        }}
+                        isDarkMode={isDarkMode}
+                      />
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                      <BookmarkList
+                        bookmarks={favoritePrompts}
+                        onBookmarkSelect={handleBookmarkSelect}
+                        onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
+                        onBookmarkDelete={handleBookmarkDelete}
+                        onBookmarkReorder={handleBookmarkReorder}
+                        isDarkMode={isDarkMode}
+                      />
+                    </div>
+                  </>
+                )}
+                {messages.length > 0 && (
+                  <div
+                    className={`scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth p-2 ${isDarkMode ? 'bg-slate-900/80' : ''}`}>
+                    <MessageList messages={messages} isDarkMode={isDarkMode} />
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+                {messages.length > 0 && (
+                  <div
+                    className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} p-2 shadow-sm backdrop-blur-sm`}>
+                    <ChatInput
+                      onSendMessage={handleSendMessage}
+                      onStopTask={handleStopTask}
+                      disabled={!inputEnabled || isHistoricalSession}
+                      showStopButton={showStopButton}
+                      setContent={setter => {
+                        setInputTextRef.current = setter;
+                      }}
+                      isDarkMode={isDarkMode}
+                    />
+                  </div>
+                )}
               </>
-            )}
-            {messages.length > 0 && (
-              <div
-                className={`scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth p-2 ${isDarkMode ? 'bg-slate-900/80' : ''}`}>
-                <MessageList messages={messages} isDarkMode={isDarkMode} />
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-            {messages.length > 0 && (
-              <div
-                className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} p-2 shadow-sm backdrop-blur-sm`}>
-                <ChatInput
-                  onSendMessage={handleSendMessage}
-                  onStopTask={handleStopTask}
-                  disabled={!inputEnabled || isHistoricalSession}
-                  showStopButton={showStopButton}
-                  setContent={setter => {
-                    setInputTextRef.current = setter;
-                  }}
-                  isDarkMode={isDarkMode}
-                />
-              </div>
             )}
           </>
         )}
