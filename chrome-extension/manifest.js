@@ -31,8 +31,8 @@ function withSidePanel(manifest) {
  * This is compatible with Chrome extensions and won't break Chrome Web Store validation.
  */
 function withOperaSidebar(manifest) {
-  // Only add Opera sidebar_action if not Firefox (Opera is Chromium-based)
-  if (isFirefox) {
+  // Only add Opera sidebar_action if building specifically for Opera
+  if (isFirefox || !isOpera) {
     return manifest;
   }
 
