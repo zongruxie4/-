@@ -71,8 +71,14 @@ export default class Page {
     this._tabId = tabId;
     this._config = { ...DEFAULT_BROWSER_CONTEXT_CONFIG, ...config };
     this._state = build_initial_state(tabId, url, title);
-    // chrome://newtab/, chrome://newtab/extensions are not valid web pages, can't be attached
-    this._validWebPage = (tabId && url && url.startsWith('http')) || false;
+    // chrome://newtab/, chrome://newtab/extensions, https://chromewebstore.google.com/ are not valid web pages, can't be attached
+    const lowerCaseUrl = url.trim().toLowerCase();
+    this._validWebPage =
+      (tabId &&
+        lowerCaseUrl &&
+        lowerCaseUrl.startsWith('http') &&
+        !lowerCaseUrl.startsWith('https://chromewebstore.google.com')) ||
+      false;
   }
 
   get tabId(): number {
@@ -166,7 +172,7 @@ export default class Page {
   }
 
   async removeHighlight(): Promise<void> {
-    if (this._config.highlightElements && this._validWebPage) {
+    if (this._config.displayHighlights && this._validWebPage) {
       await _removeHighlights(this._tabId);
     }
   }
@@ -258,8 +264,9 @@ export default class Page {
 
       // Get DOM content (equivalent to dom_service.get_clickable_elements)
       // This part would need to be implemented based on your DomService logic
-      // showHighlightElements is true if useVision is true, otherwise false
-      const content = await this.getClickableElements(useVision, focusElement);
+      // showHighlightElements is true if either useVision or displayHighlights is true
+      const displayHighlights = this._config.displayHighlights || useVision;
+      const content = await this.getClickableElements(displayHighlights, focusElement);
       if (!content) {
         logger.warning('Failed to get clickable elements');
         // Return last known good state if available

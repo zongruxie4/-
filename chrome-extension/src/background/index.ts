@@ -299,6 +299,11 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   }
 
   const generalSettings = await generalSettingsStore.getSettings();
+  browserContext.updateConfig({
+    minimumWaitPageLoadTime: generalSettings.minWaitPageLoad / 1000.0,
+    displayHighlights: generalSettings.displayHighlights,
+  });
+
   const executor = new Executor(task, taskId, browserContext, navigatorLLM, {
     plannerLLM: plannerLLM ?? navigatorLLM,
     validatorLLM: validatorLLM ?? navigatorLLM,
