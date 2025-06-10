@@ -4,7 +4,7 @@ import { RxDiscordLogo } from 'react-icons/rx';
 import { FiSettings } from 'react-icons/fi';
 import { PiPlusBold } from 'react-icons/pi';
 import { GrHistory } from 'react-icons/gr';
-import { type Message, Actors, chatHistoryStore, agentModelStore, AgentNameEnum } from '@extension/storage';
+import { type Message, Actors, chatHistoryStore, agentModelStore } from '@extension/storage';
 import favoritesStorage, { type FavoritePrompt } from '@extension/storage/lib/prompt/favorites';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
@@ -65,12 +65,6 @@ const SidePanel = () => {
       // Check if at least one agent (preferably Navigator) is configured
       const hasAtLeastOneModel = configuredAgents.length > 0;
       setHasConfiguredModels(hasAtLeastOneModel);
-
-      // If no models configured, automatically open settings
-      if (!hasAtLeastOneModel) {
-        console.log('No models configured, opening settings page');
-        chrome.runtime.openOptionsPage();
-      }
     } catch (error) {
       console.error('Error checking model configuration:', error);
       setHasConfiguredModels(false);
