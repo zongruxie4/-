@@ -779,20 +779,40 @@ export default class Page {
         return null;
       }
       currentFrame = frame;
+      logger.info('currentFrame changed', currentFrame);
     }
 
     const cssSelector = element.enhancedCssSelectorForElement(this._config.includeDynamicAttributes);
 
     try {
-      const elementHandle: ElementHandle | null = await currentFrame.$(cssSelector);
+      // Try CSS selector first
+      let elementHandle: ElementHandle | null = await currentFrame.$(cssSelector);
+
+      // If CSS selector failed, try XPath
+      if (!elementHandle) {
+        const xpath = element.xpath;
+        if (xpath) {
+          try {
+            logger.info('Trying XPath selector:', xpath);
+            const fullXpath = xpath.startsWith('/') ? xpath : `/${xpath}`;
+            const xpathSelector = `::-p-xpath(${fullXpath})`;
+            elementHandle = await currentFrame.$(xpathSelector);
+          } catch (xpathError) {
+            logger.error('Failed to locate element using XPath:', xpathError);
+          }
+        }
+      }
+
+      // If element found, check visibility and scroll into view
       if (elementHandle) {
-        // Scroll element into view if needed
         const isHidden = await elementHandle.isHidden();
         if (!isHidden) {
           await this._scrollIntoViewIfNeeded(elementHandle);
         }
         return elementHandle;
       }
+
+      logger.info('elementHandle not located');
     } catch (error) {
       logger.error('Failed to locate element:', error);
     }
