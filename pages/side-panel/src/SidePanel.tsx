@@ -940,9 +940,9 @@ const SidePanel = () => {
             {/* Show loading state while checking model configuration */}
             {hasConfiguredModels === null && (
               <div
-                className={`flex-1 flex items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
+                className={`flex flex-1 items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
                 <div className="text-center">
-                  <div className="animate-spin w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <div className="mx-auto mb-4 size-8 animate-spin rounded-full border-2 border-sky-400 border-t-transparent"></div>
                   <p>Checking configuration...</p>
                 </div>
               </div>
@@ -951,31 +951,35 @@ const SidePanel = () => {
             {/* Show setup message when no models are configured */}
             {hasConfiguredModels === false && (
               <div
-                className={`flex-1 flex items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
-                <div className="text-center max-w-md">
-                  <FiSettings size={48} className={`mx-auto mb-4 ${isDarkMode ? 'text-sky-400' : 'text-sky-500'}`} />
-                  <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-sky-200' : 'text-sky-700'}`}>
+                className={`flex flex-1 items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
+                <div className="max-w-md text-center">
+                  <img src="/icon-128.png" alt="Nanobrowser Logo" className="mx-auto mb-4 size-12" />
+                  <h3 className={`mb-2 text-lg font-semibold ${isDarkMode ? 'text-sky-200' : 'text-sky-700'}`}>
                     Welcome to Nanobrowser!
                   </h3>
-                  <p className="mb-4">
-                    To get started, you need to configure your AI models. The settings page should have opened
-                    automatically.
-                  </p>
+                  <p className="mb-4">To get started, please configure your API keys in the settings page.</p>
                   <button
                     onClick={() => chrome.runtime.openOptionsPage()}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      isDarkMode ? 'bg-sky-600 hover:bg-sky-700 text-white' : 'bg-sky-500 hover:bg-sky-600 text-white'
+                    className={`my-4 rounded-lg px-4 py-2 font-medium transition-colors ${
+                      isDarkMode ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-sky-500 text-white hover:bg-sky-600'
                     }`}>
                     Open Settings
                   </button>
                   <div className="mt-4 text-sm opacity-75">
-                    <p>Need help? Check our:</p>
                     <a
-                      href="https://github.com/nanobrowser/nanobrowser#quick-start"
+                      href="https://github.com/nanobrowser/nanobrowser?tab=readme-ov-file#-quick-start"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sky-400 hover:text-sky-300 underline">
+                      className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
                       Quick Start Guide
+                    </a>
+                    <span className="mx-2">•</span>
+                    <a
+                      href="https://discord.gg/NN3ABHggMK"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
+                      Join Our Community
                     </a>
                   </div>
                 </div>
