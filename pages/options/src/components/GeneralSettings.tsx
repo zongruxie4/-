@@ -200,7 +200,6 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
                 onChange={e => updateSetting('minWaitPageLoad', Number.parseInt(e.target.value, 10))}
                 className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
               />
-              <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>ms</span>
             </div>
           </div>
         </div>
