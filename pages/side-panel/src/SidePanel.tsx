@@ -60,7 +60,6 @@ const SidePanel = () => {
   const checkModelConfiguration = useCallback(async () => {
     try {
       const configuredAgents = await agentModelStore.getConfiguredAgents();
-      console.log('Configured agents:', configuredAgents);
 
       // Check if at least one agent (preferably Navigator) is configured
       const hasAtLeastOneModel = configuredAgents.length > 0;
@@ -622,7 +621,6 @@ const SidePanel = () => {
   };
 
   const handleBookmarkSelect = (content: string) => {
-    console.log('handleBookmarkSelect', content);
     if (setInputTextRef.current) {
       setInputTextRef.current(content);
     }
