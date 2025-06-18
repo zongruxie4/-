@@ -16,7 +16,7 @@ import {
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
 } from './errors';
-import { calcBranchPathHashSet } from '@src/background/dom/views';
+import { calcBranchPathHashSet } from '@src/background/browser/dom/views';
 import { URLNotAllowedError } from '@src/background/browser/views';
 import { convertZodToJsonSchema, repairJsonString } from '@src/background/utils';
 

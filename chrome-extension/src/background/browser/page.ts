@@ -15,11 +15,11 @@ import {
   getClickableElements as _getClickableElements,
   removeHighlights as _removeHighlights,
   getScrollInfo as _getScrollInfo,
-} from '../dom/service';
-import { DOMElementNode, type DOMState } from '../dom/views';
+} from './dom/service';
+import { DOMElementNode, type DOMState } from './dom/views';
 import { type BrowserContextConfig, DEFAULT_BROWSER_CONTEXT_CONFIG, type PageState, URLNotAllowedError } from './views';
 import { createLogger } from '@src/background/log';
-import { ClickableElementProcessor } from '../dom/clickable/service';
+import { ClickableElementProcessor } from './dom/clickable/service';
 import { isUrlAllowed } from './util';
 
 const logger = createLogger('Page');
