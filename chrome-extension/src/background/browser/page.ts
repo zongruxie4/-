@@ -205,6 +205,10 @@ export default class Page {
     return await this._puppeteerPage.content();
   }
 
+  getCachedState(): PageState | null {
+    return this._cachedState;
+  }
+
   async getState(useVision = false, cacheClickableElementsHashes = false): Promise<PageState> {
     if (!this._validWebPage) {
       // return the initial state
@@ -242,7 +246,7 @@ export default class Page {
     return updatedState;
   }
 
-  async _updateState(useVision = true, focusElement = -1): Promise<PageState> {
+  async _updateState(useVision = false, focusElement = -1): Promise<PageState> {
     try {
       // Test if page is still accessible
       // @ts-expect-error - puppeteerPage is not null, already checked before calling this function

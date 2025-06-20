@@ -316,6 +316,22 @@ export default class BrowserContext {
     return tabInfos;
   }
 
+  public async getCachedState(useVision = false, cacheClickableElementsHashes = false): Promise<BrowserState> {
+    const currentPage = await this.getCurrentPage();
+
+    let pageState = !currentPage ? build_initial_state() : currentPage.getCachedState();
+    if (!pageState) {
+      pageState = await currentPage.getState(useVision, cacheClickableElementsHashes);
+    }
+
+    const tabInfos = await this.getTabInfos();
+    const browserState: BrowserState = {
+      ...pageState,
+      tabs: tabInfos,
+    };
+    return browserState;
+  }
+
   public async getState(useVision = false, cacheClickableElementsHashes = false): Promise<BrowserState> {
     const currentPage = await this.getCurrentPage();
 
@@ -326,7 +342,7 @@ export default class BrowserContext {
     const browserState: BrowserState = {
       ...pageState,
       tabs: tabInfos,
-      browser_errors: [],
+      // browser_errors: [],
     };
     return browserState;
   }

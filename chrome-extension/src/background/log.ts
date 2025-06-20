@@ -23,11 +23,7 @@ const createLogger = (namespace: string): Logger => {
   const boundGroupEnd = console.groupEnd.bind(console);
 
   return {
-    debug: (...args: unknown[]) => {
-      if (import.meta.env.DEV) {
-        boundDebug(...args);
-      }
-    },
+    debug: import.meta.env.DEV ? boundDebug : () => {},
     info: boundInfo,
     warning: boundWarn,
     error: boundError,

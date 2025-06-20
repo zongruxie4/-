@@ -24,8 +24,15 @@ export interface ChatSessionMetadata {
   messageCount: number;
 }
 
+// ChatSession is the full conversation history displayed in the Sidepanel
 export interface ChatSession extends ChatSessionMetadata {
   messages: ChatMessage[];
+}
+
+// ChatAgentStepHistory is the history of the every step of the agent
+export interface ChatAgentStepHistory {
+  history: string;
+  timestamp: number; // Unix timestamp in milliseconds
 }
 
 export interface ChatHistoryStorage {
@@ -55,4 +62,10 @@ export interface ChatHistoryStorage {
 
   // Delete a message from a chat session
   deleteMessage: (sessionId: string, messageId: string) => Promise<void>;
+
+  // Store the history of the agent's state
+  storeAgentStepHistory: (sessionId: string, history: string) => Promise<void>;
+
+  // Load the history of the agent's state
+  loadAgentStepHistory: (sessionId: string) => Promise<ChatAgentStepHistory | null>;
 }

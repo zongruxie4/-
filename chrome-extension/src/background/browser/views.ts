@@ -109,23 +109,23 @@ export interface TabInfo {
 
 export interface BrowserState extends PageState {
   tabs: TabInfo[];
-  browser_errors: string[];
+  // browser_errors: string[];
 }
 
-export interface BrowserStateHistory {
+export class BrowserStateHistory {
   url: string;
   title: string;
   tabs: TabInfo[];
-  interactedElements: (DOMHistoryElement | null)[] | null[];
+  interactedElements: (DOMHistoryElement | null)[];
   screenshot: string | null;
 
-  toDict(): {
-    tabs: TabInfo[];
-    screenshot: string | null;
-    interactedElements: (Record<string, unknown> | null)[];
-    url: string;
-    title: string;
-  };
+  constructor(state: BrowserState, interactedElements?: (DOMHistoryElement | null)[]) {
+    this.url = state.url;
+    this.title = state.title;
+    this.tabs = state.tabs;
+    this.interactedElements = interactedElements ?? [];
+    this.screenshot = state.screenshot;
+  }
 }
 
 export class BrowserError extends Error {
