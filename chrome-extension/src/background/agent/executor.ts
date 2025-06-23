@@ -1,5 +1,5 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { ActionResult, AgentContext, type AgentOptions } from './types';
+import { type ActionResult, AgentContext, type AgentOptions } from './types';
 import { NavigatorAgent, NavigatorActionRegistry } from './agents/navigator';
 import { PlannerAgent, type PlannerOutput } from './agents/planner';
 import { ValidatorAgent } from './agents/validator';
@@ -19,13 +19,6 @@ import { chatHistoryStore } from '@extension/storage/lib/chat';
 import type { AgentStepHistory } from './history';
 
 const logger = createLogger('Executor');
-
-interface ParsedModelOutput {
-  current_state?: {
-    next_goal?: string;
-  };
-  action?: (Record<string, unknown> | null)[] | null;
-}
 
 export interface ExecutorExtraArgs {
   plannerLLM?: BaseChatModel;
@@ -232,7 +225,11 @@ export class Executor {
         logger.debug('Executor history', JSON.stringify(this.context.history, null, 2));
       }
       // store the history
-      await chatHistoryStore.storeAgentStepHistory(this.context.taskId, JSON.stringify(this.context.history));
+      await chatHistoryStore.storeAgentStepHistory(
+        this.context.taskId,
+        this.tasks[0],
+        JSON.stringify(this.context.history),
+      );
     }
   }
 
@@ -331,7 +328,7 @@ export class Executor {
    * @returns List of action results
    */
   async replayHistory(
-    history: AgentStepHistory,
+    sessionId: string,
     maxRetries = 3,
     skipFailures = true,
     delayBetweenActions = 2.0,
@@ -339,89 +336,38 @@ export class Executor {
     const results: ActionResult[] = [];
     const replayLogger = createLogger('Executor:replayHistory');
 
+    logger.info('replay task', this.tasks[0]);
+
     try {
+      const historyFromStorage = await chatHistoryStore.loadAgentStepHistory(sessionId);
+      if (!historyFromStorage) {
+        throw new Error('History not found');
+      }
+
+      const history = JSON.parse(historyFromStorage.history) as AgentStepHistory;
+      logger.debug(`🔄 Replaying history: ${JSON.stringify(history, null, 2)}`);
       this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
 
       for (let i = 0; i < history.history.length; i++) {
         const historyItem = history.history[i];
 
-        // Parse the model output to get the goal and actions
-        let goal = '';
-        let parsedModelOutput: ParsedModelOutput | null = null;
-        if (historyItem.modelOutput) {
-          try {
-            parsedModelOutput = JSON.parse(historyItem.modelOutput) as ParsedModelOutput;
-            goal = parsedModelOutput?.current_state?.next_goal || '';
-          } catch (error) {
-            replayLogger.warning(`Step ${i + 1}: Could not parse modelOutput: ${error}`);
-            // If modelOutput is crucial and unparseable, we might decide to skip or error differently.
-            // For now, proceed, and the action check below will likely cause a skip.
-          }
+        // Check if execution should stop
+        if (this.context.stopped) {
+          replayLogger.info('Replay stopped by user');
+          break;
         }
 
-        replayLogger.info(`Replaying step ${i + 1}/${history.history.length}: goal: ${goal}`);
+        // Execute the history step with enhanced method that handles all the logic
+        const stepResults = await this.navigator.executeHistoryStep(
+          historyItem,
+          i,
+          history.history.length,
+          maxRetries,
+          delayBetweenActions * 1000,
+          skipFailures,
+        );
 
-        const actionsToReplay = parsedModelOutput?.action;
-
-        // Skip steps with no actions, aligning with Python logic
-        if (
-          !historyItem.modelOutput || // No model output string at all
-          !actionsToReplay || // 'action' field is missing or null after parsing
-          (Array.isArray(actionsToReplay) && actionsToReplay.length === 0) || // 'action' is an empty array
-          (Array.isArray(actionsToReplay) && actionsToReplay.length === 1 && actionsToReplay[0] === null) // 'action' is [null]
-        ) {
-          replayLogger.warning(`Step ${i + 1}: No action to replay based on modelOutput, skipping`);
-          results.push(
-            new ActionResult({
-              error: 'No action to replay',
-              includeInMemory: true,
-            }),
-          );
-          continue;
-        }
-
-        // Try to execute the step with retries
-        let retryCount = 0;
-        let success = false;
-
-        while (retryCount < maxRetries && !success) {
-          try {
-            // Check if execution should stop
-            if (this.context.stopped) {
-              replayLogger.info('Replay stopped by user');
-              break;
-            }
-
-            // Execute the history step
-            const stepResults = await this.navigator.executeHistoryStep(historyItem, delayBetweenActions * 1000);
-
-            results.push(...stepResults);
-            success = true;
-          } catch (error) {
-            retryCount++;
-            const errorMessage = error instanceof Error ? error.message : String(error);
-
-            if (retryCount >= maxRetries) {
-              const failMsg = `Step ${i + 1} failed after ${maxRetries} attempts: ${errorMessage}`;
-              replayLogger.error(failMsg);
-
-              results.push(
-                new ActionResult({
-                  error: failMsg,
-                  includeInMemory: true,
-                }),
-              );
-
-              if (!skipFailures) {
-                throw new Error(failMsg);
-              }
-            } else {
-              replayLogger.warning(`Step ${i + 1} failed (attempt ${retryCount}/${maxRetries}), retrying...`);
-              // Wait before retrying
-              await new Promise(resolve => setTimeout(resolve, delayBetweenActions * 1000));
-            }
-          }
-        }
+        results.push(...stepResults);
 
         // If stopped during execution, break the loop
         if (this.context.stopped) {
@@ -429,7 +375,11 @@ export class Executor {
         }
       }
 
-      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, 'History replay completed');
+      if (this.context.stopped) {
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, 'History replay cancelled');
+      } else {
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, 'History replay completed');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       replayLogger.error(`History replay failed: ${errorMessage}`);

@@ -26,9 +26,4 @@ export class AgentStepHistory {
   constructor(history?: AgentStepRecord[]) {
     this.history = history ?? [];
   }
-
-  dump() {
-    const dump = JSON.stringify(this.history);
-    return dump;
-  }
 }

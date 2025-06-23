@@ -37,6 +37,7 @@ const getSessionAgentStepHistoryStorage = (sessionId: string) => {
   return createStorage<ChatAgentStepHistory>(
     getSessionAgentStepHistoryKey(sessionId),
     {
+      task: '',
       history: '',
       timestamp: 0,
     },
@@ -224,7 +225,7 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       });
     },
 
-    storeAgentStepHistory: async (sessionId: string, history: string): Promise<void> => {
+    storeAgentStepHistory: async (sessionId: string, task: string, history: string): Promise<void> => {
       // Check if session exists
       const sessionsMeta = await chatSessionsMetaStorage.get();
       const sessionMeta = sessionsMeta.find(session => session.id === sessionId);
@@ -234,6 +235,7 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
 
       const agentStepHistoryStorage = getSessionAgentStepHistoryStorage(sessionId);
       await agentStepHistoryStorage.set({
+        task,
         history,
         timestamp: getCurrentTimestamp(),
       });
