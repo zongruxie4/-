@@ -10,8 +10,11 @@ import { Actors, ExecutionState } from '../event/types';
 import {
   ChatModelAuthError,
   ChatModelForbiddenError,
+  EXTENSION_CONFLICT_ERROR_MESSAGE,
+  ExtensionConflictError,
   isAbortedError,
   isAuthenticationError,
+  isExtensionConflictError,
   isForbiddenError,
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
@@ -214,9 +217,13 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       if (error instanceof URLNotAllowedError) {
         throw error;
       }
+      if (isExtensionConflictError(error)) {
+        throw new ExtensionConflictError(EXTENSION_CONFLICT_ERROR_MESSAGE, error);
+      }
 
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorString = `Navigation failed: ${errorMessage}`;
+
       logger.error(errorString);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_FAIL, errorString);
       agentOutput.error = errorMessage;

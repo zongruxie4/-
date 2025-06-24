@@ -12,7 +12,12 @@ import type BrowserContext from '../browser/context';
 import { ActionBuilder } from './actions/builder';
 import { EventManager } from './event/manager';
 import { Actors, type EventCallback, EventType, ExecutionState } from './event/types';
-import { ChatModelAuthError, ChatModelForbiddenError, RequestCancelledError } from './agents/errors';
+import {
+  ChatModelAuthError,
+  ChatModelForbiddenError,
+  ExtensionConflictError,
+  RequestCancelledError,
+} from './agents/errors';
 import { wrapUntrustedContent } from './messages/utils';
 import { URLNotAllowedError } from '../browser/views';
 import { chatHistoryStore } from '@extension/storage/lib/chat';
@@ -260,7 +265,8 @@ export class Executor {
         error instanceof ChatModelAuthError ||
         error instanceof ChatModelForbiddenError ||
         error instanceof URLNotAllowedError ||
-        error instanceof RequestCancelledError
+        error instanceof RequestCancelledError ||
+        error instanceof ExtensionConflictError
       ) {
         throw error;
       }
