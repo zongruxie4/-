@@ -229,20 +229,18 @@ chrome.runtime.onConnect.addListener(port => {
             if (!message.taskId) return port.postMessage({ type: 'error', error: 'No task ID provided' });
             if (!message.historySessionId)
               return port.postMessage({ type: 'error', error: 'No history session ID provided' });
-
             logger.info('replay', message.tabId, message.taskId, message.historySessionId);
 
             try {
               // Switch to the specified tab
               await browserContext.switchTab(message.tabId);
-
               // Setup executor with the new taskId and a dummy task description
               currentExecutor = await setupExecutor(message.taskId, message.task, browserContext);
               subscribeToExecutorEvents(currentExecutor);
 
               // Run replayHistory with the history session ID
               const result = await currentExecutor.replayHistory(message.historySessionId);
-              logger.info('replay execution result', message.tabId, result);
+              logger.debug('replay execution result', message.tabId, result);
             } catch (error) {
               logger.error('Replay failed:', error);
               return port.postMessage({

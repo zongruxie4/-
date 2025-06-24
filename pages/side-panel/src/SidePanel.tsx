@@ -34,7 +34,9 @@ const SidePanel = () => {
   const [hasConfiguredModels, setHasConfiguredModels] = useState<boolean | null>(null); // null = loading, false = no models, true = has models
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
+  const [isReplaying, setIsReplaying] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
+  const isReplayingRef = useRef<boolean>(false);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const heartbeatIntervalRef = useRef<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -102,6 +104,10 @@ const SidePanel = () => {
     sessionIdRef.current = currentSessionId;
   }, [currentSessionId]);
 
+  useEffect(() => {
+    isReplayingRef.current = isReplaying;
+  }, [isReplaying]);
+
   const appendMessage = useCallback((newMessage: Message, sessionId?: string | null) => {
     // Don't save progress messages
     const isProgressMessage = newMessage.content === 'Showing progress...';
@@ -133,6 +139,7 @@ const SidePanel = () => {
       let skip = true;
       let displayProgress = false;
 
+      console.log('handleTaskState isReplaying', isReplayingRef.current);
       switch (actor) {
         case Actors.SYSTEM:
           switch (state) {
@@ -144,17 +151,20 @@ const SidePanel = () => {
               setIsFollowUpMode(true);
               setInputEnabled(true);
               setShowStopButton(false);
+              setIsReplaying(false);
               break;
             case ExecutionState.TASK_FAIL:
               setIsFollowUpMode(true);
               setInputEnabled(true);
               setShowStopButton(false);
+              setIsReplaying(false);
               skip = false;
               break;
             case ExecutionState.TASK_CANCEL:
               setIsFollowUpMode(false);
               setInputEnabled(true);
               setShowStopButton(false);
+              setIsReplaying(false);
               skip = false;
               break;
             case ExecutionState.TASK_PAUSE:
@@ -208,7 +218,7 @@ const SidePanel = () => {
               }
               break;
             case ExecutionState.ACT_OK:
-              skip = true;
+              skip = !isReplayingRef.current;
               break;
             case ExecutionState.ACT_FAIL:
               skip = false;
@@ -380,7 +390,7 @@ const SidePanel = () => {
       if (!historyData) {
         appendMessage({
           actor: Actors.SYSTEM,
-          content: `No action history found for session "${historySessionId.substring(0, 20)}...". This session may not contain replayable actions. \n\nIt was created before the replay feature was available, or it's a replay session itself (replay sessions cannot be replayed again).`,
+          content: `No action history found for session "${historySessionId.substring(0, 20)}...". This session may not contain replayable actions. \n\nIt's a replay session itself (replay sessions cannot be replayed again), or it was created before the replay feature was available.`,
           timestamp: Date.now(),
         });
         return;
@@ -443,6 +453,7 @@ const SidePanel = () => {
         content: `Starting replay of task:\n\n"${historyData.task}"`,
         timestamp: Date.now(),
       });
+      setIsReplaying(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       appendMessage({

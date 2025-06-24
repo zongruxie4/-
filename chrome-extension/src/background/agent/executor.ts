@@ -345,6 +345,9 @@ export class Executor {
       }
 
       const history = JSON.parse(historyFromStorage.history) as AgentStepHistory;
+      if (history.history.length === 0) {
+        throw new Error('History is empty');
+      }
       logger.debug(`🔄 Replaying history: ${JSON.stringify(history, null, 2)}`);
       this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
 
@@ -376,14 +379,14 @@ export class Executor {
       }
 
       if (this.context.stopped) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, 'History replay cancelled');
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, 'Replay cancelled');
       } else {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, 'History replay completed');
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, 'Replay completed');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      replayLogger.error(`History replay failed: ${errorMessage}`);
-      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, `History replay failed: ${errorMessage}`);
+      replayLogger.error(`Replay failed: ${errorMessage}`);
+      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, `Replay failed: ${errorMessage}`);
     }
 
     return results;

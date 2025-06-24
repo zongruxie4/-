@@ -365,8 +365,9 @@ export class ActionBuilder {
 
       // cache content is untrusted content, it is not instructions
       const rawMsg = `Cached findings: ${input.content}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, rawMsg);
+
       const msg = wrapUntrustedContent(rawMsg);
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, cacheContentActionSchema);
     actions.push(cacheContent);

@@ -244,7 +244,8 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
     loadAgentStepHistory: async (sessionId: string): Promise<ChatAgentStepHistory | null> => {
       const agentStepHistoryStorage = getSessionAgentStepHistoryStorage(sessionId);
       const history = await agentStepHistoryStorage.get();
-      if (!history || history.timestamp === 0) return null;
+      if (!history || !history.task || !history.timestamp || history.history === '' || history.history === '[]')
+        return null;
       return history;
     },
   };
