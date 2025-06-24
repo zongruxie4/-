@@ -380,7 +380,7 @@ const SidePanel = () => {
       if (!historyData) {
         appendMessage({
           actor: Actors.SYSTEM,
-          content: `No action history found for session ID: \n\n"${historySessionId}". \n\nPlease check the session ID and try again.`,
+          content: `No action history found for session "${historySessionId.substring(0, 20)}...". This session may not contain replayable actions. \n\nIt was created before the replay feature was available, or it's a replay session itself (replay sessions cannot be replayed again).`,
           timestamp: Date.now(),
         });
         return;
@@ -391,6 +391,11 @@ const SidePanel = () => {
       const tabId = tabs[0]?.id;
       if (!tabId) {
         throw new Error('No active tab found');
+      }
+
+      // Clear messages if we're in a historical session
+      if (isHistoricalSession) {
+        setMessages([]);
       }
 
       // Create a new chat session for this replay task
@@ -1096,6 +1101,8 @@ const SidePanel = () => {
                           setInputTextRef.current = setter;
                         }}
                         isDarkMode={isDarkMode}
+                        historicalSessionId={isHistoricalSession ? currentSessionId : null}
+                        onReplay={handleReplay}
                       />
                     </div>
                     <div className="flex-1 overflow-y-auto">
@@ -1132,6 +1139,8 @@ const SidePanel = () => {
                         setInputTextRef.current = setter;
                       }}
                       isDarkMode={isDarkMode}
+                      historicalSessionId={isHistoricalSession ? currentSessionId : null}
+                      onReplay={handleReplay}
                     />
                   </div>
                 )}

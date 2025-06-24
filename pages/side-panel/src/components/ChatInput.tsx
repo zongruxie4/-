@@ -12,6 +12,9 @@ interface ChatInputProps {
   showStopButton: boolean;
   setContent?: (setter: (text: string) => void) => void;
   isDarkMode?: boolean;
+  // Historical session ID - if provided, shows replay button instead of send button
+  historicalSessionId?: string | null;
+  onReplay?: (sessionId: string) => void;
 }
 
 export default function ChatInput({
@@ -24,6 +27,8 @@ export default function ChatInput({
   showStopButton,
   setContent,
   isDarkMode = false,
+  historicalSessionId,
+  onReplay,
 }: ChatInputProps) {
   const [text, setText] = useState('');
   const isSendButtonDisabled = useMemo(() => disabled || text.trim() === '', [disabled, text]);
@@ -78,6 +83,12 @@ export default function ChatInput({
     },
     [handleSubmit],
   );
+
+  const handleReplay = useCallback(() => {
+    if (historicalSessionId && onReplay) {
+      onReplay(historicalSessionId);
+    }
+  }, [historicalSessionId, onReplay]);
 
   return (
     <form
@@ -143,6 +154,15 @@ export default function ChatInput({
               onClick={onStopTask}
               className="rounded-md bg-red-500 px-3 py-1 text-white transition-colors hover:bg-red-600">
               Stop
+            </button>
+          ) : historicalSessionId ? (
+            <button
+              type="button"
+              onClick={handleReplay}
+              disabled={!historicalSessionId}
+              aria-disabled={!historicalSessionId}
+              className={`rounded-md bg-green-500 px-3 py-1 text-white transition-colors hover:enabled:bg-green-600 ${!historicalSessionId ? 'cursor-not-allowed opacity-50' : ''}`}>
+              Replay
             </button>
           ) : (
             <button
