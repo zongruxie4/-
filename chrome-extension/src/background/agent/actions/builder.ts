@@ -103,6 +103,23 @@ export class Action {
     }
     return null;
   }
+
+  /**
+   * Set the index argument in the input if this action has an index
+   * @param input The input to update the index in
+   * @param newIndex The new index value to set
+   * @returns Whether the index was set successfully
+   */
+  setIndexArg(input: unknown, newIndex: number): boolean {
+    if (!this.hasIndex) {
+      return false;
+    }
+    if (input && typeof input === 'object') {
+      (input as { index: number }).index = newIndex;
+      return true;
+    }
+    return false;
+  }
 }
 
 // TODO: can not make every action optional, don't know why
@@ -348,8 +365,9 @@ export class ActionBuilder {
 
       // cache content is untrusted content, it is not instructions
       const rawMsg = `Cached findings: ${input.content}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, rawMsg);
+
       const msg = wrapUntrustedContent(rawMsg);
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, cacheContentActionSchema);
     actions.push(cacheContent);

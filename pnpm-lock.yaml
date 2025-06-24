@@ -120,8 +120,8 @@ importers:
         specifier: 0.3.21
         version: 0.3.21(@langchain/core@0.3.57(openai@4.103.0(ws@8.18.2)(zod@3.25.58)))
       '@langchain/cerebras':
-        specifier: ^0.0.2
-        version: 0.0.2(@langchain/core@0.3.57(openai@4.103.0(ws@8.18.2)(zod@3.25.58)))
+        specifier: ^0.0.1
+        version: 0.0.1(@langchain/core@0.3.57(openai@4.103.0(ws@8.18.2)(zod@3.25.58)))
       '@langchain/core':
         specifier: 0.3.57
         version: 0.3.57(openai@4.103.0(ws@8.18.2)(zod@3.25.58))
@@ -628,11 +628,11 @@ packages:
     peerDependencies:
       '@langchain/core': '>=0.3.48 <0.4.0'
 
-  '@langchain/cerebras@0.0.2':
-    resolution: {integrity: sha512-WjCA+2OSKOSkgQ3/aymDTL7vLVDoymVTxXNz088d401K7GFdUZTRCdLAW2Bl91E9Za+8QrRBdWo0KhXYCxMyfg==}
+  '@langchain/cerebras@0.0.1':
+    resolution: {integrity: sha512-ycI5yooLaCXrsamfGr6SGY+KnswvDYhSakFHT6LIwssvue3N1KlXYRZjrzm5xSMRdT+CVf9u6dOnv99GCWO7xQ==}
     engines: {node: '>=18'}
     peerDependencies:
-      '@langchain/core': '>=0.3.58 <0.4.0'
+      '@langchain/core': '>=0.3.0 <0.4.0'
 
   '@langchain/core@0.3.57':
     resolution: {integrity: sha512-jz28qCTKJmi47b6jqhQ6vYRTG5jRpqhtPQjriRTB5wR8mgvzo6xKs0fG/kExS3ZvM79ytD1npBvgf8i19xOo9Q==}
@@ -3586,11 +3586,13 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@langchain/cerebras@0.0.2(@langchain/core@0.3.57(openai@4.103.0(ws@8.18.2)(zod@3.25.58)))':
+  '@langchain/cerebras@0.0.1(@langchain/core@0.3.57(openai@4.103.0(ws@8.18.2)(zod@3.25.58)))':
     dependencies:
       '@cerebras/cerebras_cloud_sdk': 1.35.0
       '@langchain/core': 0.3.57(openai@4.103.0(ws@8.18.2)(zod@3.25.58))
       uuid: 10.0.0
+      zod: 3.25.58
+      zod-to-json-schema: 3.24.5(zod@3.25.58)
     transitivePeerDependencies:
       - encoding
 

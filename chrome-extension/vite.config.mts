@@ -59,5 +59,9 @@ export default defineConfig({
     },
   },
 
+  define: {
+    'import.meta.env.DEV': isDev,
+  },
+
   envDir: '../',
 });

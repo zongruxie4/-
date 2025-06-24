@@ -1,5 +1,5 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { AgentContext, type AgentOptions } from './types';
+import { type ActionResult, AgentContext, type AgentOptions } from './types';
 import { NavigatorAgent, NavigatorActionRegistry } from './agents/navigator';
 import { PlannerAgent, type PlannerOutput } from './agents/planner';
 import { ValidatorAgent } from './agents/validator';
@@ -15,6 +15,9 @@ import { Actors, type EventCallback, EventType, ExecutionState } from './event/t
 import { ChatModelAuthError, ChatModelForbiddenError, RequestCancelledError } from './agents/errors';
 import { wrapUntrustedContent } from './messages/utils';
 import { URLNotAllowedError } from '../browser/views';
+import { chatHistoryStore } from '@extension/storage/lib/chat';
+import type { AgentStepHistory } from './history';
+
 const logger = createLogger('Executor');
 
 export interface ExecutorExtraArgs {
@@ -217,6 +220,16 @@ export class Executor {
         const errorMessage = error instanceof Error ? error.message : String(error);
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, `Task failed: ${errorMessage}`);
       }
+    } finally {
+      if (import.meta.env.DEV) {
+        logger.debug('Executor history', JSON.stringify(this.context.history, null, 2));
+      }
+      // store the history
+      await chatHistoryStore.storeAgentStepHistory(
+        this.context.taskId,
+        this.tasks[0],
+        JSON.stringify(this.context.history),
+      );
     }
   }
 
@@ -303,5 +316,79 @@ export class Executor {
 
   async getCurrentTaskId(): Promise<string> {
     return this.context.taskId;
+  }
+
+  /**
+   * Replays a saved history of actions with error handling and retry logic.
+   *
+   * @param history - The history to replay
+   * @param maxRetries - Maximum number of retries per action
+   * @param skipFailures - Whether to skip failed actions or stop execution
+   * @param delayBetweenActions - Delay between actions in seconds
+   * @returns List of action results
+   */
+  async replayHistory(
+    sessionId: string,
+    maxRetries = 3,
+    skipFailures = true,
+    delayBetweenActions = 2.0,
+  ): Promise<ActionResult[]> {
+    const results: ActionResult[] = [];
+    const replayLogger = createLogger('Executor:replayHistory');
+
+    logger.info('replay task', this.tasks[0]);
+
+    try {
+      const historyFromStorage = await chatHistoryStore.loadAgentStepHistory(sessionId);
+      if (!historyFromStorage) {
+        throw new Error('History not found');
+      }
+
+      const history = JSON.parse(historyFromStorage.history) as AgentStepHistory;
+      if (history.history.length === 0) {
+        throw new Error('History is empty');
+      }
+      logger.debug(`🔄 Replaying history: ${JSON.stringify(history, null, 2)}`);
+      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
+
+      for (let i = 0; i < history.history.length; i++) {
+        const historyItem = history.history[i];
+
+        // Check if execution should stop
+        if (this.context.stopped) {
+          replayLogger.info('Replay stopped by user');
+          break;
+        }
+
+        // Execute the history step with enhanced method that handles all the logic
+        const stepResults = await this.navigator.executeHistoryStep(
+          historyItem,
+          i,
+          history.history.length,
+          maxRetries,
+          delayBetweenActions * 1000,
+          skipFailures,
+        );
+
+        results.push(...stepResults);
+
+        // If stopped during execution, break the loop
+        if (this.context.stopped) {
+          break;
+        }
+      }
+
+      if (this.context.stopped) {
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, 'Replay cancelled');
+      } else {
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, 'Replay completed');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      replayLogger.error(`Replay failed: ${errorMessage}`);
+      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, `Replay failed: ${errorMessage}`);
+    }
+
+    return results;
   }
 }

@@ -3,6 +3,8 @@ import type BrowserContext from '../browser/context';
 import type MessageManager from './messages/service';
 import type { EventManager } from './event/manager';
 import { type Actors, type ExecutionState, AgentEvent } from './event/types';
+import { AgentStepHistory } from './history';
+import { DOMHistoryElement } from '../browser/dom/history/view';
 
 export interface AgentOptions {
   maxSteps: number;
@@ -35,14 +37,17 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
     'type',
     'name',
     'role',
-    'href',
-    'tabindex',
     'aria-label',
     'placeholder',
     'value',
     'alt',
     'aria-expanded',
     'data-date-format',
+    'checked',
+    'data-state',
+    'aria-checked',
+    'href',
+    'tabindex',
   ],
   planningInterval: 3,
 };
@@ -62,6 +67,8 @@ export class AgentContext {
   stepInfo: AgentStepInfo | null;
   actionResults: ActionResult[];
   stateMessageAdded: boolean;
+  history: AgentStepHistory;
+
   constructor(
     taskId: string,
     browserContext: BrowserContext,
@@ -84,6 +91,7 @@ export class AgentContext {
     this.stepInfo = null;
     this.actionResults = [];
     this.stateMessageAdded = false;
+    this.history = new AgentStepHistory();
   }
 
   async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string) {
@@ -120,21 +128,18 @@ export class AgentStepInfo {
   }
 }
 
-interface ActionResultParams {
-  isDone?: boolean;
-  extractedContent?: string | null;
-  error?: string | null;
-  includeInMemory?: boolean;
-}
-
 export class ActionResult {
   isDone: boolean;
+  success: boolean;
   extractedContent: string | null;
   error: string | null;
   includeInMemory: boolean;
+  interactedElement: DOMHistoryElement | null;
 
-  constructor(params: ActionResultParams = {}) {
+  constructor(params: Partial<ActionResult> = {}) {
     this.isDone = params.isDone ?? false;
+    this.success = params.success ?? false;
+    this.interactedElement = params.interactedElement ?? null;
     this.extractedContent = params.extractedContent ?? null;
     this.error = params.error ?? null;
     this.includeInMemory = params.includeInMemory ?? false;
@@ -144,6 +149,27 @@ export class ActionResult {
 export type WrappedActionResult = ActionResult & {
   toolCallId: string;
 };
+
+export class StepMetadata {
+  stepStartTime: number;
+  stepEndTime: number;
+  inputTokens: number;
+  stepNumber: number;
+
+  constructor(stepStartTime: number, stepEndTime: number, inputTokens: number, stepNumber: number) {
+    this.stepStartTime = stepStartTime;
+    this.stepEndTime = stepEndTime;
+    this.inputTokens = inputTokens;
+    this.stepNumber = stepNumber;
+  }
+
+  /**
+   * Calculate step duration in seconds
+   */
+  get durationSeconds(): number {
+    return this.stepEndTime - this.stepStartTime;
+  }
+}
 
 export const agentBrainSchema = z
   .object({

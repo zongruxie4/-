@@ -14,7 +14,6 @@ import { createChatModel } from './agent/helper';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { DEFAULT_AGENT_OPTIONS } from './agent/types';
 import { SpeechToTextService } from './services/speechToText';
-import { ProviderTypeEnum } from '@extension/storage';
 
 const logger = createLogger('background');
 
@@ -223,6 +222,33 @@ chrome.runtime.onConnect.addListener(port => {
                 error: error instanceof Error ? error.message : 'Speech recognition failed',
               });
             }
+          }
+
+          case 'replay': {
+            if (!message.tabId) return port.postMessage({ type: 'error', error: 'No tab ID provided' });
+            if (!message.taskId) return port.postMessage({ type: 'error', error: 'No task ID provided' });
+            if (!message.historySessionId)
+              return port.postMessage({ type: 'error', error: 'No history session ID provided' });
+            logger.info('replay', message.tabId, message.taskId, message.historySessionId);
+
+            try {
+              // Switch to the specified tab
+              await browserContext.switchTab(message.tabId);
+              // Setup executor with the new taskId and a dummy task description
+              currentExecutor = await setupExecutor(message.taskId, message.task, browserContext);
+              subscribeToExecutorEvents(currentExecutor);
+
+              // Run replayHistory with the history session ID
+              const result = await currentExecutor.replayHistory(message.historySessionId);
+              logger.debug('replay execution result', message.tabId, result);
+            } catch (error) {
+              logger.error('Replay failed:', error);
+              return port.postMessage({
+                type: 'error',
+                error: error instanceof Error ? error.message : 'Replay failed',
+              });
+            }
+            break;
           }
 
           default:
