@@ -596,35 +596,68 @@ export default class Page {
     return convertedKey as KeyInput;
   }
 
-  async scrollToText(text: string): Promise<boolean> {
+  async scrollToText(text: string, nth: number = 1): Promise<boolean> {
     if (!this._puppeteerPage) {
       throw new Error('Puppeteer is not connected');
     }
 
     try {
-      // Try different locator strategies
+      // Convert text to lowercase for consistent searching
+      const lowerCaseText = text.toLowerCase();
+
+      // Try different locator strategies to find all elements containing the text
       const selectors = [
-        // Using text selector (equivalent to get_by_text)
+        // Using text selector (equivalent to get_by_text) - for exact text match
         `::-p-text(${text})`,
         // Using XPath selector (contains text) - case insensitive
-        `::-p-xpath(//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${text.toLowerCase()}')])`,
+        `::-p-xpath(//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${lowerCaseText}')])`,
       ];
 
       for (const selector of selectors) {
         try {
-          const element = await this._puppeteerPage.$(selector);
-          if (element) {
-            // Check if element is visible
-            const isVisible = await element.evaluate(el => {
-              const style = window.getComputedStyle(el);
-              return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-            });
+          // Use $$ to get all matching elements
+          const elements = await this._puppeteerPage.$$(selector);
 
-            if (isVisible) {
-              await this._scrollIntoViewIfNeeded(element);
+          if (elements.length > 0) {
+            // Find visible elements and select the nth occurrence
+            const visibleElements = [];
+
+            for (const element of elements) {
+              const isVisible = await element.evaluate(el => {
+                const style = window.getComputedStyle(el);
+                const rect = el.getBoundingClientRect();
+                return (
+                  style.display !== 'none' &&
+                  style.visibility !== 'hidden' &&
+                  style.opacity !== '0' &&
+                  rect.width > 0 &&
+                  rect.height > 0
+                );
+              });
+
+              if (isVisible) {
+                visibleElements.push(element);
+              }
+            }
+
+            // Check if we have enough visible elements for the requested nth occurrence
+            if (visibleElements.length >= nth) {
+              const targetElement = visibleElements[nth - 1]; // Convert to 0-indexed
+              await this._scrollIntoViewIfNeeded(targetElement);
               await new Promise(resolve => setTimeout(resolve, 500)); // Wait for scroll to complete
+
+              // Dispose of all element handles to prevent memory leaks
+              for (const element of elements) {
+                await element.dispose();
+              }
+
               return true;
             }
+          }
+
+          // Dispose of all element handles to prevent memory leaks
+          for (const element of elements) {
+            await element.dispose();
           }
         } catch (e) {
           logger.debug(`Locator attempt failed: ${e}`);

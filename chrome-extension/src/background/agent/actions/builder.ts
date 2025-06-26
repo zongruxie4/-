@@ -438,6 +438,29 @@ export class ActionBuilder {
     }, scrollUpActionSchema);
     actions.push(scrollUp);
 
+    // Scroll to text
+    const scrollToText = new Action(async (input: z.infer<typeof scrollToTextActionSchema.schema>) => {
+      const intent =
+        input.intent ||
+        `Scroll to text: ${input.text}${input.nth > 1 ? ` (${input.nth}${input.nth === 2 ? 'nd' : input.nth === 3 ? 'rd' : 'th'} occurrence)` : ''}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+      const page = await this.context.browserContext.getCurrentPage();
+      try {
+        const scrolled = await page.scrollToText(input.text, input.nth);
+        const msg = scrolled
+          ? `Scrolled to text: ${input.text}${input.nth > 1 ? ` (${input.nth}${input.nth === 2 ? 'nd' : input.nth === 3 ? 'rd' : 'th'} occurrence)` : ''}`
+          : `Text '${input.text}' not found or not visible on page${input.nth > 1 ? ` (${input.nth}${input.nth === 2 ? 'nd' : input.nth === 3 ? 'rd' : 'th'} occurrence)` : ''}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      } catch (error) {
+        const msg = `Failed to scroll to text: ${error instanceof Error ? error.message : String(error)}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, msg);
+        return new ActionResult({ error: msg, includeInMemory: true });
+      }
+    }, scrollToTextActionSchema);
+    actions.push(scrollToText);
+
     // Keyboard Actions
     const sendKeys = new Action(async (input: z.infer<typeof sendKeysActionSchema.schema>) => {
       const intent = input.intent || `Send keys: ${input.keys}`;
@@ -450,26 +473,6 @@ export class ActionBuilder {
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, sendKeysActionSchema);
     actions.push(sendKeys);
-
-    const scrollToText = new Action(async (input: z.infer<typeof scrollToTextActionSchema.schema>) => {
-      const intent = input.intent || `Scroll to text: ${input.text}`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-
-      const page = await this.context.browserContext.getCurrentPage();
-      try {
-        const scrolled = await page.scrollToText(input.text);
-        const msg = scrolled
-          ? `Scrolled to text: ${input.text}`
-          : `Text '${input.text}' not found or not visible on page`;
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-        return new ActionResult({ extractedContent: msg, includeInMemory: true });
-      } catch (error) {
-        const msg = `Failed to scroll to text: ${error instanceof Error ? error.message : String(error)}`;
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, msg);
-        return new ActionResult({ error: msg, includeInMemory: true });
-      }
-    }, scrollToTextActionSchema);
-    actions.push(scrollToText);
 
     // Get all options from a native dropdown
     const getDropdownOptions = new Action(

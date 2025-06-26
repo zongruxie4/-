@@ -142,10 +142,16 @@ export const sendKeysActionSchema: ActionSchema = {
 
 export const scrollToTextActionSchema: ActionSchema = {
   name: 'scroll_to_text',
-  description: 'If you dont find something which you want to interact with, scroll to it',
+  description: 'If you dont find something which you want to interact with in current viewport, try to scroll to it',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
     text: z.string().describe('text to scroll to'),
+    nth: z
+      .number()
+      .int()
+      .min(1)
+      .default(1)
+      .describe('which occurrence of the text to scroll to (1-indexed, default: 1)'),
   }),
 };
 
