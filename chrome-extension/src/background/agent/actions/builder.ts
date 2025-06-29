@@ -9,7 +9,6 @@ import {
   searchGoogleActionSchema,
   switchTabActionSchema,
   type ActionSchema,
-  scrollByActionSchema,
   sendKeysActionSchema,
   scrollToTextActionSchema,
   cacheContentActionSchema,
@@ -17,10 +16,9 @@ import {
   getDropdownOptionsActionSchema,
   closeTabActionSchema,
   waitActionSchema,
-  scrollToBottomActionSchema,
-  scrollToTopActionSchema,
-  scrollToPreviousPageActionSchema,
-  scrollToNextPageActionSchema,
+  previousPageActionSchema,
+  scrollToPercentActionSchema,
+  nextPageActionSchema,
 } from './schemas';
 import { z } from 'zod';
 import { createLogger } from '@src/background/log';
@@ -375,75 +373,51 @@ export class ActionBuilder {
     }, cacheContentActionSchema);
     actions.push(cacheContent);
 
-    const scrollBy = new Action(async (input: z.infer<typeof scrollByActionSchema.schema>) => {
-      // Determine scroll direction and amount
-      const amount = input.amount || null; // Use null for default page scroll
-      const direction = amount === null || amount >= 0 ? 'down' : 'up';
-      const requestedAmount = amount !== null ? `${Math.abs(amount)} pixels ${direction}` : 'one page down';
-      const intent = input.intent || `Scroll ${requestedAmount}`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+    // const scrollBy = new Action(async (input: z.infer<typeof scrollByActionSchema.schema>) => {
+    //   // Determine scroll direction and amount
+    //   const amount = input.amount || null; // Use null for default page scroll
+    //   const direction = amount === null || amount >= 0 ? 'down' : 'up';
+    //   const requestedAmount = amount !== null ? `${Math.abs(amount)} pixels ${direction}` : 'one page down';
+    //   const intent = input.intent || `Scroll ${requestedAmount}`;
+    //   this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
-      const page = await this.context.browserContext.getCurrentPage();
+    //   const page = await this.context.browserContext.getCurrentPage();
 
-      // Get initial scroll position
-      const [initialScrollY, initialVisualViewportHeight, initialScrollHeight] = await page.getScrollInfo();
+    //   // Get initial scroll position
+    //   const [initialScrollY, initialVisualViewportHeight, initialScrollHeight] = await page.getScrollInfo();
 
-      // Check scroll limits
-      if (direction === 'down' && initialScrollY + initialVisualViewportHeight >= initialScrollHeight) {
-        const msg = 'Already at bottom of page, cannot scroll down further';
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-        return new ActionResult({ extractedContent: msg, includeInMemory: true });
-      }
+    //   // Check scroll limits
+    //   if (direction === 'down' && initialScrollY + initialVisualViewportHeight >= initialScrollHeight) {
+    //     const msg = 'Already at bottom of page, cannot scroll down further';
+    //     this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+    //     return new ActionResult({ extractedContent: msg, includeInMemory: true });
+    //   }
 
-      if (direction === 'up' && initialScrollY === 0) {
-        const msg = 'Already at top of page, cannot scroll up further';
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-        return new ActionResult({ extractedContent: msg, includeInMemory: true });
-      }
+    //   if (direction === 'up' && initialScrollY === 0) {
+    //     const msg = 'Already at top of page, cannot scroll up further';
+    //     this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+    //     return new ActionResult({ extractedContent: msg, includeInMemory: true });
+    //   }
 
-      // Perform scrolling
-      await page.scrollBy(amount);
+    //   // Perform scrolling
+    //   await page.scrollBy(amount);
 
-      // Get final scroll position
-      const [finalScrollY] = await page.getScrollInfo();
-      // Calculate actual scroll amount
-      const actualScrolled = finalScrollY - initialScrollY;
-      const actualDirection = actualScrolled >= 0 ? 'down' : 'up';
-      const actualAmount = Math.abs(actualScrolled);
+    //   // Get final scroll position
+    //   const [finalScrollY] = await page.getScrollInfo();
+    //   // Calculate actual scroll amount
+    //   const actualScrolled = finalScrollY - initialScrollY;
+    //   const actualDirection = actualScrolled >= 0 ? 'down' : 'up';
+    //   const actualAmount = Math.abs(actualScrolled);
 
-      const msg = `Scrolled ${actualDirection} the page by ${actualAmount} pixels${amount !== null && actualAmount !== Math.abs(amount) ? ` (requested ${Math.abs(amount)} pixels)` : ''}`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-      return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, scrollByActionSchema);
-    actions.push(scrollBy);
+    //   const msg = `Scrolled ${actualDirection} the page by ${actualAmount} pixels${amount !== null && actualAmount !== Math.abs(amount) ? ` (requested ${Math.abs(amount)} pixels)` : ''}`;
+    //   this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+    //   return new ActionResult({ extractedContent: msg, includeInMemory: true });
+    // }, scrollByActionSchema);
+    // actions.push(scrollBy);
 
-    // Scroll to bottom
-    const scrollToBottom = new Action(async (input: z.infer<typeof scrollToBottomActionSchema.schema>) => {
-      const intent = input.intent || `Scroll to bottom of the page`;
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-      const page = await this.context.browserContext.getCurrentPage();
-
-      if (input.index) {
-        const state = await page.getCachedState();
-        const elementNode = state?.selectorMap.get(input.index);
-        if (!elementNode) {
-          const errorMsg = `Element with index ${input.index} does not exist - retry or use alternative actions`;
-          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
-          return new ActionResult({ error: errorMsg, includeInMemory: true });
-        }
-        await page.scrollToBottom(elementNode);
-      } else {
-        await page.scrollToBottom();
-      }
-      const msg = 'Scrolled to bottom of the page';
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
-      return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, scrollToBottomActionSchema);
-    actions.push(scrollToBottom);
-
-    // Scroll to top
-    const scrollToTop = new Action(async (input: z.infer<typeof scrollToTopActionSchema.schema>) => {
-      const intent = input.intent || `Scroll to top of the page`;
+    // Scroll to percent
+    const scrollToPercent = new Action(async (input: z.infer<typeof scrollToPercentActionSchema.schema>) => {
+      const intent = input.intent || `Scroll to percent: ${input.yPercent}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
       const page = await this.context.browserContext.getCurrentPage();
 
@@ -455,18 +429,19 @@ export class ActionBuilder {
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({ error: errorMsg, includeInMemory: true });
         }
-        await page.scrollToTop(elementNode);
+        logger.info(`Scrolling to percent: ${input.yPercent} with elementNode: ${elementNode.xpath}`);
+        await page.scrollToPercent(input.yPercent, elementNode);
       } else {
-        await page.scrollToTop();
+        await page.scrollToPercent(input.yPercent);
       }
-      const msg = 'Scrolled to top of the page';
+      const msg = `Scrolled to percent: ${input.yPercent}`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, scrollToTopActionSchema);
-    actions.push(scrollToTop);
+    }, scrollToPercentActionSchema);
+    actions.push(scrollToPercent);
 
     // Scroll to previous page
-    const scrollToPreviousPage = new Action(async (input: z.infer<typeof scrollToPreviousPageActionSchema.schema>) => {
+    const previousPage = new Action(async (input: z.infer<typeof previousPageActionSchema.schema>) => {
       const intent = input.intent || `Scroll to previous page`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
       const page = await this.context.browserContext.getCurrentPage();
@@ -479,18 +454,42 @@ export class ActionBuilder {
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({ error: errorMsg, includeInMemory: true });
         }
+
+        // Check if element is already at top of its scrollable area
+        try {
+          const [elementScrollTop] = await page.getElementScrollInfo(elementNode);
+          if (elementScrollTop === 0) {
+            const msg = `Element with index ${input.index} is already at top, cannot scroll to previous page`;
+            this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+            return new ActionResult({ extractedContent: msg, includeInMemory: true });
+          }
+        } catch (error) {
+          // If we can't get scroll info, let the scrollToPreviousPage method handle it
+          logger.warning(
+            `Could not get element scroll info: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+
         await page.scrollToPreviousPage(elementNode);
       } else {
+        // Check if page is already at top
+        const [initialScrollY] = await page.getScrollInfo();
+        if (initialScrollY === 0) {
+          const msg = 'Already at top of page, cannot scroll to previous page';
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+          return new ActionResult({ extractedContent: msg, includeInMemory: true });
+        }
+
         await page.scrollToPreviousPage();
       }
       const msg = 'Scrolled to previous page';
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, scrollToPreviousPageActionSchema);
-    actions.push(scrollToPreviousPage);
+    }, previousPageActionSchema);
+    actions.push(previousPage);
 
     // Scroll to next page
-    const scrollToNextPage = new Action(async (input: z.infer<typeof scrollToNextPageActionSchema.schema>) => {
+    const nextPage = new Action(async (input: z.infer<typeof nextPageActionSchema.schema>) => {
       const intent = input.intent || `Scroll to next page`;
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
       const page = await this.context.browserContext.getCurrentPage();
@@ -503,15 +502,40 @@ export class ActionBuilder {
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({ error: errorMsg, includeInMemory: true });
         }
+
+        // Check if element is already at bottom of its scrollable area
+        try {
+          const [elementScrollTop, elementClientHeight, elementScrollHeight] =
+            await page.getElementScrollInfo(elementNode);
+          if (elementScrollTop + elementClientHeight >= elementScrollHeight) {
+            const msg = `Element with index ${input.index} is already at bottom, cannot scroll to next page`;
+            this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+            return new ActionResult({ extractedContent: msg, includeInMemory: true });
+          }
+        } catch (error) {
+          // If we can't get scroll info, let the scrollToNextPage method handle it
+          logger.warning(
+            `Could not get element scroll info: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+
         await page.scrollToNextPage(elementNode);
       } else {
+        // Check if page is already at bottom
+        const [initialScrollY, initialVisualViewportHeight, initialScrollHeight] = await page.getScrollInfo();
+        if (initialScrollY + initialVisualViewportHeight >= initialScrollHeight) {
+          const msg = 'Already at bottom of page, cannot scroll to next page';
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+          return new ActionResult({ extractedContent: msg, includeInMemory: true });
+        }
+
         await page.scrollToNextPage();
       }
       const msg = 'Scrolled to next page';
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
-    }, scrollToNextPageActionSchema);
-    actions.push(scrollToNextPage);
+    }, nextPageActionSchema);
+    actions.push(nextPage);
 
     // Scroll to text
     const scrollToText = new Action(async (input: z.infer<typeof scrollToTextActionSchema.schema>) => {

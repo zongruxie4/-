@@ -112,38 +112,19 @@ export const cacheContentActionSchema: ActionSchema = {
   }),
 };
 
-export const scrollByActionSchema: ActionSchema = {
-  name: 'scroll_by',
+export const scrollToPercentActionSchema: ActionSchema = {
+  name: 'scroll_to_percent',
   description:
-    'Scroll the document in the window by pixel amount - positive values scroll down, negative values scroll up',
+    'Scrolls to a particular vertical percentage of the document or an element. If no index is specified, scroll the whole document.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    amount: z.number().int().describe('amount of pixels - positive for down, negative for up'),
+    yPercent: z.number().int().describe('percentage to scroll to - min 0, max 100; 0 is top, 100 is bottom'),
+    index: z.number().int().nullable().optional().describe('index of the element to scroll'),
   }),
 };
 
-export const scrollToBottomActionSchema: ActionSchema = {
-  name: 'scrollToBottom',
-  description:
-    'Scroll the document in the window or an element to the bottom. If no index is specified, scroll the whole document.',
-  schema: z.object({
-    intent: z.string().default('').describe('purpose of this action'),
-    index: z.number().int().nullable().optional().describe('index of the element to scroll to bottom'),
-  }),
-};
-
-export const scrollToTopActionSchema: ActionSchema = {
-  name: 'scrollToTop',
-  description:
-    'Scroll the document in the window or an element to the top. If no index is specified, scroll the whole document.',
-  schema: z.object({
-    intent: z.string().default('').describe('purpose of this action'),
-    index: z.number().int().nullable().optional().describe('index of the element to scroll to top'),
-  }),
-};
-
-export const scrollToPreviousPageActionSchema: ActionSchema = {
-  name: 'scrollToPreviousPage',
+export const previousPageActionSchema: ActionSchema = {
+  name: 'previous_page',
   description:
     'Scroll the document in the window or an element to the previous page. If no index is specified, scroll the whole document.',
   schema: z.object({
@@ -152,8 +133,8 @@ export const scrollToPreviousPageActionSchema: ActionSchema = {
   }),
 };
 
-export const scrollToNextPageActionSchema: ActionSchema = {
-  name: 'scrollToNextPage',
+export const nextPageActionSchema: ActionSchema = {
+  name: 'next_page',
   description:
     'Scroll the document in the window or an element to the next page. If no index is specified, scroll the whole document.',
   schema: z.object({

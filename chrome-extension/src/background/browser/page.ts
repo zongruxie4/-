@@ -199,6 +199,134 @@ export default class Page {
     return _getScrollInfo(this._tabId);
   }
 
+  // Get scroll position information for a specific element.
+  async getElementScrollInfo(elementNode: DOMElementNode): Promise<[number, number, number]> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+
+    const element = await this.locateElement(elementNode);
+    if (!element) {
+      throw new Error(`Element: ${elementNode} not found`);
+    }
+
+    // Find the nearest scrollable ancestor
+    const scrollableElement = await this._findNearestScrollableElement(element);
+    if (!scrollableElement) {
+      throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
+    }
+
+    const scrollInfo = await scrollableElement.evaluate(el => {
+      return {
+        scrollTop: el.scrollTop,
+        clientHeight: el.clientHeight,
+        scrollHeight: el.scrollHeight,
+      };
+    });
+
+    return [scrollInfo.scrollTop, scrollInfo.clientHeight, scrollInfo.scrollHeight];
+  }
+
+  /**
+   * Find the nearest scrollable ancestor of the given element
+   * @param element The element to start searching from
+   * @returns The nearest scrollable ancestor or null if none found
+   */
+  private async _findNearestScrollableElement(element: ElementHandle): Promise<ElementHandle | null> {
+    if (!this._puppeteerPage) {
+      return null;
+    }
+
+    // Check if the current element is scrollable
+    const isScrollable = await element.evaluate((el: Element) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const style = window.getComputedStyle(el);
+      const hasVerticalScrollbar = el.scrollHeight > el.clientHeight;
+      const canScrollVertically =
+        style.overflowY === 'scroll' ||
+        style.overflowY === 'auto' ||
+        style.overflow === 'scroll' ||
+        style.overflow === 'auto';
+
+      return hasVerticalScrollbar && canScrollVertically;
+    });
+
+    if (isScrollable) {
+      return element;
+    }
+
+    // Check parent elements
+    let currentElement: ElementHandle<Element> | null = element;
+
+    try {
+      while (currentElement) {
+        // Get the parent element (as an ElementHandle) of the current element
+        const parentHandle = (await currentElement.evaluateHandle(
+          (el: Element) => el.parentElement,
+        )) as ElementHandle<Element> | null;
+
+        const parentElement = parentHandle ? await parentHandle.asElement() : null;
+
+        if (!parentElement) {
+          // Reached the root without finding a scrollable ancestor
+          currentElement = null;
+          break;
+        }
+
+        const parentIsScrollable = await parentElement.evaluate((el: Element) => {
+          if (!(el instanceof HTMLElement)) return false;
+          const style = window.getComputedStyle(el);
+          const hasVerticalScrollbar = el.scrollHeight > el.clientHeight;
+          const canScrollVertically =
+            ['scroll', 'auto'].includes(style.overflowY) || ['scroll', 'auto'].includes(style.overflow);
+
+          return hasVerticalScrollbar && canScrollVertically;
+        });
+
+        if (parentIsScrollable) {
+          // Found a scrollable ancestor – return it (the caller should dispose when finished)
+          return parentElement;
+        }
+
+        // Move up the DOM tree – dispose the previous element handle before continuing
+        if (currentElement !== element) {
+          try {
+            await currentElement.dispose();
+          } catch (disposeErr) {
+            logger.debug('Failed to dispose element handle:', disposeErr);
+          }
+        }
+
+        currentElement = parentElement;
+      }
+    } catch (error) {
+      // Error accessing parent, break out of loop
+      logger.error('Error finding scrollable parent:', error);
+    }
+
+    // If no scrollable ancestor found, return the document body or documentElement
+    try {
+      const bodyElement = await this._puppeteerPage.$('body');
+      if (bodyElement) {
+        const bodyIsScrollable = await bodyElement.evaluate(el => {
+          if (!(el instanceof HTMLElement)) return false;
+          return el.scrollHeight > el.clientHeight;
+        });
+        if (bodyIsScrollable) {
+          return bodyElement;
+        }
+      }
+
+      // Last resort: return document element for page-level scrolling
+      const documentElement = await this._puppeteerPage.evaluateHandle(() => document.documentElement);
+      const docElement = (await documentElement.asElement()) as ElementHandle<Element> | null;
+      return docElement;
+    } catch (error) {
+      logger.error('Failed to find scrollable element:', error);
+      return null;
+    }
+  }
+
   async getContent(): Promise<string> {
     if (!this._puppeteerPage) {
       throw new Error('Puppeteer page is not connected');
@@ -461,90 +589,47 @@ export default class Page {
     }
   }
 
-  // async scrollDown(amount?: number): Promise<void> {
-  //   if (this._puppeteerPage) {
-  //     if (amount) {
-  //       await this._puppeteerPage?.evaluate(`window.scrollBy(0, ${amount});`);
-  //     } else {
-  //       await this._puppeteerPage?.evaluate('window.scrollBy(0, window.innerHeight);');
-  //     }
-  //   }
-  // }
-
-  // async scrollUp(amount?: number): Promise<void> {
-  //   if (this._puppeteerPage) {
-  //     if (amount) {
-  //       await this._puppeteerPage?.evaluate(`window.scrollBy(0, -${amount});`);
-  //     } else {
-  //       await this._puppeteerPage?.evaluate('window.scrollBy(0, -window.innerHeight);');
-  //     }
-  //   }
-  // }
-
-  async scrollBy(amount: number, elementNode?: DOMElementNode): Promise<void> {
+  // scroll to a percentage of the page or element
+  // if yPercent is positive, scroll down, if negative, scroll up, if 0, scroll to the top of the page, if 100, scroll to the bottom of the page
+  // if elementNode is provided, scroll to a percentage of the element
+  // if elementNode is not provided, scroll to a percentage of the page
+  async scrollToPercent(yPercent: number, elementNode?: DOMElementNode): Promise<void> {
     if (!this._puppeteerPage) {
       throw new Error('Puppeteer is not connected');
     }
-    try {
-      if (!elementNode) {
-        // scroll the whole page by relative amount
-        await this._puppeteerPage?.evaluate(`window.scrollBy(0, ${amount});`);
-        return;
-      } else {
-        // scroll the element by relative amount
-        const element = await this.locateElement(elementNode);
-        if (!element) {
-          throw new Error(`Element: ${elementNode} not found`);
-        }
-
-        // Scroll the specific element by the specified amount
-        await element.evaluate((el, scrollAmount) => {
-          el.scrollBy(0, scrollAmount);
-        }, amount);
-      }
-    } catch (error) {
-      logger.error('Failed to scroll by:', error);
-      throw new Error(`Failed to scroll by: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async scrollToBottom(elementNode?: DOMElementNode): Promise<void> {
-    if (!this._puppeteerPage) {
-      throw new Error('Puppeteer is not connected');
-    }
-
     if (!elementNode) {
-      // Scroll the whole page to bottom
-      await this._puppeteerPage.evaluate('window.scrollTo(0, document.body.scrollHeight);');
+      await this._puppeteerPage.evaluate(yPercent => {
+        const scrollHeight = document.documentElement.scrollHeight;
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        const scrollTop = (scrollHeight - viewportHeight) * (yPercent / 100);
+        window.scrollTo({
+          top: scrollTop,
+          left: window.scrollX,
+          behavior: 'smooth',
+        });
+      }, yPercent);
     } else {
-      // Scroll the specific element to bottom
       const element = await this.locateElement(elementNode);
       if (!element) {
         throw new Error(`Element: ${elementNode} not found`);
       }
-      await element.evaluate(el => {
-        el.scrollTo(0, el.scrollHeight);
-      });
-    }
-  }
 
-  async scrollToTop(elementNode?: DOMElementNode): Promise<void> {
-    if (!this._puppeteerPage) {
-      throw new Error('Puppeteer is not connected');
-    }
-
-    if (!elementNode) {
-      // Scroll the whole page to top
-      await this._puppeteerPage.evaluate('window.scrollTo(0, 0);');
-    } else {
-      // Scroll the specific element to top
-      const element = await this.locateElement(elementNode);
-      if (!element) {
-        throw new Error(`Element: ${elementNode} not found`);
+      // Find the nearest scrollable ancestor
+      const scrollableElement = await this._findNearestScrollableElement(element);
+      if (!scrollableElement) {
+        throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
       }
-      await element.evaluate(el => {
-        el.scrollTo(0, 0);
-      });
+
+      await scrollableElement.evaluate((el, yPercent) => {
+        const scrollHeight = el.scrollHeight;
+        const viewportHeight = el.clientHeight;
+        const scrollTop = (scrollHeight - viewportHeight) * (yPercent / 100);
+        el.scrollTo({
+          top: scrollTop,
+          left: el.scrollLeft,
+          behavior: 'smooth',
+        });
+      }, yPercent);
     }
   }
 
@@ -562,7 +647,14 @@ export default class Page {
       if (!element) {
         throw new Error(`Element: ${elementNode} not found`);
       }
-      await element.evaluate(el => {
+
+      // Find the nearest scrollable ancestor
+      const scrollableElement = await this._findNearestScrollableElement(element);
+      if (!scrollableElement) {
+        throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
+      }
+
+      await scrollableElement.evaluate(el => {
         el.scrollBy(0, -el.clientHeight);
       });
     }
@@ -582,7 +674,14 @@ export default class Page {
       if (!element) {
         throw new Error(`Element: ${elementNode} not found`);
       }
-      await element.evaluate(el => {
+
+      // Find the nearest scrollable ancestor
+      const scrollableElement = await this._findNearestScrollableElement(element);
+      if (!scrollableElement) {
+        throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
+      }
+
+      await scrollableElement.evaluate(el => {
         el.scrollBy(0, el.clientHeight);
       });
     }
@@ -1139,9 +1238,10 @@ export default class Page {
 
       if (isVisible) break;
 
-      // Check timeout
+      // Check timeout - log warning and return instead of throwing
       if (Date.now() - startTime > timeout) {
-        throw new Error('Timed out while trying to scroll element into view');
+        logger.warning('Timed out while trying to scroll element into view, continuing anyway');
+        break;
       }
 
       // Small delay before next check
