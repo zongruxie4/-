@@ -112,31 +112,53 @@ export const cacheContentActionSchema: ActionSchema = {
   }),
 };
 
-export const scrollDownActionSchema: ActionSchema = {
-  name: 'scroll_down',
-  description: 'Scroll down the page by pixel amount - if no amount is specified, scroll down one page',
-  schema: z.object({
-    intent: z.string().default('').describe('purpose of this action'),
-    amount: z.number().int().nullable().optional().describe('amount of pixels'),
-  }),
-};
-
-export const scrollUpActionSchema: ActionSchema = {
-  name: 'scroll_up',
-  description: 'Scroll up the page by pixel amount - if no amount is specified, scroll up one page',
-  schema: z.object({
-    intent: z.string().default('').describe('purpose of this action'),
-    amount: z.number().int().nullable().optional().describe('amount of pixels'),
-  }),
-};
-
-export const sendKeysActionSchema: ActionSchema = {
-  name: 'send_keys',
+export const scrollByActionSchema: ActionSchema = {
+  name: 'scroll_by',
   description:
-    'Send strings of special keys like Backspace, Insert, PageDown, Delete, Enter. Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard press. Be aware of different operating systems and their shortcuts',
+    'Scroll the document in the window by pixel amount - positive values scroll down, negative values scroll up',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    keys: z.string().describe('keys to send'),
+    amount: z.number().int().describe('amount of pixels - positive for down, negative for up'),
+  }),
+};
+
+export const scrollToBottomActionSchema: ActionSchema = {
+  name: 'scrollToBottom',
+  description:
+    'Scroll the document in the window or an element to the bottom. If no index is specified, scroll the whole document.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().nullable().optional().describe('index of the element to scroll to bottom'),
+  }),
+};
+
+export const scrollToTopActionSchema: ActionSchema = {
+  name: 'scrollToTop',
+  description:
+    'Scroll the document in the window or an element to the top. If no index is specified, scroll the whole document.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().nullable().optional().describe('index of the element to scroll to top'),
+  }),
+};
+
+export const scrollToPreviousPageActionSchema: ActionSchema = {
+  name: 'scrollToPreviousPage',
+  description:
+    'Scroll the document in the window or an element to the previous page. If no index is specified, scroll the whole document.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().nullable().optional().describe('index of the element to scroll to previous page'),
+  }),
+};
+
+export const scrollToNextPageActionSchema: ActionSchema = {
+  name: 'scrollToNextPage',
+  description:
+    'Scroll the document in the window or an element to the next page. If no index is specified, scroll the whole document.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().nullable().optional().describe('index of the element to scroll to next page'),
   }),
 };
 
@@ -152,6 +174,16 @@ export const scrollToTextActionSchema: ActionSchema = {
       .min(1)
       .default(1)
       .describe('which occurrence of the text to scroll to (1-indexed, default: 1)'),
+  }),
+};
+
+export const sendKeysActionSchema: ActionSchema = {
+  name: 'send_keys',
+  description:
+    'Send strings of special keys like Backspace, Insert, PageDown, Delete, Enter. Shortcuts such as `Control+o`, `Control+Shift+T` are supported as well. This gets used in keyboard press. Be aware of different operating systems and their shortcuts',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    keys: z.string().describe('keys to send'),
   }),
 };
 

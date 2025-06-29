@@ -1,7 +1,9 @@
 import { HumanMessage, type SystemMessage } from '@langchain/core/messages';
 import type { AgentContext } from '@src/background/agent/types';
 import { wrapUntrustedContent } from '../messages/utils';
+import { createLogger } from '@src/background/log';
 
+const logger = createLogger('BasePrompt');
 /**
  * Abstract base class for all prompt types
  */
@@ -27,26 +29,13 @@ abstract class BasePrompt {
   async buildBrowserStateUserMessage(context: AgentContext): Promise<HumanMessage> {
     const browserState = await context.browserContext.getState(context.options.useVision);
     const rawElementsText = browserState.elementTree.clickableElementsToString(context.options.includeAttributes);
-    const hasContentAbove = (browserState.pixelsAbove || 0) > 0;
-    const hasContentBelow = (browserState.pixelsBelow || 0) > 0;
 
     let formattedElementsText = '';
     if (rawElementsText !== '') {
+      const scrollInfo = `[Scroll info of current page] window.scrollY: ${browserState.scrollY}, window.visualViewport.height: ${browserState.visualViewportHeight}, document.body.scrollHeight: ${browserState.scrollHeight}\n`;
+      logger.info(scrollInfo);
       const elementsText = wrapUntrustedContent(rawElementsText);
-
-      if (hasContentAbove) {
-        // formattedElementsText = `... ${browserState.pixelsAbove} pixels above - scroll up or extract content to see more ...\n${elementsText}`;
-        formattedElementsText = `... ${browserState.pixelsAbove} pixels above - scroll up to see more ...\n${elementsText}`;
-      } else {
-        formattedElementsText = `[Start of page]\n${elementsText}`;
-      }
-
-      if (hasContentBelow) {
-        // formattedElementsText = `${formattedElementsText}\n... ${browserState.pixelsBelow} pixels below - scroll down or extract content to see more ...`;
-        formattedElementsText = `${formattedElementsText}\n... ${browserState.pixelsBelow} pixels below - scroll down to see more ...`;
-      } else {
-        formattedElementsText = `${formattedElementsText}\n[End of page]\n`;
-      }
+      formattedElementsText = `${scrollInfo}[Start of page]\n${elementsText}\n[End of page]\n`;
     } else {
       formattedElementsText = 'empty page';
     }

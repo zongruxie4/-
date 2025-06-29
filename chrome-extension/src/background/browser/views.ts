@@ -97,8 +97,9 @@ export interface PageState extends DOMState {
   url: string;
   title: string;
   screenshot: string | null;
-  pixelsAbove: number;
-  pixelsBelow: number;
+  scrollY: number;
+  scrollHeight: number;
+  visualViewportHeight: number;
 }
 
 export interface TabInfo {

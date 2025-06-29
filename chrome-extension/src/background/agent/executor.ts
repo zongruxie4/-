@@ -230,11 +230,9 @@ export class Executor {
         logger.debug('Executor history', JSON.stringify(this.context.history, null, 2));
       }
       // store the history
-      await chatHistoryStore.storeAgentStepHistory(
-        this.context.taskId,
-        this.tasks[0],
-        JSON.stringify(this.context.history),
-      );
+      const historyString = JSON.stringify(this.context.history);
+      logger.info(`Executor history size: ${historyString.length}`);
+      await chatHistoryStore.storeAgentStepHistory(this.context.taskId, this.tasks[0], historyString);
     }
   }
 

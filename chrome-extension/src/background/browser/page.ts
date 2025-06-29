@@ -39,8 +39,9 @@ export function build_initial_state(tabId?: number, url?: string, title?: string
     url: url || '',
     title: title || '',
     screenshot: null,
-    pixelsAbove: 0,
-    pixelsBelow: 0,
+    scrollY: 0,
+    scrollHeight: 0,
+    visualViewportHeight: 0,
   };
 }
 
@@ -191,9 +192,9 @@ export default class Page {
   }
 
   // Get scroll position information for the current page.
-  async getScrollInfo(): Promise<[number, number]> {
+  async getScrollInfo(): Promise<[number, number, number]> {
     if (!this._validWebPage) {
-      return [0, 0];
+      return [0, 0, 0];
     }
     return _getScrollInfo(this._tabId);
   }
@@ -290,7 +291,7 @@ export default class Page {
 
       // Take screenshot if needed
       const screenshot = useVision ? await this.takeScreenshot() : null;
-      const [pixelsAbove, pixelsBelow] = await this.getScrollInfo();
+      const [scrollY, visualViewportHeight, scrollHeight] = await this.getScrollInfo();
 
       // update the state
       this._state.elementTree = content.elementTree;
@@ -298,8 +299,9 @@ export default class Page {
       this._state.url = this._puppeteerPage?.url() || '';
       this._state.title = (await this._puppeteerPage?.title()) || '';
       this._state.screenshot = screenshot;
-      this._state.pixelsAbove = pixelsAbove;
-      this._state.pixelsBelow = pixelsBelow;
+      this._state.scrollY = scrollY;
+      this._state.visualViewportHeight = visualViewportHeight;
+      this._state.scrollHeight = scrollHeight;
       return this._state;
     } catch (error) {
       logger.error('Failed to update state:', error);
@@ -459,23 +461,130 @@ export default class Page {
     }
   }
 
-  async scrollDown(amount?: number): Promise<void> {
-    if (this._puppeteerPage) {
-      if (amount) {
+  // async scrollDown(amount?: number): Promise<void> {
+  //   if (this._puppeteerPage) {
+  //     if (amount) {
+  //       await this._puppeteerPage?.evaluate(`window.scrollBy(0, ${amount});`);
+  //     } else {
+  //       await this._puppeteerPage?.evaluate('window.scrollBy(0, window.innerHeight);');
+  //     }
+  //   }
+  // }
+
+  // async scrollUp(amount?: number): Promise<void> {
+  //   if (this._puppeteerPage) {
+  //     if (amount) {
+  //       await this._puppeteerPage?.evaluate(`window.scrollBy(0, -${amount});`);
+  //     } else {
+  //       await this._puppeteerPage?.evaluate('window.scrollBy(0, -window.innerHeight);');
+  //     }
+  //   }
+  // }
+
+  async scrollBy(amount: number, elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+    try {
+      if (!elementNode) {
+        // scroll the whole page by relative amount
         await this._puppeteerPage?.evaluate(`window.scrollBy(0, ${amount});`);
+        return;
       } else {
-        await this._puppeteerPage?.evaluate('window.scrollBy(0, window.innerHeight);');
+        // scroll the element by relative amount
+        const element = await this.locateElement(elementNode);
+        if (!element) {
+          throw new Error(`Element: ${elementNode} not found`);
+        }
+
+        // Scroll the specific element by the specified amount
+        await element.evaluate((el, scrollAmount) => {
+          el.scrollBy(0, scrollAmount);
+        }, amount);
       }
+    } catch (error) {
+      logger.error('Failed to scroll by:', error);
+      throw new Error(`Failed to scroll by: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async scrollUp(amount?: number): Promise<void> {
-    if (this._puppeteerPage) {
-      if (amount) {
-        await this._puppeteerPage?.evaluate(`window.scrollBy(0, -${amount});`);
-      } else {
-        await this._puppeteerPage?.evaluate('window.scrollBy(0, -window.innerHeight);');
+  async scrollToBottom(elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+
+    if (!elementNode) {
+      // Scroll the whole page to bottom
+      await this._puppeteerPage.evaluate('window.scrollTo(0, document.body.scrollHeight);');
+    } else {
+      // Scroll the specific element to bottom
+      const element = await this.locateElement(elementNode);
+      if (!element) {
+        throw new Error(`Element: ${elementNode} not found`);
       }
+      await element.evaluate(el => {
+        el.scrollTo(0, el.scrollHeight);
+      });
+    }
+  }
+
+  async scrollToTop(elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+
+    if (!elementNode) {
+      // Scroll the whole page to top
+      await this._puppeteerPage.evaluate('window.scrollTo(0, 0);');
+    } else {
+      // Scroll the specific element to top
+      const element = await this.locateElement(elementNode);
+      if (!element) {
+        throw new Error(`Element: ${elementNode} not found`);
+      }
+      await element.evaluate(el => {
+        el.scrollTo(0, 0);
+      });
+    }
+  }
+
+  async scrollToPreviousPage(elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+
+    if (!elementNode) {
+      // Scroll the whole page up by viewport height
+      await this._puppeteerPage.evaluate('window.scrollBy(0, -(window.visualViewport?.height || window.innerHeight));');
+    } else {
+      // Scroll the specific element up by its client height
+      const element = await this.locateElement(elementNode);
+      if (!element) {
+        throw new Error(`Element: ${elementNode} not found`);
+      }
+      await element.evaluate(el => {
+        el.scrollBy(0, -el.clientHeight);
+      });
+    }
+  }
+
+  async scrollToNextPage(elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+
+    if (!elementNode) {
+      // Scroll the whole page down by viewport height
+      await this._puppeteerPage.evaluate('window.scrollBy(0, (window.visualViewport?.height || window.innerHeight));');
+    } else {
+      // Scroll the specific element down by its client height
+      const element = await this.locateElement(elementNode);
+      if (!element) {
+        throw new Error(`Element: ${elementNode} not found`);
+      }
+      await element.evaluate(el => {
+        el.scrollBy(0, el.clientHeight);
+      });
     }
   }
 
