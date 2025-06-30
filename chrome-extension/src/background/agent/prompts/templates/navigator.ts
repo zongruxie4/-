@@ -85,7 +85,11 @@ Common action sequences:
 - Keep track of the status and subresults in the memory.
 - You are provided with procedural memory summaries that condense previous task history (every N steps). Use these summaries to maintain context about completed actions, current progress, and next steps. The summaries appear in chronological order and contain key information about navigation history, findings, errors encountered, and current state. Refer to these summaries to avoid repeating actions and to ensure consistent progress toward the task goal.
 
-9. Extraction:
+9. Scrolling:
+- If you scroll to an exact position of the page or an element, use the scroll_to_percent action, yPercent 0 for top, 100 for bottom.
+- If you scroll by a page, use the previous_page or next_page action.
+
+10. Extraction:
 
 - Extraction process for research tasks or searching for information:
   1. ANALYZE: Extract relevant content from current visible state as new-findings
@@ -93,10 +97,10 @@ Common action sequences:
      - If SUFFICIENT → Complete task using all findings
      - If INSUFFICIENT → Follow these steps in order:
        a) CACHE: First of all, use cache_content action to store new-findings from current visible state
-       b) SCROLL: Scroll the page using scroll_down/scroll_up
+       b) SCROLL: Scroll the content by ONE page per step, do not scroll to bottom directly
        c) REPEAT: Continue analyze-evaluate loop until either:
           • Information becomes sufficient
-          • Maximum 8 page scrolls completed
+          • Maximum 10 page scrolls completed
   3. FINALIZE:
      - Combine all cached-findings with new-findings from current visible state
      - Verify all required information is collected
@@ -105,19 +109,19 @@ Common action sequences:
 - Critical guidelines:
   • Be thorough and specific in extraction
   • ***ALWAYS CACHE CURRENT FINDINGS BEFORE SCROLLING***
+  • Avoid to cache duplicate information 
   • Verify source information before caching
-  • Scroll EXACTLY ONE PAGE in most cases
-  • Scroll less than one page only if you are sure you have to
+  • Scroll EXACTLY ONE PAGE per step
   • NEVER scroll more than one page at once, as this will cause loss of information
   • NEVER scroll less than 1/4 page, as this is inefficient and you will get stuck in a loop
-  • Stop after maximum 8 page scrolls
+  • Stop after maximum 10 page scrolls
 
-10. Login & Authentication:
+11. Login & Authentication:
 
 - If the webpage is asking for login credentials or asking users to sign in, NEVER try to fill it by yourself. Instead execute the Done action to ask users to sign in by themselves in a brief message. 
 - Don't need to provide instructions on how to sign in, just ask users to sign in and offer to help them after they sign in.
 
-11. Plan:
+12. Plan:
 
 - Plan is a json string wrapped by the <plan> tag
 - If a plan is provided, follow the instructions in the next_steps exactly first

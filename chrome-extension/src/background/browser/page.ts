@@ -39,8 +39,9 @@ export function build_initial_state(tabId?: number, url?: string, title?: string
     url: url || '',
     title: title || '',
     screenshot: null,
-    pixelsAbove: 0,
-    pixelsBelow: 0,
+    scrollY: 0,
+    scrollHeight: 0,
+    visualViewportHeight: 0,
   };
 }
 
@@ -191,11 +192,139 @@ export default class Page {
   }
 
   // Get scroll position information for the current page.
-  async getScrollInfo(): Promise<[number, number]> {
+  async getScrollInfo(): Promise<[number, number, number]> {
     if (!this._validWebPage) {
-      return [0, 0];
+      return [0, 0, 0];
     }
     return _getScrollInfo(this._tabId);
+  }
+
+  // Get scroll position information for a specific element.
+  async getElementScrollInfo(elementNode: DOMElementNode): Promise<[number, number, number]> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+
+    const element = await this.locateElement(elementNode);
+    if (!element) {
+      throw new Error(`Element: ${elementNode} not found`);
+    }
+
+    // Find the nearest scrollable ancestor
+    const scrollableElement = await this._findNearestScrollableElement(element);
+    if (!scrollableElement) {
+      throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
+    }
+
+    const scrollInfo = await scrollableElement.evaluate(el => {
+      return {
+        scrollTop: el.scrollTop,
+        clientHeight: el.clientHeight,
+        scrollHeight: el.scrollHeight,
+      };
+    });
+
+    return [scrollInfo.scrollTop, scrollInfo.clientHeight, scrollInfo.scrollHeight];
+  }
+
+  /**
+   * Find the nearest scrollable ancestor of the given element
+   * @param element The element to start searching from
+   * @returns The nearest scrollable ancestor or null if none found
+   */
+  private async _findNearestScrollableElement(element: ElementHandle): Promise<ElementHandle | null> {
+    if (!this._puppeteerPage) {
+      return null;
+    }
+
+    // Check if the current element is scrollable
+    const isScrollable = await element.evaluate((el: Element) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const style = window.getComputedStyle(el);
+      const hasVerticalScrollbar = el.scrollHeight > el.clientHeight;
+      const canScrollVertically =
+        style.overflowY === 'scroll' ||
+        style.overflowY === 'auto' ||
+        style.overflow === 'scroll' ||
+        style.overflow === 'auto';
+
+      return hasVerticalScrollbar && canScrollVertically;
+    });
+
+    if (isScrollable) {
+      return element;
+    }
+
+    // Check parent elements
+    let currentElement: ElementHandle<Element> | null = element;
+
+    try {
+      while (currentElement) {
+        // Get the parent element (as an ElementHandle) of the current element
+        const parentHandle = (await currentElement.evaluateHandle(
+          (el: Element) => el.parentElement,
+        )) as ElementHandle<Element> | null;
+
+        const parentElement = parentHandle ? await parentHandle.asElement() : null;
+
+        if (!parentElement) {
+          // Reached the root without finding a scrollable ancestor
+          currentElement = null;
+          break;
+        }
+
+        const parentIsScrollable = await parentElement.evaluate((el: Element) => {
+          if (!(el instanceof HTMLElement)) return false;
+          const style = window.getComputedStyle(el);
+          const hasVerticalScrollbar = el.scrollHeight > el.clientHeight;
+          const canScrollVertically =
+            ['scroll', 'auto'].includes(style.overflowY) || ['scroll', 'auto'].includes(style.overflow);
+
+          return hasVerticalScrollbar && canScrollVertically;
+        });
+
+        if (parentIsScrollable) {
+          // Found a scrollable ancestor – return it (the caller should dispose when finished)
+          return parentElement;
+        }
+
+        // Move up the DOM tree – dispose the previous element handle before continuing
+        if (currentElement !== element) {
+          try {
+            await currentElement.dispose();
+          } catch (disposeErr) {
+            logger.debug('Failed to dispose element handle:', disposeErr);
+          }
+        }
+
+        currentElement = parentElement;
+      }
+    } catch (error) {
+      // Error accessing parent, break out of loop
+      logger.error('Error finding scrollable parent:', error);
+    }
+
+    // If no scrollable ancestor found, return the document body or documentElement
+    try {
+      const bodyElement = await this._puppeteerPage.$('body');
+      if (bodyElement) {
+        const bodyIsScrollable = await bodyElement.evaluate(el => {
+          if (!(el instanceof HTMLElement)) return false;
+          return el.scrollHeight > el.clientHeight;
+        });
+        if (bodyIsScrollable) {
+          return bodyElement;
+        }
+      }
+
+      // Last resort: return document element for page-level scrolling
+      const documentElement = await this._puppeteerPage.evaluateHandle(() => document.documentElement);
+      const docElement = (await documentElement.asElement()) as ElementHandle<Element> | null;
+      return docElement;
+    } catch (error) {
+      logger.error('Failed to find scrollable element:', error);
+      return null;
+    }
   }
 
   async getContent(): Promise<string> {
@@ -290,7 +419,7 @@ export default class Page {
 
       // Take screenshot if needed
       const screenshot = useVision ? await this.takeScreenshot() : null;
-      const [pixelsAbove, pixelsBelow] = await this.getScrollInfo();
+      const [scrollY, visualViewportHeight, scrollHeight] = await this.getScrollInfo();
 
       // update the state
       this._state.elementTree = content.elementTree;
@@ -298,8 +427,9 @@ export default class Page {
       this._state.url = this._puppeteerPage?.url() || '';
       this._state.title = (await this._puppeteerPage?.title()) || '';
       this._state.screenshot = screenshot;
-      this._state.pixelsAbove = pixelsAbove;
-      this._state.pixelsBelow = pixelsBelow;
+      this._state.scrollY = scrollY;
+      this._state.visualViewportHeight = visualViewportHeight;
+      this._state.scrollHeight = scrollHeight;
       return this._state;
     } catch (error) {
       logger.error('Failed to update state:', error);
@@ -459,23 +589,101 @@ export default class Page {
     }
   }
 
-  async scrollDown(amount?: number): Promise<void> {
-    if (this._puppeteerPage) {
-      if (amount) {
-        await this._puppeteerPage?.evaluate(`window.scrollBy(0, ${amount});`);
-      } else {
-        await this._puppeteerPage?.evaluate('window.scrollBy(0, window.innerHeight);');
+  // scroll to a percentage of the page or element
+  // if yPercent is positive, scroll down, if negative, scroll up, if 0, scroll to the top of the page, if 100, scroll to the bottom of the page
+  // if elementNode is provided, scroll to a percentage of the element
+  // if elementNode is not provided, scroll to a percentage of the page
+  async scrollToPercent(yPercent: number, elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+    if (!elementNode) {
+      await this._puppeteerPage.evaluate(yPercent => {
+        const scrollHeight = document.documentElement.scrollHeight;
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        const scrollTop = (scrollHeight - viewportHeight) * (yPercent / 100);
+        window.scrollTo({
+          top: scrollTop,
+          left: window.scrollX,
+          behavior: 'smooth',
+        });
+      }, yPercent);
+    } else {
+      const element = await this.locateElement(elementNode);
+      if (!element) {
+        throw new Error(`Element: ${elementNode} not found`);
       }
+
+      // Find the nearest scrollable ancestor
+      const scrollableElement = await this._findNearestScrollableElement(element);
+      if (!scrollableElement) {
+        throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
+      }
+
+      await scrollableElement.evaluate((el, yPercent) => {
+        const scrollHeight = el.scrollHeight;
+        const viewportHeight = el.clientHeight;
+        const scrollTop = (scrollHeight - viewportHeight) * (yPercent / 100);
+        el.scrollTo({
+          top: scrollTop,
+          left: el.scrollLeft,
+          behavior: 'smooth',
+        });
+      }, yPercent);
     }
   }
 
-  async scrollUp(amount?: number): Promise<void> {
-    if (this._puppeteerPage) {
-      if (amount) {
-        await this._puppeteerPage?.evaluate(`window.scrollBy(0, -${amount});`);
-      } else {
-        await this._puppeteerPage?.evaluate('window.scrollBy(0, -window.innerHeight);');
+  async scrollToPreviousPage(elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+
+    if (!elementNode) {
+      // Scroll the whole page up by viewport height
+      await this._puppeteerPage.evaluate('window.scrollBy(0, -(window.visualViewport?.height || window.innerHeight));');
+    } else {
+      // Scroll the specific element up by its client height
+      const element = await this.locateElement(elementNode);
+      if (!element) {
+        throw new Error(`Element: ${elementNode} not found`);
       }
+
+      // Find the nearest scrollable ancestor
+      const scrollableElement = await this._findNearestScrollableElement(element);
+      if (!scrollableElement) {
+        throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
+      }
+
+      await scrollableElement.evaluate(el => {
+        el.scrollBy(0, -el.clientHeight);
+      });
+    }
+  }
+
+  async scrollToNextPage(elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+
+    if (!elementNode) {
+      // Scroll the whole page down by viewport height
+      await this._puppeteerPage.evaluate('window.scrollBy(0, (window.visualViewport?.height || window.innerHeight));');
+    } else {
+      // Scroll the specific element down by its client height
+      const element = await this.locateElement(elementNode);
+      if (!element) {
+        throw new Error(`Element: ${elementNode} not found`);
+      }
+
+      // Find the nearest scrollable ancestor
+      const scrollableElement = await this._findNearestScrollableElement(element);
+      if (!scrollableElement) {
+        throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
+      }
+
+      await scrollableElement.evaluate(el => {
+        el.scrollBy(0, el.clientHeight);
+      });
     }
   }
 
@@ -596,35 +804,68 @@ export default class Page {
     return convertedKey as KeyInput;
   }
 
-  async scrollToText(text: string): Promise<boolean> {
+  async scrollToText(text: string, nth: number = 1): Promise<boolean> {
     if (!this._puppeteerPage) {
       throw new Error('Puppeteer is not connected');
     }
 
     try {
-      // Try different locator strategies
+      // Convert text to lowercase for consistent searching
+      const lowerCaseText = text.toLowerCase();
+
+      // Try different locator strategies to find all elements containing the text
       const selectors = [
-        // Using text selector (equivalent to get_by_text)
+        // Using text selector (equivalent to get_by_text) - for exact text match
         `::-p-text(${text})`,
         // Using XPath selector (contains text) - case insensitive
-        `::-p-xpath(//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${text.toLowerCase()}')])`,
+        `::-p-xpath(//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${lowerCaseText}')])`,
       ];
 
       for (const selector of selectors) {
         try {
-          const element = await this._puppeteerPage.$(selector);
-          if (element) {
-            // Check if element is visible
-            const isVisible = await element.evaluate(el => {
-              const style = window.getComputedStyle(el);
-              return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-            });
+          // Use $$ to get all matching elements
+          const elements = await this._puppeteerPage.$$(selector);
 
-            if (isVisible) {
-              await this._scrollIntoViewIfNeeded(element);
+          if (elements.length > 0) {
+            // Find visible elements and select the nth occurrence
+            const visibleElements = [];
+
+            for (const element of elements) {
+              const isVisible = await element.evaluate(el => {
+                const style = window.getComputedStyle(el);
+                const rect = el.getBoundingClientRect();
+                return (
+                  style.display !== 'none' &&
+                  style.visibility !== 'hidden' &&
+                  style.opacity !== '0' &&
+                  rect.width > 0 &&
+                  rect.height > 0
+                );
+              });
+
+              if (isVisible) {
+                visibleElements.push(element);
+              }
+            }
+
+            // Check if we have enough visible elements for the requested nth occurrence
+            if (visibleElements.length >= nth) {
+              const targetElement = visibleElements[nth - 1]; // Convert to 0-indexed
+              await this._scrollIntoViewIfNeeded(targetElement);
               await new Promise(resolve => setTimeout(resolve, 500)); // Wait for scroll to complete
+
+              // Dispose of all element handles to prevent memory leaks
+              for (const element of elements) {
+                await element.dispose();
+              }
+
               return true;
             }
+          }
+
+          // Dispose of all element handles to prevent memory leaks
+          for (const element of elements) {
+            await element.dispose();
           }
         } catch (e) {
           logger.debug(`Locator attempt failed: ${e}`);
@@ -997,9 +1238,10 @@ export default class Page {
 
       if (isVisible) break;
 
-      // Check timeout
+      // Check timeout - log warning and return instead of throwing
       if (Date.now() - startTime > timeout) {
-        throw new Error('Timed out while trying to scroll element into view');
+        logger.warning('Timed out while trying to scroll element into view, continuing anyway');
+        break;
       }
 
       // Small delay before next check

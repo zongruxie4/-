@@ -284,16 +284,38 @@ export async function removeHighlights(tabId: number): Promise<void> {
  * @param tabId - The ID of the tab to get the scroll information for.
  * @returns A tuple containing the number of pixels above and below the current scroll position.
  */
-export async function getScrollInfo(tabId: number): Promise<[number, number]> {
+// export async function getScrollInfo(tabId: number): Promise<[number, number]> {
+//   const results = await chrome.scripting.executeScript({
+//     target: { tabId: tabId },
+//     func: () => {
+//       const scroll_y = window.scrollY;
+//       const viewport_height = window.innerHeight;
+//       const total_height = document.documentElement.scrollHeight;
+//       return {
+//         pixels_above: scroll_y,
+//         pixels_below: total_height - (scroll_y + viewport_height),
+//       };
+//     },
+//   });
+
+//   const result = results[0]?.result;
+//   if (!result) {
+//     throw new Error('Failed to get scroll information');
+//   }
+//   return [result.pixels_above, result.pixels_below];
+// }
+
+export async function getScrollInfo(tabId: number): Promise<[number, number, number]> {
   const results = await chrome.scripting.executeScript({
     target: { tabId: tabId },
     func: () => {
-      const scroll_y = window.scrollY;
-      const viewport_height = window.innerHeight;
-      const total_height = document.documentElement.scrollHeight;
+      const scrollY = window.scrollY;
+      const visualViewportHeight = window.visualViewport?.height || window.innerHeight;
+      const scrollHeight = document.body.scrollHeight;
       return {
-        pixels_above: scroll_y,
-        pixels_below: total_height - (scroll_y + viewport_height),
+        scrollY: scrollY,
+        visualViewportHeight: visualViewportHeight,
+        scrollHeight: scrollHeight,
       };
     },
   });
@@ -302,5 +324,5 @@ export async function getScrollInfo(tabId: number): Promise<[number, number]> {
   if (!result) {
     throw new Error('Failed to get scroll information');
   }
-  return [result.pixels_above, result.pixels_below];
+  return [result.scrollY, result.visualViewportHeight, result.scrollHeight];
 }

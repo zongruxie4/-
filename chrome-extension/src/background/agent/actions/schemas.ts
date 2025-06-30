@@ -112,21 +112,49 @@ export const cacheContentActionSchema: ActionSchema = {
   }),
 };
 
-export const scrollDownActionSchema: ActionSchema = {
-  name: 'scroll_down',
-  description: 'Scroll down the page by pixel amount - if no amount is specified, scroll down one page',
+export const scrollToPercentActionSchema: ActionSchema = {
+  name: 'scroll_to_percent',
+  description:
+    'Scrolls to a particular vertical percentage of the document or an element. If no index is specified, scroll the whole document.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    amount: z.number().int().nullable().optional().describe('amount of pixels'),
+    yPercent: z.number().int().describe('percentage to scroll to - min 0, max 100; 0 is top, 100 is bottom'),
+    index: z.number().int().nullable().optional().describe('index of the element to scroll'),
   }),
 };
 
-export const scrollUpActionSchema: ActionSchema = {
-  name: 'scroll_up',
-  description: 'Scroll up the page by pixel amount - if no amount is specified, scroll up one page',
+export const previousPageActionSchema: ActionSchema = {
+  name: 'previous_page',
+  description:
+    'Scroll the document in the window or an element to the previous page. If no index is specified, scroll the whole document.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    amount: z.number().int().nullable().optional().describe('amount of pixels'),
+    index: z.number().int().nullable().optional().describe('index of the element to scroll to previous page'),
+  }),
+};
+
+export const nextPageActionSchema: ActionSchema = {
+  name: 'next_page',
+  description:
+    'Scroll the document in the window or an element to the next page. If no index is specified, scroll the whole document.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().nullable().optional().describe('index of the element to scroll to next page'),
+  }),
+};
+
+export const scrollToTextActionSchema: ActionSchema = {
+  name: 'scroll_to_text',
+  description: 'If you dont find something which you want to interact with in current viewport, try to scroll to it',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    text: z.string().describe('text to scroll to'),
+    nth: z
+      .number()
+      .int()
+      .min(1)
+      .default(1)
+      .describe('which occurrence of the text to scroll to (1-indexed, default: 1)'),
   }),
 };
 
@@ -137,15 +165,6 @@ export const sendKeysActionSchema: ActionSchema = {
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
     keys: z.string().describe('keys to send'),
-  }),
-};
-
-export const scrollToTextActionSchema: ActionSchema = {
-  name: 'scroll_to_text',
-  description: 'If you dont find something which you want to interact with, scroll to it',
-  schema: z.object({
-    intent: z.string().default('').describe('purpose of this action'),
-    text: z.string().describe('text to scroll to'),
   }),
 };
 
