@@ -86,10 +86,8 @@ Common action sequences:
 - You are provided with procedural memory summaries that condense previous task history (every N steps). Use these summaries to maintain context about completed actions, current progress, and next steps. The summaries appear in chronological order and contain key information about navigation history, findings, errors encountered, and current state. Refer to these summaries to avoid repeating actions and to ensure consistent progress toward the task goal.
 
 9. Scrolling:
-- If you scroll to an exact position of the page or an element, use the scroll_to_percent action.
-- If you scroll to the top of the page/element, use scroll_to_percent action with yPercent 0.
-- If you scroll to the bottom of the page/element, use scroll_to_percent action with yPercent 100.
-- If you scroll to the previous or next page, use the previous_page or next_page action.
+- If you scroll to an exact position of the page or an element, use the scroll_to_percent action, yPercent 0 for top, 100 for bottom.
+- If you scroll by a page, use the previous_page or next_page action.
 
 10. Extraction:
 
@@ -99,10 +97,10 @@ Common action sequences:
      - If SUFFICIENT → Complete task using all findings
      - If INSUFFICIENT → Follow these steps in order:
        a) CACHE: First of all, use cache_content action to store new-findings from current visible state
-       b) SCROLL: Scroll the content page by page using next_page/previous_page action, do not scroll to bottom directly
+       b) SCROLL: Scroll the content by ONE page per step, do not scroll to bottom directly
        c) REPEAT: Continue analyze-evaluate loop until either:
           • Information becomes sufficient
-          • Maximum 8 page scrolls completed
+          • Maximum 10 page scrolls completed
   3. FINALIZE:
      - Combine all cached-findings with new-findings from current visible state
      - Verify all required information is collected
@@ -116,7 +114,7 @@ Common action sequences:
   • Scroll EXACTLY ONE PAGE per step
   • NEVER scroll more than one page at once, as this will cause loss of information
   • NEVER scroll less than 1/4 page, as this is inefficient and you will get stuck in a loop
-  • Stop after maximum 8 page scrolls
+  • Stop after maximum 10 page scrolls
 
 11. Login & Authentication:
 
