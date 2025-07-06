@@ -4,7 +4,7 @@ import { RxDiscordLogo } from 'react-icons/rx';
 import { FiSettings } from 'react-icons/fi';
 import { PiPlusBold } from 'react-icons/pi';
 import { GrHistory } from 'react-icons/gr';
-import { type Message, Actors, chatHistoryStore, agentModelStore } from '@extension/storage';
+import { type Message, Actors, chatHistoryStore, agentModelStore, generalSettingsStore } from '@extension/storage';
 import favoritesStorage, { type FavoritePrompt } from '@extension/storage/lib/prompt/favorites';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
@@ -35,6 +35,7 @@ const SidePanel = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
   const [isReplaying, setIsReplaying] = useState(false);
+  const [replayEnabled, setReplayEnabled] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
   const isReplayingRef = useRef<boolean>(false);
   const portRef = useRef<chrome.runtime.Port | null>(null);
@@ -72,23 +73,37 @@ const SidePanel = () => {
     }
   }, []);
 
+  // Load general settings to check if replay is enabled
+  const loadGeneralSettings = useCallback(async () => {
+    try {
+      const settings = await generalSettingsStore.getSettings();
+      setReplayEnabled(settings.replayHistoricalTasks);
+    } catch (error) {
+      console.error('Error loading general settings:', error);
+      setReplayEnabled(false);
+    }
+  }, []);
+
   // Check model configuration on mount
   useEffect(() => {
     checkModelConfiguration();
-  }, [checkModelConfiguration]);
+    loadGeneralSettings();
+  }, [checkModelConfiguration, loadGeneralSettings]);
 
   // Re-check model configuration when the side panel becomes visible again
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // Panel became visible, re-check configuration
+        // Panel became visible, re-check configuration and settings
         checkModelConfiguration();
+        loadGeneralSettings();
       }
     };
 
     const handleFocus = () => {
-      // Panel gained focus, re-check configuration
+      // Panel gained focus, re-check configuration and settings
       checkModelConfiguration();
+      loadGeneralSettings();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -98,7 +113,7 @@ const SidePanel = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [checkModelConfiguration]);
+  }, [checkModelConfiguration, loadGeneralSettings]);
 
   useEffect(() => {
     sessionIdRef.current = currentSessionId;
@@ -385,6 +400,17 @@ const SidePanel = () => {
   // Handle replay command
   const handleReplay = async (historySessionId: string): Promise<void> => {
     try {
+      // Check if replay is enabled in settings
+      if (!replayEnabled) {
+        appendMessage({
+          actor: Actors.SYSTEM,
+          content:
+            'Replay is disabled in general settings. Please enable "Replay Historical Tasks" in the extension settings to use this feature.',
+          timestamp: Date.now(),
+        });
+        return;
+      }
+
       // Check if history exists using loadAgentStepHistory
       const historyData = await chatHistoryStore.loadAgentStepHistory(historySessionId);
       if (!historyData) {
@@ -1112,7 +1138,7 @@ const SidePanel = () => {
                           setInputTextRef.current = setter;
                         }}
                         isDarkMode={isDarkMode}
-                        historicalSessionId={isHistoricalSession ? currentSessionId : null}
+                        historicalSessionId={isHistoricalSession && replayEnabled ? currentSessionId : null}
                         onReplay={handleReplay}
                       />
                     </div>
@@ -1150,7 +1176,7 @@ const SidePanel = () => {
                         setInputTextRef.current = setter;
                       }}
                       isDarkMode={isDarkMode}
-                      historicalSessionId={isHistoricalSession ? currentSessionId : null}
+                      historicalSessionId={isHistoricalSession && replayEnabled ? currentSessionId : null}
                       onReplay={handleReplay}
                     />
                   </div>

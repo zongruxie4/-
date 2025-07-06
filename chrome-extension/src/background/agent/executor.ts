@@ -22,6 +22,7 @@ import { wrapUntrustedContent } from './messages/utils';
 import { URLNotAllowedError } from '../browser/views';
 import { chatHistoryStore } from '@extension/storage/lib/chat';
 import type { AgentStepHistory } from './history';
+import type { GeneralSettingsConfig } from '@extension/storage';
 
 const logger = createLogger('Executor');
 
@@ -30,6 +31,7 @@ export interface ExecutorExtraArgs {
   validatorLLM?: BaseChatModel;
   extractorLLM?: BaseChatModel;
   agentOptions?: Partial<AgentOptions>;
+  generalSettings?: GeneralSettingsConfig;
 }
 
 export class Executor {
@@ -40,6 +42,7 @@ export class Executor {
   private readonly plannerPrompt: PlannerPrompt;
   private readonly navigatorPrompt: NavigatorPrompt;
   private readonly validatorPrompt: ValidatorPrompt;
+  private readonly generalSettings: GeneralSettingsConfig | undefined;
   private tasks: string[] = [];
   constructor(
     task: string,
@@ -62,6 +65,7 @@ export class Executor {
       extraArgs?.agentOptions ?? {},
     );
 
+    this.generalSettings = extraArgs?.generalSettings;
     this.tasks.push(task);
     this.navigatorPrompt = new NavigatorPrompt(context.options.maxActionsPerStep);
     this.plannerPrompt = new PlannerPrompt();
@@ -229,10 +233,14 @@ export class Executor {
       if (import.meta.env.DEV) {
         logger.debug('Executor history', JSON.stringify(this.context.history, null, 2));
       }
-      // store the history
-      const historyString = JSON.stringify(this.context.history);
-      logger.info(`Executor history size: ${historyString.length}`);
-      await chatHistoryStore.storeAgentStepHistory(this.context.taskId, this.tasks[0], historyString);
+      // store the history only if replay is enabled
+      if (this.generalSettings?.replayHistoricalTasks) {
+        const historyString = JSON.stringify(this.context.history);
+        logger.info(`Executor history size: ${historyString.length}`);
+        await chatHistoryStore.storeAgentStepHistory(this.context.taskId, this.tasks[0], historyString);
+      } else {
+        logger.info('Replay historical tasks is disabled, skipping history storage');
+      }
     }
   }
 

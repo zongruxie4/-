@@ -341,6 +341,7 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
       useVisionForPlanner: true,
       planningInterval: generalSettings.planningInterval,
     },
+    generalSettings: generalSettings,
   });
 
   return executor;
