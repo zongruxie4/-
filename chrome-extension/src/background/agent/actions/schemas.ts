@@ -119,7 +119,25 @@ export const scrollToPercentActionSchema: ActionSchema = {
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
     yPercent: z.number().int().describe('percentage to scroll to - min 0, max 100; 0 is top, 100 is bottom'),
-    index: z.number().int().nullable().optional().describe('index of the element to scroll'),
+    index: z.number().int().nullable().optional().describe('index of the element'),
+  }),
+};
+
+export const scrollToTopActionSchema: ActionSchema = {
+  name: 'scroll_to_top',
+  description: 'Scroll the document in the window or an element to the top',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().nullable().optional().describe('index of the element'),
+  }),
+};
+
+export const scrollToBottomActionSchema: ActionSchema = {
+  name: 'scroll_to_bottom',
+  description: 'Scroll the document in the window or an element to the bottom',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().nullable().optional().describe('index of the element'),
   }),
 };
 
@@ -129,7 +147,7 @@ export const previousPageActionSchema: ActionSchema = {
     'Scroll the document in the window or an element to the previous page. If no index is specified, scroll the whole document.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    index: z.number().int().nullable().optional().describe('index of the element to scroll to previous page'),
+    index: z.number().int().nullable().optional().describe('index of the element'),
   }),
 };
 
@@ -139,7 +157,7 @@ export const nextPageActionSchema: ActionSchema = {
     'Scroll the document in the window or an element to the next page. If no index is specified, scroll the whole document.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    index: z.number().int().nullable().optional().describe('index of the element to scroll to next page'),
+    index: z.number().int().nullable().optional().describe('index of the element'),
   }),
 };
 

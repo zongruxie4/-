@@ -32,12 +32,7 @@ export const llmProviderModelNames = {
     'claude-3-5-haiku-latest',
   ],
   [ProviderTypeEnum.DeepSeek]: ['deepseek-chat', 'deepseek-reasoner'],
-  [ProviderTypeEnum.Gemini]: [
-    'gemini-2.5-flash-preview-05-20',
-    'gemini-2.5-pro-preview-06-05',
-    'gemini-2.0-flash',
-    // 'gemini-2.0-flash-thinking-exp-01-21', // TODO: not support function calling for now
-  ],
+  [ProviderTypeEnum.Gemini]: ['gemini-2.5-flash', 'gemini-2.5-pro'],
   [ProviderTypeEnum.Grok]: ['grok-3', 'grok-3-fast', 'grok-3-mini', 'grok-3-mini-fast'],
   [ProviderTypeEnum.Ollama]: ['qwen3:14b', 'falcon3:10b', 'qwen2.5-coder:14b', 'mistral-small:24b'],
   [ProviderTypeEnum.AzureOpenAI]: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o', 'gpt-4o-mini', 'o4-mini', 'o3'],

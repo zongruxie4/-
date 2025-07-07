@@ -19,6 +19,8 @@ import {
   previousPageActionSchema,
   scrollToPercentActionSchema,
   nextPageActionSchema,
+  scrollToTopActionSchema,
+  scrollToBottomActionSchema,
 } from './schemas';
 import { z } from 'zod';
 import { createLogger } from '@src/background/log';
@@ -397,6 +399,52 @@ export class ActionBuilder {
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, scrollToPercentActionSchema);
     actions.push(scrollToPercent);
+
+    // Scroll to top
+    const scrollToTop = new Action(async (input: z.infer<typeof scrollToTopActionSchema.schema>) => {
+      const intent = input.intent || `Scroll to top`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+      const page = await this.context.browserContext.getCurrentPage();
+      if (input.index) {
+        const state = await page.getCachedState();
+        const elementNode = state?.selectorMap.get(input.index);
+        if (!elementNode) {
+          const errorMsg = `Element with index ${input.index} does not exist - retry or use alternative actions`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({ error: errorMsg, includeInMemory: true });
+        }
+        await page.scrollToPercent(0, elementNode);
+      } else {
+        await page.scrollToPercent(0);
+      }
+      const msg = 'Scrolled to top';
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+      return new ActionResult({ extractedContent: msg, includeInMemory: true });
+    }, scrollToTopActionSchema);
+    actions.push(scrollToTop);
+
+    // Scroll to bottom
+    const scrollToBottom = new Action(async (input: z.infer<typeof scrollToBottomActionSchema.schema>) => {
+      const intent = input.intent || `Scroll to bottom`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+      const page = await this.context.browserContext.getCurrentPage();
+      if (input.index) {
+        const state = await page.getCachedState();
+        const elementNode = state?.selectorMap.get(input.index);
+        if (!elementNode) {
+          const errorMsg = `Element with index ${input.index} does not exist - retry or use alternative actions`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({ error: errorMsg, includeInMemory: true });
+        }
+        await page.scrollToPercent(100, elementNode);
+      } else {
+        await page.scrollToPercent(100);
+      }
+      const msg = 'Scrolled to bottom';
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+      return new ActionResult({ extractedContent: msg, includeInMemory: true });
+    }, scrollToBottomActionSchema);
+    actions.push(scrollToBottom);
 
     // Scroll to previous page
     const previousPage = new Action(async (input: z.infer<typeof previousPageActionSchema.schema>) => {

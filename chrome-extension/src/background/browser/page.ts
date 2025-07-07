@@ -633,6 +633,39 @@ export default class Page {
     }
   }
 
+  async scrollBy(y: number, elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+    if (!elementNode) {
+      await this._puppeteerPage.evaluate(y => {
+        window.scrollBy({
+          top: y,
+          left: 0,
+          behavior: 'smooth',
+        });
+      }, y);
+    } else {
+      const element = await this.locateElement(elementNode);
+      if (!element) {
+        throw new Error(`Element: ${elementNode} not found`);
+      }
+
+      // Find the nearest scrollable ancestor
+      const scrollableElement = await this._findNearestScrollableElement(element);
+      if (!scrollableElement) {
+        throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
+      }
+      await scrollableElement.evaluate(el => {
+        el.scrollBy({
+          top: y,
+          left: 0,
+          behavior: 'smooth',
+        });
+      });
+    }
+  }
+
   async scrollToPreviousPage(elementNode?: DOMElementNode): Promise<void> {
     if (!this._puppeteerPage) {
       throw new Error('Puppeteer is not connected');
