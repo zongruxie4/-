@@ -12,6 +12,7 @@ export interface GeneralSettingsConfig {
   planningInterval: number;
   displayHighlights: boolean;
   minWaitPageLoad: number;
+  replayHistoricalTasks: boolean;
 }
 
 export type GeneralSettingsStorage = BaseStorage<GeneralSettingsConfig> & {
@@ -30,6 +31,7 @@ export const DEFAULT_GENERAL_SETTINGS: GeneralSettingsConfig = {
   planningInterval: 3,
   displayHighlights: true,
   minWaitPageLoad: 250,
+  replayHistoricalTasks: false,
 };
 
 const storage = createStorage<GeneralSettingsConfig>('general-settings', DEFAULT_GENERAL_SETTINGS, {
