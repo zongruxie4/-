@@ -97,7 +97,7 @@ Common action sequences:
      - If SUFFICIENT → Complete task using all findings
      - If INSUFFICIENT → Follow these steps in order:
        a) CACHE: First of all, use cache_content action to store new-findings from current visible state
-       b) SCROLL: Scroll the content by ONE page per step, do not scroll to bottom directly
+       b) SCROLL: Scroll the content by ONE page with next_page action per step, do not scroll to bottom directly
        c) REPEAT: Continue analyze-evaluate loop until either:
           • Information becomes sufficient
           • Maximum 10 page scrolls completed
@@ -111,9 +111,9 @@ Common action sequences:
   • ***ALWAYS CACHE CURRENT FINDINGS BEFORE SCROLLING***
   • Avoid to cache duplicate information 
   • Verify source information before caching
-  • Scroll EXACTLY ONE PAGE per step
+  • Scroll EXACTLY ONE PAGE with next_page action per step
   • NEVER scroll more than one page at once, as this will cause loss of information
-  • NEVER scroll less than 1/4 page, as this is inefficient and you will get stuck in a loop
+  • NEVER scroll less than one page, as this is inefficient and you will get stuck in a loop
   • Stop after maximum 10 page scrolls
 
 11. Login & Authentication:

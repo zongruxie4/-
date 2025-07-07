@@ -590,7 +590,7 @@ export default class Page {
   }
 
   // scroll to a percentage of the page or element
-  // if yPercent is positive, scroll down, if negative, scroll up, if 0, scroll to the top of the page, if 100, scroll to the bottom of the page
+  // if yPercent is 0, scroll to the top of the page, if 100, scroll to the bottom of the page
   // if elementNode is provided, scroll to a percentage of the element
   // if elementNode is not provided, scroll to a percentage of the page
   async scrollToPercent(yPercent: number, elementNode?: DOMElementNode): Promise<void> {

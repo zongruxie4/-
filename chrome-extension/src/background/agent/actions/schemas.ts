@@ -115,7 +115,7 @@ export const cacheContentActionSchema: ActionSchema = {
 export const scrollToPercentActionSchema: ActionSchema = {
   name: 'scroll_to_percent',
   description:
-    'Scrolls to a particular vertical percentage of the document or an element. If no index is specified, scroll the whole document.',
+    'Scrolls to a particular vertical percentage of the document or an element. If no index of element is specified, scroll the whole document.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
     yPercent: z.number().int().describe('percentage to scroll to - min 0, max 100; 0 is top, 100 is bottom'),
