@@ -7,7 +7,7 @@ const defaultFavoritePrompts = [
   {
     title: '📚 Explore AI Papers',
     content:
-      '- Go to https://huggingface.co/papers and click through each of the top 3 upvoted papers.\n- For each paper:\n  - Record the title, URL and upvotes\n  - Summarise the abstract section\n- Finally, compile together a summary of all 3 papers, ranked by upvotes',
+      '- Go to https://huggingface.co/papers and click through each of the first 3 papers.\n- For each paper:\n  - Record the title, URL and upvotes\n  - Summarise the abstract section\n- Finally, compile together a summary of all 3 papers, ranked by upvotes',
   },
   {
     title: '🐦 Follow us on X/Twitter!',

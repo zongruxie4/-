@@ -590,7 +590,7 @@ export default class Page {
   }
 
   // scroll to a percentage of the page or element
-  // if yPercent is positive, scroll down, if negative, scroll up, if 0, scroll to the top of the page, if 100, scroll to the bottom of the page
+  // if yPercent is 0, scroll to the top of the page, if 100, scroll to the bottom of the page
   // if elementNode is provided, scroll to a percentage of the element
   // if elementNode is not provided, scroll to a percentage of the page
   async scrollToPercent(yPercent: number, elementNode?: DOMElementNode): Promise<void> {
@@ -630,6 +630,39 @@ export default class Page {
           behavior: 'smooth',
         });
       }, yPercent);
+    }
+  }
+
+  async scrollBy(y: number, elementNode?: DOMElementNode): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer is not connected');
+    }
+    if (!elementNode) {
+      await this._puppeteerPage.evaluate(y => {
+        window.scrollBy({
+          top: y,
+          left: 0,
+          behavior: 'smooth',
+        });
+      }, y);
+    } else {
+      const element = await this.locateElement(elementNode);
+      if (!element) {
+        throw new Error(`Element: ${elementNode} not found`);
+      }
+
+      // Find the nearest scrollable ancestor
+      const scrollableElement = await this._findNearestScrollableElement(element);
+      if (!scrollableElement) {
+        throw new Error(`No scrollable ancestor found for element: ${elementNode}`);
+      }
+      await scrollableElement.evaluate(el => {
+        el.scrollBy({
+          top: y,
+          left: 0,
+          behavior: 'smooth',
+        });
+      });
     }
   }
 

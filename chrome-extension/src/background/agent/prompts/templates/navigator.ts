@@ -45,6 +45,7 @@ Common action sequences:
 - If the page changes after an action, the sequence will be interrupted
 - Only provide the action sequence until an action which changes the page state significantly
 - Try to be efficient, e.g. fill forms at once, or chain actions where nothing changes on the page
+- Do NOT use cache_content action in multiple action sequences
 - only use multiple actions if it makes sense
 
 3. ELEMENT INTERACTION:
@@ -86,8 +87,8 @@ Common action sequences:
 - You are provided with procedural memory summaries that condense previous task history (every N steps). Use these summaries to maintain context about completed actions, current progress, and next steps. The summaries appear in chronological order and contain key information about navigation history, findings, errors encountered, and current state. Refer to these summaries to avoid repeating actions and to ensure consistent progress toward the task goal.
 
 9. Scrolling:
-- If you scroll to an exact position of the page or an element, use the scroll_to_percent action, yPercent 0 for top, 100 for bottom.
-- If you scroll by a page, use the previous_page or next_page action.
+- Prefer to use the previous_page, next_page, scroll_to_top and scroll_to_bottom action.
+- Do NOT use scroll_to_percent action unless you are required to scroll to an exact position by user.
 
 10. Extraction:
 
@@ -97,7 +98,7 @@ Common action sequences:
      - If SUFFICIENT → Complete task using all findings
      - If INSUFFICIENT → Follow these steps in order:
        a) CACHE: First of all, use cache_content action to store new-findings from current visible state
-       b) SCROLL: Scroll the content by ONE page per step, do not scroll to bottom directly
+       b) SCROLL: Scroll the content by ONE page with next_page action per step, do not scroll to bottom directly
        c) REPEAT: Continue analyze-evaluate loop until either:
           • Information becomes sufficient
           • Maximum 10 page scrolls completed
@@ -106,14 +107,15 @@ Common action sequences:
      - Verify all required information is collected
      - Present complete findings in done action
 
-- Critical guidelines:
-  • Be thorough and specific in extraction
-  • ***ALWAYS CACHE CURRENT FINDINGS BEFORE SCROLLING***
+- Critical guidelines for extraction:
+  • ***REMEMBER TO CACHE CURRENT FINDINGS BEFORE SCROLLING***
+  • ***REMEMBER TO CACHE CURRENT FINDINGS BEFORE SCROLLING***
+  • ***REMEMBER TO CACHE CURRENT FINDINGS BEFORE SCROLLING***
   • Avoid to cache duplicate information 
+  • Count how many findings you have cached and how many are left to cache per step, and include this in the memory
   • Verify source information before caching
-  • Scroll EXACTLY ONE PAGE per step
-  • NEVER scroll more than one page at once, as this will cause loss of information
-  • NEVER scroll less than 1/4 page, as this is inefficient and you will get stuck in a loop
+  • Scroll EXACTLY ONE PAGE with next_page/previous_page action per step
+  • NEVER use scroll_to_percent action, as this will cause loss of information
   • Stop after maximum 10 page scrolls
 
 11. Login & Authentication:
