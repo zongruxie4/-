@@ -90,6 +90,13 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
   async invoke(inputMessages: BaseMessage[]): Promise<this['ModelOutput']> {
     // Use structured output
     if (this.withStructuredOutput) {
+      logger.debug(`[NavigatorAgent-${this.modelName}] Preparing structured output call with schema:`, {
+        schemaName: this.modelOutputToolName,
+        messageCount: inputMessages.length,
+        modelProvider: this.provider,
+        actions: Object.keys(this.actions),
+      });
+
       const structuredLlm = this.chatLLM.withStructuredOutput(this.jsonSchema, {
         includeRaw: true,
         name: this.modelOutputToolName,
@@ -97,18 +104,28 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
       let response = undefined;
       try {
+        logger.debug(`[NavigatorAgent-${this.modelName}] Invoking LLM with structured output...`);
         response = await structuredLlm.invoke(inputMessages, {
           signal: this.context.controller.signal,
           ...this.callOptions,
         });
 
+        logger.debug(`[NavigatorAgent-${this.modelName}] LLM response received:`, {
+          hasParsed: !!response.parsed,
+          hasRaw: !!response.raw,
+          rawContent: response.raw?.content?.slice(0, 500) + (response.raw?.content?.length > 500 ? '...' : ''),
+          hasToolCalls: !!(response.raw as any)?.tool_calls?.length,
+        });
+
         if (response.parsed) {
+          logger.debug(`[NavigatorAgent-${this.modelName}] Successfully parsed structured output`);
           return response.parsed;
         }
       } catch (error) {
         if (isAbortedError(error)) {
           throw error;
         }
+        logger.error(`[NavigatorAgent-${this.modelName}] LLM call failed with error:`, error);
         const errorMessage = `Failed to invoke ${this.modelName} with structured output: ${error}`;
         throw new Error(errorMessage);
       }
@@ -135,7 +152,10 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       }
       throw new Error('Could not parse response');
     }
-    throw new Error('Navigator needs to work with LLM that supports tool calling');
+
+    // Fallback to parent class manual JSON extraction for models without structured output support
+    logger.debug(`[NavigatorAgent-${this.modelName}] Falling back to manual JSON extraction method`);
+    return super.invoke(inputMessages);
   }
 
   async execute(): Promise<AgentOutput<NavigatorResult>> {

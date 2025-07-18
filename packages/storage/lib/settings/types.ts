@@ -19,6 +19,7 @@ export enum ProviderTypeEnum {
   OpenRouter = 'openrouter',
   Groq = 'groq',
   Cerebras = 'cerebras',
+  Llama = 'llama',
   CustomOpenAI = 'custom_openai',
 }
 
@@ -45,6 +46,12 @@ export const llmProviderModelNames = {
   ],
   [ProviderTypeEnum.Groq]: ['llama-3.3-70b-versatile'],
   [ProviderTypeEnum.Cerebras]: ['llama-3.3-70b'],
+  [ProviderTypeEnum.Llama]: [
+    'Llama-3.3-70B-Instruct',
+    'Llama-3.3-8B-Instruct',
+    'Llama-4-Maverick-17B-128E-Instruct-FP8',
+    'Llama-4-Scout-17B-16E-Instruct-FP8',
+  ],
   // Custom OpenAI providers don't have predefined models as they are user-defined
 };
 
@@ -163,6 +170,20 @@ export const llmProviderParameters = {
     },
   },
   [ProviderTypeEnum.Cerebras]: {
+    [AgentNameEnum.Planner]: {
+      temperature: 0.7,
+      topP: 0.9,
+    },
+    [AgentNameEnum.Navigator]: {
+      temperature: 0.3,
+      topP: 0.85,
+    },
+    [AgentNameEnum.Validator]: {
+      temperature: 0.1,
+      topP: 0.8,
+    },
+  },
+  [ProviderTypeEnum.Llama]: {
     [AgentNameEnum.Planner]: {
       temperature: 0.7,
       topP: 0.9,
