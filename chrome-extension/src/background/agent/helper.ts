@@ -22,17 +22,11 @@ class ChatLlama extends ChatOpenAI {
   // Override the completionWithRetry method to intercept and transform the response
   async completionWithRetry(request: any, options?: any): Promise<any> {
     try {
-      console.log(`[ChatLlama] Making request to Llama API:`, { request });
-
       // Make the request using the parent's implementation
       const response = await super.completionWithRetry(request, options);
 
-      console.log(`[ChatLlama] Raw API response:`, response);
-
       // Check if this is a Llama API response format
       if (response?.completion_message?.content?.text) {
-        console.log(`[ChatLlama] Converting Llama API response format to OpenAI format`);
-
         // Transform Llama API response to OpenAI format
         const transformedResponse = {
           id: response.id || 'llama-response',
@@ -56,7 +50,6 @@ class ChatLlama extends ChatOpenAI {
           },
         };
 
-        console.log(`[ChatLlama] Transformed response:`, transformedResponse);
         return transformedResponse;
       }
 

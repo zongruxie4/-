@@ -37,8 +37,6 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
 
     // Handle Llama's tool call format first
     if (processedContent.includes('<|tool_call_start_id|>')) {
-      console.log(`[extractJsonFromModelOutput] Detected Llama tool call format`);
-
       // Extract content between tool call tags
       const startTag = '<|tool_call_start_id|>';
       const endTag = '<|tool_call_end_id|>';
@@ -51,17 +49,14 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
       }
 
       processedContent = processedContent.substring(startIndex, endIndex).trim();
-      console.log(`[extractJsonFromModelOutput] Extracted tool call content:`, processedContent);
 
       // Parse the tool call structure
       const toolCall = JSON.parse(processedContent);
-      console.log(`[extractJsonFromModelOutput] Parsed tool call:`, toolCall);
 
       // Extract the actual parameters (which contains the agent output)
       if (toolCall.parameters) {
         // The parameters field contains an escaped JSON string
         const parametersJson = JSON.parse(toolCall.parameters);
-        console.log(`[extractJsonFromModelOutput] Extracted parameters:`, parametersJson);
         return parametersJson;
       }
 
@@ -70,8 +65,6 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
 
     // Handle Llama's python tag format
     if (processedContent.includes('<|python_tag|>')) {
-      console.log(`[extractJsonFromModelOutput] Detected Llama python tag format`);
-
       // Extract content between python tags
       const startTag = '<|python_tag|>';
       const endTag = '<|/python_tag|>';
@@ -84,26 +77,19 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
       }
 
       processedContent = processedContent.substring(startIndex, endIndex).trim();
-      console.log(`[extractJsonFromModelOutput] Extracted python tag content:`, processedContent);
 
       // Parse the python tag structure
       const pythonCall = JSON.parse(processedContent);
-      console.log(`[extractJsonFromModelOutput] Parsed python call:`, pythonCall);
 
       // Extract the actual parameters (which contains the agent output)
       if (pythonCall.parameters && pythonCall.parameters.output) {
-        // For python tag format, the output is in parameters.output
-        console.log(`[extractJsonFromModelOutput] Extracted python output:`, pythonCall.parameters.output);
-
         // Try to parse the output if it's a JSON string
         if (typeof pythonCall.parameters.output === 'string') {
           try {
             const outputJson = JSON.parse(pythonCall.parameters.output);
-            console.log(`[extractJsonFromModelOutput] Parsed output JSON:`, outputJson);
             return outputJson;
           } catch (e) {
             // If it's not valid JSON, return as is
-            console.log(`[extractJsonFromModelOutput] Output is not JSON, returning as string`);
             return { output: pythonCall.parameters.output };
           }
         }

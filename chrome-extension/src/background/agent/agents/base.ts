@@ -98,61 +98,23 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     return toolCallingMethod || null;
   }
 
-  // Detect provider from model name for compatibility
-  private detectProviderFromModelName(modelName: string): string {
-    // Llama models - updated to match actual API model names
-    if (modelName.includes('Llama-4') || modelName.includes('Llama-3.3') || modelName.includes('llama-3.3')) {
-      return ProviderTypeEnum.Llama;
-    }
-
-    // DeepSeek models
-    if (modelName.includes('deepseek')) {
-      return ProviderTypeEnum.DeepSeek;
-    }
-
-    // OpenAI models
-    if (modelName.includes('gpt-') || modelName.includes('o3') || modelName.includes('o4')) {
-      return ProviderTypeEnum.OpenAI;
-    }
-
-    // Anthropic models
-    if (modelName.includes('claude')) {
-      return ProviderTypeEnum.Anthropic;
-    }
-
-    // Gemini models
-    if (modelName.includes('gemini')) {
-      return ProviderTypeEnum.Gemini;
-    }
-
-    // Grok models
-    if (modelName.includes('grok')) {
-      return ProviderTypeEnum.Grok;
-    }
-
-    // Default fallback
-    return 'unknown';
+  // Check if model is a Llama model (only for Llama-specific handling)
+  private isLlamaModel(modelName: string): boolean {
+    return modelName.includes('Llama-4') || modelName.includes('Llama-3.3') || modelName.includes('llama-3.3');
   }
 
   // Set whether to use structured output based on the model name
   private setWithStructuredOutput(): boolean {
-    // Use provider from options if available, otherwise detect from model name
-    const effectiveProvider = this.provider || this.detectProviderFromModelName(this.modelName);
-    console.log(`[setWithStructuredOutput] Checking model: ${this.modelName}, provider: ${effectiveProvider}`);
-
     if (this.modelName === 'deepseek-reasoner' || this.modelName === 'deepseek-r1') {
-      console.log(`[${this.modelName}] DeepSeek reasoner model detected, disabling structured output`);
       return false;
     }
 
     // Llama API models don't support json_schema response format
-    if (effectiveProvider === ProviderTypeEnum.Llama) {
-      console.log(`[${this.modelName}] Llama API doesn't support structured output, using manual JSON extraction`);
+    if (this.provider === ProviderTypeEnum.Llama || this.isLlamaModel(this.modelName)) {
       logger.debug(`[${this.modelName}] Llama API doesn't support structured output, using manual JSON extraction`);
       return false;
     }
 
-    console.log(`[${this.modelName}] Using structured output for provider: ${effectiveProvider}`);
     return true;
   }
 
@@ -200,50 +162,21 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     }
 
     // Without structured output support, need to extract JSON from model output manually
-    console.log(`[${this.modelName}] Using manual JSON extraction fallback method`);
     logger.debug(`[${this.modelName}] Using manual JSON extraction fallback method`);
     const convertedInputMessages = convertInputMessages(inputMessages, this.modelName);
 
     try {
-      console.log(`[${this.modelName}] Invoking LLM without structured output...`);
-      logger.debug(`[${this.modelName}] Invoking LLM without structured output...`);
       const response = await this.chatLLM.invoke(convertedInputMessages, {
         signal: this.context.controller.signal,
         ...this.callOptions,
       });
 
-      console.log(`[${this.modelName}] LLM response received for manual extraction:`, {
-        contentType: typeof response.content,
-        contentLength: typeof response.content === 'string' ? response.content.length : 0,
-        contentPreview:
-          typeof response.content === 'string'
-            ? response.content.slice(0, 500) + (response.content.length > 500 ? '...' : '')
-            : response.content,
-        fullResponse: response,
-        responseKeys: Object.keys(response || {}),
-      });
-      logger.debug(`[${this.modelName}] LLM response received for manual extraction:`, {
-        contentType: typeof response.content,
-        contentLength: typeof response.content === 'string' ? response.content.length : 0,
-        contentPreview:
-          typeof response.content === 'string'
-            ? response.content.slice(0, 500) + (response.content.length > 500 ? '...' : '')
-            : response.content,
-      });
-
       if (typeof response.content === 'string') {
         response.content = removeThinkTags(response.content);
         try {
-          console.log(`[${this.modelName}] Extracting JSON from response content...`);
-          logger.debug(`[${this.modelName}] Extracting JSON from response content...`);
           const extractedJson = extractJsonFromModelOutput(response.content);
-          console.log(`[${this.modelName}] Extracted JSON:`, extractedJson);
-          logger.debug(`[${this.modelName}] Extracted JSON:`, extractedJson);
-
           const parsed = this.validateModelOutput(extractedJson);
           if (parsed) {
-            console.log(`[${this.modelName}] Successfully validated and parsed manual JSON extraction`);
-            logger.debug(`[${this.modelName}] Successfully validated and parsed manual JSON extraction`);
             return parsed;
           }
         } catch (error) {
