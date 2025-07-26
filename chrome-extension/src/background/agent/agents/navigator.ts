@@ -135,7 +135,9 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       }
       throw new Error('Could not parse response');
     }
-    throw new Error('Navigator needs to work with LLM that supports tool calling');
+
+    // Fallback to parent class manual JSON extraction for models without structured output support
+    return super.invoke(inputMessages);
   }
 
   async execute(): Promise<AgentOutput<NavigatorResult>> {

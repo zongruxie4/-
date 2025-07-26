@@ -217,14 +217,27 @@ export default class MessageManager {
   }
 
   public getMessages(): BaseMessage[] {
-    const messages = this.history.messages.map(m => m.message);
+    const messages = this.history.messages
+      .filter(m => {
+        if (!m.message) {
+          console.error(`[MessageManager] Filtering out message with undefined message property:`, m);
+          return false;
+        }
+        return true;
+      })
+      .map(m => m.message);
 
     let totalInputTokens = 0;
     logger.debug(`Messages in history: ${this.history.messages.length}:`);
 
     for (const m of this.history.messages) {
       totalInputTokens += m.metadata.tokens;
-      logger.debug(`${m.message.constructor.name} - Token count: ${m.metadata.tokens}`);
+      if (m.message) {
+        logger.debug(`${m.message.constructor.name} - Token count: ${m.metadata.tokens}`);
+      } else {
+        console.error(`[MessageManager] Found message with undefined message property:`, m);
+        logger.debug(`Message with undefined message property - Token count: ${m.metadata.tokens}`);
+      }
     }
 
     logger.debug(`Total input tokens: ${totalInputTokens}`);
