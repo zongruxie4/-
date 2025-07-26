@@ -64,7 +64,7 @@ OpenAI Operator’ın aylık 200 dolarlık ücretinden kurtulmak mı istiyorsunu
    * "Chrome’a Ekle" butonuna tıklayın
    * Kurulumu onaylayın
 
-> **Önemli Not**: En yeni özellikler için aşağıdaki ["En Son Sürümü Manuel Kur"](##-manually-install-latest-version) kısmından kurulum yapmanızı öneririz. Chrome Web Mağazası versiyonu inceleme süreci nedeniyle gecikebilir.
+> **Önemli Not**: En yeni özellikler için aşağıdaki ["En Son Sürümü Manuel Kur"](#-en-son-sürümü-manuel-kur) kısmından kurulum yapmanızı öneririz. Chrome Web Mağazası versiyonu inceleme süreci nedeniyle gecikebilir.
 
 2. **Ajan Modellerini Yapılandırın**:
    * Araç çubuğundaki Nanobrowser simgesine tıklayın
