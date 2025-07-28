@@ -239,7 +239,6 @@ Nanobrowser builds on top of other awesome open-source projects:
 
 Huge thanks to their creators and contributors!
 
-
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
@@ -248,5 +247,24 @@ Made with ❤️ by the Nanobrowser Team.
 
 Like Nanobrowser? Give us a star 🌟 and join us in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/nanobrowser_ai)
 
+## ⚠️ DISCLAIMER ON DERIVATIVE PROJECTS
+
+Nanobrowser is a free, open-source AI web automation tool designed for legitimate productivity and automation use cases under the terms of Apache 2.0 License. 
+
+The license grants broad permissions for modification, distribution, and commercial use.
+
+Nanobrowser maintainers and contributors are dedicated to developing a powerful and accessible AI browser agent. 
+
+However, we have no control over how third parties may use our open-source code.
+
+**We explicitly *DO NOT* endorse, support, or participate in any** projects involving cryptocurrencies, tokens, NFTs, or other blockchain-related applications **based on this codebase.**
+
+**Any such derivative projects are NOT Affiliated with, or maintained by, or in any way connected to the official Nanobrowser project or its core team.**
+
+**We assume NO LIABILITY for any losses, damages, or issues arising from the use of third-party derivative projects. Users interact with these projects at their own risk.**
+
+**We reserve the right to publicly distance ourselves from any misuse or misleading use of our name, codebase, or brand.**
+
+We encourage open-source innovation but urge our community to be discerning and cautious. Please ensure you understand the risks before using any software or service built upon our codebase by independent developers.
 
 
