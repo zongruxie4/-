@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import type BrowserContext from '../browser/context';
+import { DEFAULT_INCLUDE_ATTRIBUTES } from '../browser/dom/views';
+import type { DOMHistoryElement } from '../browser/dom/history/view';
 import type MessageManager from './messages/service';
 import type { EventManager } from './event/manager';
 import { type Actors, type ExecutionState, AgentEvent } from './event/types';
 import { AgentStepHistory } from './history';
-import { DOMHistoryElement } from '../browser/dom/history/view';
 
 export interface AgentOptions {
   maxSteps: number;
@@ -32,23 +33,7 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
   useVision: false,
   useVisionForPlanner: true,
   validateOutput: true,
-  includeAttributes: [
-    'title',
-    'type',
-    'name',
-    'role',
-    'aria-label',
-    'placeholder',
-    'value',
-    'alt',
-    'aria-expanded',
-    'data-date-format',
-    'checked',
-    'data-state',
-    'aria-checked',
-    'href',
-    'tabindex',
-  ],
+  includeAttributes: DEFAULT_INCLUDE_ATTRIBUTES,
   planningInterval: 3,
 };
 

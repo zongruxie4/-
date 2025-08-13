@@ -2,6 +2,7 @@ import { createLogger } from '@src/background/log';
 import type { BuildDomTreeArgs, RawDomTreeNode, BuildDomTreeResult } from './raw_types';
 import { type DOMState, type DOMBaseNode, DOMElementNode, DOMTextNode } from './views';
 import type { ViewportInfo } from './history/view';
+import { isNewTabPage } from '../util';
 
 const logger = createLogger('DOMService');
 
@@ -104,7 +105,7 @@ async function _buildDomTree(
   debugMode = false,
 ): Promise<[DOMElementNode, Map<number, DOMElementNode>]> {
   // If URL is provided and it's about:blank, return a minimal DOM tree
-  if (url === 'about:blank') {
+  if (isNewTabPage(url) || url.startsWith('chrome://')) {
     const elementTree = new DOMElementNode({
       tagName: 'body',
       xpath: '',
