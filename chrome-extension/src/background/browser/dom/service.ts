@@ -22,7 +22,7 @@ export interface ReadabilityResult {
   publishedTime: string;
 }
 
-export interface NanoFrameInfo {
+export interface FrameInfo {
   frameId: number;
   computedHeight: number;
   computedWidth: number;
@@ -34,7 +34,6 @@ export interface NanoFrameInfo {
 declare global {
   interface Window {
     buildDomTree: (args: BuildDomTreeArgs) => RawDomTreeNode | null;
-    nanoGetFrameInfo: (frameId: number) => NanoFrameInfo;
     turn2Markdown: (selector?: string) => string;
     parserReadability: () => ReadabilityResult | null;
   }
@@ -165,9 +164,9 @@ async function _buildDomTree(
 
   // If the root frame was unable to parse child iframes (e.g. cross-origin frame policies),
   // We'd need to detect that  here, build the DOM tree there for each subframe, and construct it here.
-  const iframesFailedLoading = _iFramesFailedLoading(mainFramePage);
-  const iframesFailedLoadingCount = Object.values(iframesFailedLoading).length;
-  if (iframesFailedLoadingCount > 0) {
+  const visibleIframesFailedLoading = _visibleIFramesFailedLoading(mainFramePage);
+  const visibleIframesFailedLoadingCount = Object.values(visibleIframesFailedLoading).length;
+  if (visibleIframesFailedLoadingCount > 0) {
     const tabFrames = await chrome.webNavigation.getAllFrames({ tabId });
     const subFrames = (tabFrames ?? []).filter(frame => frame.frameId !== mainFrameResult[0].frameId).sort();
 
@@ -177,10 +176,14 @@ async function _buildDomTree(
       subFrames.map(async frame => {
         const result = await chrome.scripting.executeScript({
           target: { tabId, frameIds: [frame.frameId] },
-          func: frameId => {
-            // Access buildDomTree from the window context of the target page
-            return window.nanoGetFrameInfo(frameId);
-          },
+          func: frameId => ({
+            frameId,
+            computedHeight: window.innerHeight,
+            computedWidth: window.innerWidth,
+            href: window.location.href,
+            name: window.name,
+            title: document.title,
+          }),
           args: [frame.frameId],
         });
         return result[0].result;
@@ -212,17 +215,17 @@ async function constructFrameTree(
   viewportExpansion = 0,
   debugMode = false,
   parentFramePage: BuildDomTreeResult,
-  allFramesInfo: NanoFrameInfo[],
+  allFramesInfo: FrameInfo[],
   startingNodeId: number,
   startingHighlightIndex: number,
 ): Promise<{ maxNodeId: number; maxHighlightIndex: number; resultPage: BuildDomTreeResult }> {
-  const parentIframesFailedLoading = _iFramesFailedLoading(parentFramePage);
+  const parentIframesFailedLoading = _visibleIFramesFailedLoading(parentFramePage);
   const failedLoadingFrames = allFramesInfo.filter(frameInfo => {
     return _locateMatchingIframeNode(parentIframesFailedLoading, frameInfo) != null;
   });
   const parentIframesFailedCount = Object.values(parentIframesFailedLoading).length;
   if (parentIframesFailedCount > failedLoadingFrames.length) {
-    console.warn(
+    logger.warning(
       'Failed to locate some iframes that failed to load:',
       parentIframesFailedCount,
       'vs',
@@ -287,7 +290,7 @@ async function constructFrameTree(
       iframeNode.children.push(subFramePage.rootId);
     }
 
-    const childrenIframesFailedLoading = _iFramesFailedLoading(subFramePage);
+    const childrenIframesFailedLoading = _visibleIFramesFailedLoading(subFramePage);
     const childrenIframesFailedCount = Object.values(childrenIframesFailedLoading).length;
     if (childrenIframesFailedCount > 0) {
       const result = await constructFrameTree(
@@ -330,35 +333,35 @@ function _getMaxID(result: BuildDomTreeResult, priorMaxId?: number): number {
 // 'locateElement' function wouldn't be able to find & interact with these visible elements.
 function _locateMatchingIframeNode(
   iframeNodes: Record<string, RawDomElementNode>,
-  frameInfo: NanoFrameInfo,
+  frameInfo: FrameInfo,
   strictComparison: boolean = true,
 ): RawDomElementNode | undefined {
   const result = Object.values(iframeNodes).find(iframeNode => {
-    const frameHeight = iframeNode.attributes['computedHeight'];
-    const frameWidth = iframeNode.attributes['computedWidth'];
+    const frameHeight = parseInt(iframeNode.attributes['computedHeight']);
+    const frameWidth = parseInt(iframeNode.attributes['computedWidth']);
     const frameName = iframeNode.attributes['name'];
     const frameUrl = iframeNode.attributes['src'];
     const frameTitle = iframeNode.attributes['title'];
     let heightMatch = false;
     let widthMatch = false;
+    const nameMatch = !frameName || !frameInfo.name || frameInfo.name === frameName;
+    let urlMatch;
+    let titleMatch;
     if (strictComparison) {
-      heightMatch = frameInfo.computedHeight === parseInt(frameHeight);
-      widthMatch = frameInfo.computedWidth === parseInt(frameWidth);
+      heightMatch = frameInfo.computedHeight === frameHeight;
+      widthMatch = frameInfo.computedWidth === frameWidth;
+      urlMatch = !frameUrl || !frameInfo.href || frameInfo.href === frameUrl;
+      titleMatch = !frameTitle || !frameInfo.title || frameInfo.title === frameTitle;
     } else {
-      const heightDifference = Math.abs(frameInfo.computedHeight - parseInt(frameHeight));
+      const heightDifference = Math.abs(frameInfo.computedHeight - frameHeight);
       heightMatch =
-        heightDifference < 10 || heightDifference / Math.max(frameInfo.computedHeight, parseInt(frameHeight), 1) < 0.1;
-      const widthDifference = Math.abs(frameInfo.computedWidth - parseInt(frameWidth));
-      widthMatch =
-        widthDifference < 10 || widthDifference / Math.max(frameInfo.computedWidth, parseInt(frameWidth), 1) < 0.1;
+        heightDifference < 10 || heightDifference / Math.max(frameInfo.computedHeight, frameHeight, 1) < 0.1;
+      const widthDifference = Math.abs(frameInfo.computedWidth - frameWidth);
+      widthMatch = widthDifference < 10 || widthDifference / Math.max(frameInfo.computedWidth, frameWidth, 1) < 0.1;
+      urlMatch = true;
+      titleMatch = true;
     }
-    return (
-      heightMatch &&
-      widthMatch &&
-      (!frameName || !frameInfo.name || frameInfo.name === frameName) &&
-      (!frameUrl || !frameInfo.href || frameInfo.href === frameUrl) &&
-      (!frameTitle || !frameInfo.title || frameInfo.title === frameTitle)
-    );
+    return heightMatch && widthMatch && nameMatch && urlMatch && titleMatch;
   });
   if (result == null && strictComparison) {
     return _locateMatchingIframeNode(iframeNodes, frameInfo, false);
@@ -381,11 +384,14 @@ function _getRawDomTreeNodes(result: BuildDomTreeResult, tagName?: string): Reco
   return nodes;
 }
 
-function _iFramesFailedLoading(result: BuildDomTreeResult): Record<string, RawDomElementNode> {
+function _visibleIFramesFailedLoading(result: BuildDomTreeResult): Record<string, RawDomElementNode> {
   const iframeNodes = _getRawDomTreeNodes(result, 'iframe');
   return Object.fromEntries(
-    Object.entries(iframeNodes).filter(([, node]) => {
-      return node.attributes['error'] != null;
+    Object.entries(iframeNodes).filter(([, iframeNode]) => {
+      const error = iframeNode.attributes['error'];
+      const height = parseInt(iframeNode.attributes['computedHeight']);
+      const width = parseInt(iframeNode.attributes['computedWidth']);
+      return error != null && height > 0 && width > 0;
     }),
   );
 }
@@ -588,7 +594,6 @@ export async function injectBuildDomTreeScripts(tabId: number) {
     // Check if already injected
     const injectedFrames = await scriptInjectedFrames(tabId);
     if (injectedFrames.values().every(injected => injected)) {
-      console.log('Scripts already injected, skipping...');
       return;
     }
 
