@@ -1,10 +1,14 @@
 import { createLogger } from '@src/background/log';
-import type { BuildDomTreeArgs, RawDomTreeNode, BuildDomTreeResult } from './raw_types';
+import type { BuildDomTreeArgs, RawDomTreeNode, RawDomElementNode, BuildDomTreeResult } from './raw_types';
 import { type DOMState, type DOMBaseNode, DOMElementNode, DOMTextNode } from './views';
 import type { ViewportInfo } from './history/view';
 import { isNewTabPage } from '../util';
 
 const logger = createLogger('DOMService');
+
+function isNotNull<T>(item: T | null | undefined): item is T {
+  return item != null;
+}
 
 export interface ReadabilityResult {
   title: string;
@@ -17,6 +21,15 @@ export interface ReadabilityResult {
   siteName: string;
   lang: string;
   publishedTime: string;
+}
+
+export interface FrameInfo {
+  frameId: number;
+  computedHeight: number;
+  computedWidth: number;
+  href: string | null;
+  name: string | null;
+  title: string | null;
 }
 
 declare global {
@@ -120,7 +133,9 @@ async function _buildDomTree(
     return [elementTree, new Map<number, DOMElementNode>()];
   }
 
-  const results = await chrome.scripting.executeScript({
+  await injectBuildDomTreeScripts(tabId);
+
+  const mainFrameResult = await chrome.scripting.executeScript({
     target: { tabId },
     func: args => {
       // Access buildDomTree from the window context of the target page
@@ -131,23 +146,255 @@ async function _buildDomTree(
         showHighlightElements,
         focusHighlightIndex: focusElement,
         viewportExpansion,
+        startId: 0,
+        startHighlightIndex: 0,
         debugMode,
       },
     ],
   });
 
   // First cast to unknown, then to BuildDomTreeResult
-  const evalPage = results[0]?.result as unknown as BuildDomTreeResult;
-  if (!evalPage || !evalPage.map || !evalPage.rootId) {
+  let mainFramePage = mainFrameResult[0]?.result as unknown as BuildDomTreeResult;
+  if (!mainFramePage || !mainFramePage.map || !mainFramePage.rootId) {
     throw new Error('Failed to build DOM tree: No result returned or invalid structure');
   }
 
-  // Log performance metrics in debug mode
-  if (debugMode && evalPage.perfMetrics) {
-    logger.debug('DOM Tree Building Performance Metrics:', evalPage.perfMetrics);
+  if (debugMode && mainFramePage.perfMetrics) {
+    logger.debug('DOM Tree Building Performance Metrics (main-frame):', mainFramePage.perfMetrics);
   }
 
-  return _constructDomTree(evalPage);
+  // If the root frame was unable to parse child iframes (e.g. cross-origin frame policies),
+  // We'd need to detect that  here, build the DOM tree there for each subframe, and construct it here.
+  const visibleIframesFailedLoading = _visibleIFramesFailedLoading(mainFramePage);
+  const visibleIframesFailedLoadingCount = Object.values(visibleIframesFailedLoading).length;
+  if (visibleIframesFailedLoadingCount > 0) {
+    const tabFrames = await chrome.webNavigation.getAllFrames({ tabId });
+    const subFrames = (tabFrames ?? []).filter(frame => frame.frameId !== mainFrameResult[0].frameId).sort();
+
+    // Get sub-frames info, so that we can run the buildDomTree only on the frames that failed,
+    // to avoid double parsing & highlighting on the frames that succeeded.
+    const frameInfoResultsRaw = await Promise.all(
+      subFrames.map(async frame => {
+        const result = await chrome.scripting.executeScript({
+          target: { tabId, frameIds: [frame.frameId] },
+          func: frameId => ({
+            frameId,
+            computedHeight: window.innerHeight,
+            computedWidth: window.innerWidth,
+            href: window.location.href,
+            name: window.name,
+            title: document.title,
+          }),
+          args: [frame.frameId],
+        });
+        return result[0].result;
+      }),
+    );
+    const frameInfoResults = frameInfoResultsRaw.filter(isNotNull);
+
+    const frameTreeResult = await constructFrameTree(
+      tabId,
+      showHighlightElements,
+      focusElement,
+      viewportExpansion,
+      debugMode,
+      mainFramePage,
+      frameInfoResults,
+      _getMaxID(mainFramePage),
+      _getMaxHighlighIndex(mainFramePage),
+    );
+    mainFramePage = frameTreeResult.resultPage;
+  }
+
+  return _constructDomTree(mainFramePage);
+}
+
+async function constructFrameTree(
+  tabId: number,
+  showHighlightElements = true,
+  focusElement = -1,
+  viewportExpansion = 0,
+  debugMode = false,
+  parentFramePage: BuildDomTreeResult,
+  allFramesInfo: FrameInfo[],
+  startingNodeId: number,
+  startingHighlightIndex: number,
+): Promise<{ maxNodeId: number; maxHighlightIndex: number; resultPage: BuildDomTreeResult }> {
+  const parentIframesFailedLoading = _visibleIFramesFailedLoading(parentFramePage);
+  const failedLoadingFrames = allFramesInfo.filter(frameInfo => {
+    return _locateMatchingIframeNode(parentIframesFailedLoading, frameInfo) != null;
+  });
+  const parentIframesFailedCount = Object.values(parentIframesFailedLoading).length;
+  if (parentIframesFailedCount > failedLoadingFrames.length) {
+    logger.warning(
+      'Failed to locate some iframes that failed to load:',
+      parentIframesFailedCount,
+      'vs',
+      failedLoadingFrames.length,
+    );
+  }
+
+  let maxNodeId = startingNodeId;
+  let maxHighlightIndex = startingHighlightIndex;
+
+  for (const subFrame of failedLoadingFrames) {
+    // Processing one frame at a time, to start from the proper highlightIndex and element id.
+    const subFrameResult = await chrome.scripting.executeScript({
+      target: { tabId, frameIds: [subFrame.frameId] },
+      func: args => {
+        // Access buildDomTree from the window context of the target page
+        return window.buildDomTree({ ...args });
+      },
+      args: [
+        {
+          showHighlightElements,
+          focusHighlightIndex: focusElement,
+          viewportExpansion,
+          startId: maxNodeId + 1,
+          startHighlightIndex: maxHighlightIndex + 1,
+          debugMode,
+        },
+      ],
+    });
+
+    const subFramePage = subFrameResult[0]?.result as unknown as BuildDomTreeResult;
+    if (!subFramePage || !subFramePage.map || !subFramePage.rootId) {
+      throw new Error('Failed to build DOM tree: No result returned or invalid structure');
+    }
+    if (debugMode && subFramePage.perfMetrics) {
+      logger.debug(
+        'DOM Tree Building Performance Metrics (sub-frame' + subFrameResult[0].frameId + '):',
+        subFramePage.perfMetrics,
+      );
+    }
+    if (!subFramePage.rootId) {
+      continue;
+    }
+
+    maxNodeId = _getMaxID(subFramePage, maxNodeId);
+    maxHighlightIndex = _getMaxHighlighIndex(subFramePage, maxHighlightIndex);
+
+    // Expand lookup map to subframe elements
+    parentFramePage.map = {
+      ...parentFramePage.map,
+      ...subFramePage.map,
+    };
+
+    // Question: should we verify by checking subFrame.parentFrameId to ensure it's the correct parent to this subframe?
+    const iframeNode = _locateMatchingIframeNode(parentIframesFailedLoading, subFrame);
+    if (iframeNode == null) {
+      const subFrameRootElement = subFramePage.map[subFramePage.rootId];
+      console.warn('Cannot locate the iframe node for:', subFrame, 'with root element:', subFrameRootElement);
+    } else {
+      // Stiching together subframe DOM results with the main frame result
+      // while keeping the subset of iframe node trees, that succeded to load their contents.
+      iframeNode.children.push(subFramePage.rootId);
+    }
+
+    const childrenIframesFailedLoading = _visibleIFramesFailedLoading(subFramePage);
+    const childrenIframesFailedCount = Object.values(childrenIframesFailedLoading).length;
+    if (childrenIframesFailedCount > 0) {
+      const result = await constructFrameTree(
+        tabId,
+        showHighlightElements,
+        focusElement,
+        viewportExpansion,
+        debugMode,
+        subFramePage,
+        allFramesInfo,
+        maxNodeId,
+        maxHighlightIndex,
+      );
+      maxNodeId = Math.max(maxNodeId, result.maxNodeId);
+      maxHighlightIndex = Math.max(maxHighlightIndex, result.maxHighlightIndex);
+    }
+  }
+
+  return {
+    maxNodeId,
+    maxHighlightIndex,
+    resultPage: parentFramePage,
+  };
+}
+
+function _getMaxHighlighIndex(result: BuildDomTreeResult, priorMaxHighlightIndex?: number): number {
+  return Math.max(
+    priorMaxHighlightIndex ?? -1,
+    ...Object.values(_getRawDomTreeNodes(result))
+      .filter(node => node.highlightIndex != null)
+      .map(node => node.highlightIndex ?? -1),
+  );
+}
+
+function _getMaxID(result: BuildDomTreeResult, priorMaxId?: number): number {
+  return Math.max(priorMaxId ?? -1, parseInt(result.rootId));
+}
+
+// If stiching happens to the wrong iframe (XPath or CSS lookup),
+// 'locateElement' function wouldn't be able to find & interact with these visible elements.
+function _locateMatchingIframeNode(
+  iframeNodes: Record<string, RawDomElementNode>,
+  frameInfo: FrameInfo,
+  strictComparison: boolean = true,
+): RawDomElementNode | undefined {
+  const result = Object.values(iframeNodes).find(iframeNode => {
+    const frameHeight = parseInt(iframeNode.attributes['computedHeight']);
+    const frameWidth = parseInt(iframeNode.attributes['computedWidth']);
+    const frameName = iframeNode.attributes['name'];
+    const frameUrl = iframeNode.attributes['src'];
+    const frameTitle = iframeNode.attributes['title'];
+    let heightMatch = false;
+    let widthMatch = false;
+    const nameMatch = !frameName || !frameInfo.name || frameInfo.name === frameName;
+    let urlMatch;
+    let titleMatch;
+    if (strictComparison) {
+      heightMatch = frameInfo.computedHeight === frameHeight;
+      widthMatch = frameInfo.computedWidth === frameWidth;
+      urlMatch = !frameUrl || !frameInfo.href || frameInfo.href === frameUrl;
+      titleMatch = !frameTitle || !frameInfo.title || frameInfo.title === frameTitle;
+    } else {
+      const heightDifference = Math.abs(frameInfo.computedHeight - frameHeight);
+      heightMatch =
+        heightDifference < 10 || heightDifference / Math.max(frameInfo.computedHeight, frameHeight, 1) < 0.1;
+      const widthDifference = Math.abs(frameInfo.computedWidth - frameWidth);
+      widthMatch = widthDifference < 10 || widthDifference / Math.max(frameInfo.computedWidth, frameWidth, 1) < 0.1;
+      urlMatch = true;
+      titleMatch = true;
+    }
+    return heightMatch && widthMatch && nameMatch && urlMatch && titleMatch;
+  });
+  if (result == null && strictComparison) {
+    return _locateMatchingIframeNode(iframeNodes, frameInfo, false);
+  }
+  return result;
+}
+
+function _getRawDomTreeNodes(result: BuildDomTreeResult, tagName?: string): Record<string, RawDomElementNode> {
+  const nodes: Record<string, RawDomElementNode> = {};
+  for (const [id, nodeData] of Object.entries(result.map)) {
+    if (nodeData == null || ('type' in nodeData && nodeData.type === 'TEXT_NODE')) {
+      continue;
+    }
+    const elementData = nodeData as Exclude<RawDomTreeNode, { type: string }>;
+    if (tagName != null && tagName !== elementData.tagName) {
+      continue;
+    }
+    nodes[id] = elementData;
+  }
+  return nodes;
+}
+
+function _visibleIFramesFailedLoading(result: BuildDomTreeResult): Record<string, RawDomElementNode> {
+  const iframeNodes = _getRawDomTreeNodes(result, 'iframe');
+  return Object.fromEntries(
+    Object.entries(iframeNodes).filter(([, iframeNode]) => {
+      const error = iframeNode.attributes['error'];
+      const height = parseInt(iframeNode.attributes['computedHeight']);
+      const width = parseInt(iframeNode.attributes['computedWidth']);
+      return error != null && height > 0 && width > 0;
+    }),
+  );
 }
 
 /**
@@ -260,7 +507,7 @@ export function _parse_node(nodeData: RawDomTreeNode): [DOMBaseNode | null, stri
 export async function removeHighlights(tabId: number): Promise<void> {
   try {
     await chrome.scripting.executeScript({
-      target: { tabId },
+      target: { tabId, allFrames: true },
       func: () => {
         // Remove the highlight container and all its contents
         const container = document.getElementById('playwright-highlight-container');
@@ -326,4 +573,40 @@ export async function getScrollInfo(tabId: number): Promise<[number, number, num
     throw new Error('Failed to get scroll information');
   }
   return [result.scrollY, result.visualViewportHeight, result.scrollHeight];
+}
+
+// Function to check if script is already injected
+async function scriptInjectedFrames(tabId: number): Promise<Map<number, boolean>> {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      func: () => Object.prototype.hasOwnProperty.call(window, 'buildDomTree'),
+    });
+    return new Map(results.map(result => [result.frameId, result.result || false]));
+  } catch (err) {
+    console.error('Failed to check script injection status:', err);
+    return new Map();
+  }
+}
+
+// // Function to inject the buildDomTree script
+export async function injectBuildDomTreeScripts(tabId: number) {
+  try {
+    // Check if already injected
+    const injectedFrames = await scriptInjectedFrames(tabId);
+    if (injectedFrames.values().every(injected => injected)) {
+      return;
+    }
+
+    await chrome.scripting.executeScript({
+      target: {
+        tabId,
+        frameIds: Array.from(injectedFrames.keys()).filter(id => !injectedFrames.get(id)),
+      },
+      files: ['buildDomTree.js'],
+    });
+    console.log('Scripts successfully injected');
+  } catch (err) {
+    console.error('Failed to inject scripts:', err);
+  }
 }
