@@ -1,19 +1,28 @@
 {
-  "extensionDescription": {
+  "app_metadata_description": {
     "description": "Extension description",
     "message": "Automate web tasks with AI! NanoBrowser is an open-source Chrome extension that lets you extract data, fill forms, and more."
   },
-  "extensionName": {
+  "app_metadata_name": {
     "description": "Extension name",
     "message": "Nanobrowser: AI Web Agent & Automation"
   },
-  "toggleTheme": {
+  "navigation_back": {
+    "message": "← Back"
+  },
+  "navigation_toggleTheme": {
     "message": "Toggle theme"
   },
-  "loading": {
+  "navigation_welcome_title": {
+    "message": "Welcome to Nanobrowser!"
+  },
+  "navigation_welcome_setupInstruction": {
+    "message": "To get started, please configure your API keys in the settings page."
+  },
+  "ui_loading": {
     "message": "Loading..."
   },
-  "greeting": {
+  "ui_greeting": {
     "description": "Greeting message",
     "message": "Hello, My name is $NAME$",
     "placeholders": {
@@ -23,417 +32,272 @@
       }
     }
   },
-  "hello": {
+  "ui_hello": {
     "description": "Placeholder example",
     "message": "Hello $1"
   },
-
-  "navigationBack": {
-    "message": "← Back"
-  },
-  "welcomeTitle": {
-    "message": "Welcome to Nanobrowser!"
-  },
-  "welcomeSetupInstruction": {
-    "message": "To get started, please configure your API keys in the settings page."
-  },
-  "buttonsOpenSettings": {
+  "ui_buttons_openSettings": {
     "message": "Open Settings"
   },
-  "linksQuickStartGuide": {
-    "message": "Quick Start Guide"
-  },
-  "linksJoinCommunity": {
-    "message": "Join Our Community"
-  },
-  "statusCheckingConfiguration": {
-    "message": "Checking configuration..."
-  },
-  "errorsUnknownError": {
-    "message": "Unknown error occurred"
-  },
-  "errorsSpeechRecognitionFailed": {
-    "message": "Speech recognition failed"
-  },
-  "errorsServiceWorkerConnectionFailed": {
-    "message": "Failed to connect to service worker"
-  },
-  "replayDisabledMessage": {
-    "message": "Replay is disabled in general settings. Please enable \"Replay Historical Tasks\" in the extension settings to use this feature."
-  },
-  "replayNoHistoryMessage": {
-    "message": "No action history found for session \"$SESSION_ID$...\". This session may not contain replayable actions.\n\nIt's a replay session itself (replay sessions cannot be replayed again), or it was created before the replay feature was available.",
-    "placeholders": {
-      "session_id": {
-        "content": "$1",
-        "example": "abc123def456789"
-      }
-    }
-  },
-  "replayStartingMessage": {
-    "message": "Starting replay of task:\n\n\"$TASK$\"",
-    "placeholders": {
-      "task": {
-        "content": "$1",
-        "example": "Navigate to example.com"
-      }
-    }
-  },
-  "replayFailedMessage": {
-    "message": "Replay failed: $ERROR_MESSAGE$",
-    "placeholders": {
-      "error_message": {
-        "content": "$1",
-        "example": "Connection timeout"
-      }
-    }
-  },
-  "commandsInvalidFormat": {
-    "message": "Invalid replay command format. Usage: /replay <historySessionId>"
-  },
-  "commandsUnsupportedCommand": {
-    "message": "Unsupported command: $COMMAND$.\n\nAvailable commands: /state, /nohighlight, /replay <historySessionId>",
-    "placeholders": {
-      "command": {
-        "content": "$1",
-        "example": "/unknown"
-      }
-    }
-  },
-  "accessibilityBackToChat": {
-    "message": "Back to chat"
-  },
-  "accessibilityNewChat": {
-    "message": "New Chat"
-  },
-  "accessibilityLoadHistory": {
-    "message": "Load History"
-  },
-  "accessibilitySettings": {
-    "message": "Settings"
-  },
-
-  "inputPlaceholder": {
-    "message": "What can I help you with?"
-  },
-  "buttonsStop": {
+  "ui_buttons_stop": {
     "message": "Stop"
   },
-  "buttonsReplay": {
+  "ui_buttons_replay": {
     "message": "Replay"
   },
-  "buttonsSend": {
+  "ui_buttons_send": {
     "message": "Send"
   },
-  "accessibilityChatInputForm": {
-    "message": "Chat input form"
-  },
-  "accessibilityMessageInput": {
-    "message": "Message input"
-  },
-  "voiceProcessingSpeech": {
-    "message": "Processing speech..."
-  },
-  "voiceStopRecording": {
-    "message": "Stop recording"
-  },
-  "voiceStartVoiceInput": {
-    "message": "Start voice input"
-  },
-
-  "historyTitle": {
-    "message": "Chat History"
-  },
-  "historyEmptyState": {
-    "message": "No chat history available"
-  },
-  "accessibilityBookmarkSession": {
-    "message": "Bookmark session"
-  },
-  "accessibilityDeleteSession": {
-    "message": "Delete session"
-  },
-
-  "bookmarksTitle": {
-    "message": "Quick Start"
-  },
-  "accessibilitySaveEdit": {
-    "message": "Save edit"
-  },
-  "accessibilityCancelEdit": {
-    "message": "Cancel edit"
-  },
-  "accessibilityEditBookmark": {
-    "message": "Edit bookmark"
-  },
-  "accessibilityDeleteBookmark": {
-    "message": "Delete bookmark"
-  },
-
-  "tabsGeneral": {
-    "message": "General"
-  },
-  "tabsModels": {
-    "message": "Models"
-  },
-  "tabsFirewall": {
-    "message": "Firewall"
-  },
-  "tabsHelp": {
-    "message": "Help"
-  },
-  "settingsTitle": {
-    "message": "Settings"
-  },
-
-  "generalSectionTitle": {
-    "message": "General"
-  },
-  "settingsMaxStepsLabel": {
-    "message": "Max Steps per Task"
-  },
-  "settingsMaxStepsDescription": {
-    "message": "Step limit per task"
-  },
-  "settingsMaxActionsLabel": {
-    "message": "Max Actions per Step"
-  },
-  "settingsMaxActionsDescription": {
-    "message": "Action limit per step"
-  },
-  "settingsFailureToleranceLabel": {
-    "message": "Failure Tolerance"
-  },
-  "settingsFailureToleranceDescription": {
-    "message": "How many consecutive failures before stopping"
-  },
-  "settingsEnableVisionLabel": {
-    "message": "Enable Vision"
-  },
-  "settingsEnableVisionDescription": {
-    "message": "Use vision capability of LLMs (consumes more tokens for better results)"
-  },
-  "settingsDisplayHighlightsLabel": {
-    "message": "Display Highlights"
-  },
-  "settingsDisplayHighlightsDescription": {
-    "message": "Show visual highlights on interactive elements (e.g. buttons, links, etc.)"
-  },
-  "settingsReplanningFrequencyLabel": {
-    "message": "Replanning Frequency"
-  },
-  "settingsReplanningFrequencyDescription": {
-    "message": "Reconsider and update the plan every [Number] steps"
-  },
-  "settingsPageLoadWaitLabel": {
-    "message": "Page Load Wait Time"
-  },
-  "settingsPageLoadWaitDescription": {
-    "message": "Minimum wait time after page loads (250-5000ms)"
-  },
-  "settingsReplayTasksLabel": {
-    "message": "Replay Historical Tasks( experimental )"
-  },
-  "settingsReplayTasksDescription": {
-    "message": "Enable storing and replaying of agent step history (experimental, may have issues)"
-  },
-
-  "modelsLlmProvidersTitle": {
-    "message": "LLM Providers"
-  },
-  "modelsModelSelectionTitle": {
-    "message": "Model Selection"
-  },
-  "modelsSpeechToTextTitle": {
-    "message": "Speech-to-Text Model"
-  },
-  "modelsSpeechToTextDescription": {
-    "message": "Configure the Gemini model used for converting speech to text when using the microphone feature."
-  },
-  "modelsChooseModel": {
-    "message": "Choose model"
-  },
-  "parametersTemperature": {
-    "message": "Temperature"
-  },
-  "parametersTopP": {
-    "message": "Top P"
-  },
-  "parametersReasoning": {
-    "message": "Reasoning"
-  },
-  "reasoningLow": {
-    "message": "Low (Faster)"
-  },
-  "reasoningMedium": {
-    "message": "Medium (Balanced)"
-  },
-  "reasoningHigh": {
-    "message": "High (More thorough)"
-  },
-  "agentsNavigatorDescription": {
-    "message": "Navigates websites and performs actions"
-  },
-  "agentsPlannerDescription": {
-    "message": "Develops and refines strategies to complete tasks"
-  },
-  "agentsValidatorDescription": {
-    "message": "Checks if tasks are completed successfully"
-  },
-  "buttonsDelete": {
+  "ui_buttons_delete": {
     "message": "Delete"
   },
-  "buttonsSave": {
+  "ui_buttons_save": {
     "message": "Save"
   },
-  "buttonsCancel": {
+  "ui_buttons_cancel": {
     "message": "Cancel"
   },
-  "buttonsAddProvider": {
+  "ui_buttons_addProvider": {
     "message": "Add New Provider"
   },
-  "placeholdersProviderName": {
-    "message": "Provider name"
-  },
-  "placeholdersAzureModelName": {
-    "message": "Enter Azure model name (e.g. gpt-4o, gpt-4o-mini)"
-  },
-  "placeholdersApiVersion": {
-    "message": "e.g., 2024-02-15-preview"
-  },
-
-  "firewallTitle": {
-    "message": "Firewall"
-  },
-  "firewallEnableToggle": {
-    "message": "Enable Firewall"
-  },
-  "firewallAllowList": {
-    "message": "Allow List"
-  },
-  "firewallDenyList": {
-    "message": "Deny List"
-  },
-  "firewallHowItWorksTitle": {
-    "message": "How the Firewall Works"
-  },
-  "buttonsAdd": {
+  "ui_buttons_add": {
     "message": "Add"
   },
-  "buttonsRemove": {
+  "ui_buttons_remove": {
     "message": "Remove"
   },
-  "placeholdersDomainUrl": {
-    "message": "Enter domain or URL (e.g. example.com, localhost, 127.0.0.1)"
+  "ui_links_quickStartGuide": {
+    "message": "Quick Start Guide"
   },
-  "firewallAllowListEmpty": {
-    "message": "No domains in allow list. Empty allow list means all non-denied domains are allowed."
+  "ui_links_joinCommunity": {
+    "message": "Join Our Community"
   },
-  "firewallDenyListEmpty": {
-    "message": "No domains in deny list"
+  "ui_status_checkingConfiguration": {
+    "message": "Checking configuration..."
   },
-
-  "permissionTitle": {
-    "message": "Enable Voice Input"
-  },
-  "permissionDescription": {
-    "message": "Nanobrowser needs microphone access to convert your speech to text."
-  },
-  "permissionGrantButton": {
-    "message": "Grant Microphone Permission"
-  },
-  "permissionRequesting": {
-    "message": "Requesting microphone permission..."
-  },
-  "permissionGrantedSuccess": {
-    "message": "✅ Microphone permission granted! You can now use voice input."
-  },
-  "permissionGrantedButton": {
-    "message": "Permission Granted"
-  },
-  "permissionDenied": {
-    "message": "Permission denied. "
-  },
-  "permissionAllowHelp": {
-    "message": "Please click \"Allow\" when prompted for microphone access."
-  },
-  "permissionNoMicrophone": {
-    "message": "No microphone found. Please check your audio devices."
-  },
-  "permissionAlreadyGranted": {
-    "message": "✅ Microphone permission already granted!"
-  },
-  "permissionAlreadyGrantedButton": {
-    "message": "Permission Already Granted"
-  },
-
-  "progressShowing": {
+  "ui_status_progressShowing": {
     "message": "Showing progress..."
   },
-  "microphonePermissionDenied": {
-    "message": "Microphone access denied. Please enable microphone permissions in Chrome settings."
+  "chat_input_placeholder": {
+    "message": "What can I help you with?"
   },
-  "speechProcessingFailed": {
-    "message": "Failed to process speech recording"
+  "chat_input_accessibilityForm": {
+    "message": "Chat input form"
   },
-  "microphoneAccessFailed": {
-    "message": "Failed to access microphone. "
+  "chat_input_accessibilityMessage": {
+    "message": "Message input"
   },
-  "microphoneGrantPermission": {
-    "message": "Please grant microphone permission."
+  "chat_history_title": {
+    "message": "Chat History"
   },
-  "microphoneNotFound": {
-    "message": "No microphone found."
+  "chat_history_emptyState": {
+    "message": "No chat history available"
   },
-
-  "errorNoTask": {
-    "message": "No task provided"
+  "chat_history_accessibilityBookmark": {
+    "message": "Bookmark session"
   },
-  "errorNoTabId": {
-    "message": "No tab ID provided"
+  "chat_history_accessibilityDelete": {
+    "message": "Delete session"
   },
-  "errorNoFollowupTask": {
-    "message": "No follow up task provided"
+  "chat_bookmarks_title": {
+    "message": "Quick Start"
   },
-  "errorExecutorCleanedUp": {
-    "message": "Executor was cleaned up, can not add follow-up task"
+  "chat_bookmarks_accessibilitySaveEdit": {
+    "message": "Save edit"
   },
-  "errorNoTaskCancel": {
-    "message": "No task to cancel"
+  "chat_bookmarks_accessibilityCancelEdit": {
+    "message": "Cancel edit"
   },
-  "errorNoTaskResume": {
-    "message": "No task to resume"
+  "chat_bookmarks_accessibilityEdit": {
+    "message": "Edit bookmark"
   },
-  "errorNoTaskPause": {
-    "message": "No task to pause"
+  "chat_bookmarks_accessibilityDelete": {
+    "message": "Delete bookmark"
   },
-  "debugStatePrinted": {
-    "message": "State printed to console"
+  "voice_processing": {
+    "message": "Processing speech..."
   },
-  "errorFailedGetState": {
-    "message": "Failed to get state"
+  "voice_recording_stop": {
+    "message": "Stop recording"
   },
-  "debugHighlightRemoved": {
-    "message": "highlight removed"
+  "voice_input_start": {
+    "message": "Start voice input"
   },
-  "setupConfigureApiKeys": {
-    "message": "Please configure API keys in the settings first"
-  },
-  "setupChooseNavigatorModel": {
-    "message": "Please choose a model for the navigator in the settings first"
-  },
-
-  "speechNoModelConfigured": {
-    "message": "No speech-to-text model configured. Please configure a Gemini model in settings."
-  },
-  "speechInvalidProvider": {
-    "message": "Speech-to-text model provider not found or not a Gemini provider. Please configure a Gemini model in settings."
-  },
-  "speechTranscriptionPrompt": {
+  "voice_transcription_prompt": {
     "message": "Transcribe this audio. Return only the transcribed text without any additional formatting or explanations."
   },
-
-  "agentContextPrefix": {
+  "voice_errors_noModelConfigured": {
+    "message": "No speech-to-text model configured. Please configure a Gemini model in settings."
+  },
+  "voice_errors_invalidProvider": {
+    "message": "Speech-to-text model provider not found or not a Gemini provider. Please configure a Gemini model in settings."
+  },
+  "voice_errors_processingFailed": {
+    "message": "Failed to process speech recording"
+  },
+  "voice_microphone_permissionDenied": {
+    "message": "Microphone access denied. Please enable microphone permissions in Chrome settings."
+  },
+  "voice_microphone_accessFailed": {
+    "message": "Failed to access microphone. "
+  },
+  "voice_microphone_grantPermission": {
+    "message": "Please grant microphone permission."
+  },
+  "voice_microphone_notFound": {
+    "message": "No microphone found."
+  },
+  "permissions_microphone_title": {
+    "message": "Enable Voice Input"
+  },
+  "permissions_microphone_description": {
+    "message": "Nanobrowser needs microphone access to convert your speech to text."
+  },
+  "permissions_microphone_grantButton": {
+    "message": "Grant Microphone Permission"
+  },
+  "permissions_microphone_requesting": {
+    "message": "Requesting microphone permission..."
+  },
+  "permissions_microphone_grantedSuccess": {
+    "message": "✅ Microphone permission granted! You can now use voice input."
+  },
+  "permissions_microphone_grantedButton": {
+    "message": "Permission Granted"
+  },
+  "permissions_microphone_denied": {
+    "message": "Permission denied. "
+  },
+  "permissions_microphone_allowHelp": {
+    "message": "Please click \"Allow\" when prompted for microphone access."
+  },
+  "permissions_microphone_noMicrophone": {
+    "message": "No microphone found. Please check your audio devices."
+  },
+  "permissions_microphone_alreadyGranted": {
+    "message": "✅ Microphone permission already granted!"
+  },
+  "permissions_microphone_alreadyGrantedButton": {
+    "message": "Permission Already Granted"
+  },
+  "settings_title": {
+    "message": "Settings"
+  },
+  "settings_tabs_general": {
+    "message": "General"
+  },
+  "settings_tabs_models": {
+    "message": "Models"
+  },
+  "settings_tabs_firewall": {
+    "message": "Firewall"
+  },
+  "settings_tabs_help": {
+    "message": "Help"
+  },
+  "settings_general_title": {
+    "message": "General"
+  },
+  "settings_general_maxSteps_label": {
+    "message": "Max Steps per Task"
+  },
+  "settings_general_maxSteps_description": {
+    "message": "Step limit per task"
+  },
+  "settings_general_maxActions_label": {
+    "message": "Max Actions per Step"
+  },
+  "settings_general_maxActions_description": {
+    "message": "Action limit per step"
+  },
+  "settings_general_failureTolerance_label": {
+    "message": "Failure Tolerance"
+  },
+  "settings_general_failureTolerance_description": {
+    "message": "How many consecutive failures before stopping"
+  },
+  "settings_general_enableVision_label": {
+    "message": "Enable Vision"
+  },
+  "settings_general_enableVision_description": {
+    "message": "Use vision capability of LLMs (consumes more tokens for better results)"
+  },
+  "settings_general_displayHighlights_label": {
+    "message": "Display Highlights"
+  },
+  "settings_general_displayHighlights_description": {
+    "message": "Show visual highlights on interactive elements (e.g. buttons, links, etc.)"
+  },
+  "settings_general_replanningFrequency_label": {
+    "message": "Replanning Frequency"
+  },
+  "settings_general_replanningFrequency_description": {
+    "message": "Reconsider and update the plan every [Number] steps"
+  },
+  "settings_general_pageLoadWait_label": {
+    "message": "Page Load Wait Time"
+  },
+  "settings_general_pageLoadWait_description": {
+    "message": "Minimum wait time after page loads (250-5000ms)"
+  },
+  "settings_general_replayTasks_label": {
+    "message": "Replay Historical Tasks( experimental )"
+  },
+  "settings_general_replayTasks_description": {
+    "message": "Enable storing and replaying of agent step history (experimental, may have issues)"
+  },
+  "settings_models_llmProviders_title": {
+    "message": "LLM Providers"
+  },
+  "settings_models_selection_title": {
+    "message": "Model Selection"
+  },
+  "settings_models_speechToText_title": {
+    "message": "Speech-to-Text Model"
+  },
+  "settings_models_speechToText_description": {
+    "message": "Configure the Gemini model used for converting speech to text when using the microphone feature."
+  },
+  "settings_models_chooseModel": {
+    "message": "Choose model"
+  },
+  "settings_parameters_temperature": {
+    "message": "Temperature"
+  },
+  "settings_parameters_topP": {
+    "message": "Top P"
+  },
+  "settings_parameters_reasoning": {
+    "message": "Reasoning",
+    "low": {
+      "message": "Low (Faster)"
+    },
+    "medium": {
+      "message": "Medium (Balanced)"
+    },
+    "high": {
+      "message": "High (More thorough)"
+    }
+  },
+  "settings_placeholders_providerName": {
+    "message": "Provider name"
+  },
+  "settings_placeholders_azureModelName": {
+    "message": "Enter Azure model name (e.g. gpt-4o, gpt-4o-mini)"
+  },
+  "settings_placeholders_apiVersion": {
+    "message": "e.g., 2024-02-15-preview"
+  },
+  "agents_navigator_description": {
+    "message": "Navigates websites and performs actions"
+  },
+  "agents_planner_description": {
+    "message": "Develops and refines strategies to complete tasks"
+  },
+  "agents_validator_description": {
+    "message": "Checks if tasks are completed successfully"
+  },
+  "agents_context_prefix": {
     "message": "Context for the task: $CONTEXT$",
     "placeholders": {
       "context": {
@@ -442,7 +306,7 @@
       }
     }
   },
-  "agentSensitiveDataInfo": {
+  "agents_sensitiveData_info": {
     "message": "Here are placeholders for sensitive data: $PLACEHOLDERS$",
     "placeholders": {
       "placeholders": {
@@ -451,16 +315,16 @@
       }
     }
   },
-  "agentSensitiveDataUsage": {
+  "agents_sensitiveData_usage": {
     "message": "To use them, write <secret>the placeholder name</secret>"
   },
-  "agentExampleOutputLabel": {
+  "agents_exampleOutput_label": {
     "message": "Example output:"
   },
-  "agentHistoryStartMarker": {
+  "agents_history_startMarker": {
     "message": "[Your task history memory starts here]"
   },
-  "agentAvailableFilepaths": {
+  "agents_availableFilepaths": {
     "message": "Here are file paths you can use: $PATHS$",
     "placeholders": {
       "paths": {
@@ -469,7 +333,7 @@
       }
     }
   },
-  "agentTaskInstructions": {
+  "agents_task_instructions": {
     "message": "Your ultimate task is: \"\"\"$TASK$\"\"\". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.",
     "placeholders": {
       "task": {
@@ -478,7 +342,7 @@
       }
     }
   },
-  "agentFollowupTaskInstructions": {
+  "agents_task_followupInstructions": {
     "message": "Your new ultimate task is: \"\"\"$NEW_TASK$\"\"\". This is a follow-up of the previous tasks. Make sure to take all of the previous context into account and finish your new ultimate task.",
     "placeholders": {
       "new_task": {
@@ -487,8 +351,31 @@
       }
     }
   },
-
-  "actionSearchingGoogle": {
+  "firewall_title": {
+    "message": "Firewall"
+  },
+  "firewall_enableToggle": {
+    "message": "Enable Firewall"
+  },
+  "firewall_allowList_title": {
+    "message": "Allow List"
+  },
+  "firewall_allowList_empty": {
+    "message": "No domains in allow list. Empty allow list means all non-denied domains are allowed."
+  },
+  "firewall_denyList_title": {
+    "message": "Deny List"
+  },
+  "firewall_denyList_empty": {
+    "message": "No domains in deny list"
+  },
+  "firewall_howItWorks_title": {
+    "message": "How the Firewall Works"
+  },
+  "firewall_placeholders_domainUrl": {
+    "message": "Enter domain or URL (e.g. example.com, localhost, 127.0.0.1)"
+  },
+  "actions_google_searching": {
     "message": "Searching for \"$QUERY$\" in Google",
     "placeholders": {
       "query": {
@@ -497,7 +384,7 @@
       }
     }
   },
-  "actionSearchedGoogle": {
+  "actions_google_searched": {
     "message": "Searched for \"$QUERY$\" in Google",
     "placeholders": {
       "query": {
@@ -506,7 +393,7 @@
       }
     }
   },
-  "actionSelectDropdownIntent": {
+  "actions_dropdown_selectIntent": {
     "message": "Select option \"$TEXT$\" from dropdown with index $INDEX$",
     "placeholders": {
       "text": {
@@ -519,7 +406,7 @@
       }
     }
   },
-  "actionSelectedDropdownSuccess": {
+  "actions_dropdown_selectedSuccess": {
     "message": "Selected option \"$TEXT$\" from dropdown with index $INDEX$",
     "placeholders": {
       "text": {
@@ -532,11 +419,109 @@
       }
     }
   },
-
-  "validatorTaskCompleted": {
+  "validation_task_completed": {
     "message": "Task completed"
   },
-  "validatorTaskCompletedReason": {
+  "validation_task_completedReason": {
     "message": "The task is completed"
+  },
+  "errors_general_unknown": {
+    "message": "Unknown error occurred"
+  },
+  "errors_speech_recognitionFailed": {
+    "message": "Speech recognition failed"
+  },
+  "errors_connection_serviceWorkerFailed": {
+    "message": "Failed to connect to service worker"
+  },
+  "errors_validation_noTask": {
+    "message": "No task provided"
+  },
+  "errors_validation_noTabId": {
+    "message": "No tab ID provided"
+  },
+  "errors_validation_noFollowupTask": {
+    "message": "No follow up task provided"
+  },
+  "errors_execution_executorCleanedUp": {
+    "message": "Executor was cleaned up, can not add follow-up task"
+  },
+  "errors_execution_noTaskCancel": {
+    "message": "No task to cancel"
+  },
+  "errors_execution_noTaskResume": {
+    "message": "No task to resume"
+  },
+  "errors_execution_noTaskPause": {
+    "message": "No task to pause"
+  },
+  "errors_state_failedGetState": {
+    "message": "Failed to get state"
+  },
+  "errors_setup_configureApiKeys": {
+    "message": "Please configure API keys in the settings first"
+  },
+  "errors_setup_chooseNavigatorModel": {
+    "message": "Please choose a model for the navigator in the settings first"
+  },
+  "commands_invalidFormat": {
+    "message": "Invalid replay command format. Usage: /replay <historySessionId>"
+  },
+  "commands_unsupportedCommand": {
+    "message": "Unsupported command: $COMMAND$.\n\nAvailable commands: /state, /nohighlight, /replay <historySessionId>",
+    "placeholders": {
+      "command": {
+        "content": "$1",
+        "example": "/unknown"
+      }
+    }
+  },
+  "replay_disabled": {
+    "message": "Replay is disabled in general settings. Please enable \"Replay Historical Tasks\" in the extension settings to use this feature."
+  },
+  "replay_noHistory": {
+    "message": "No action history found for session \"$SESSION_ID$...\". This session may not contain replayable actions.\n\nIt's a replay session itself (replay sessions cannot be replayed again), or it was created before the replay feature was available.",
+    "placeholders": {
+      "session_id": {
+        "content": "$1",
+        "example": "abc123def456789"
+      }
+    }
+  },
+  "replay_starting": {
+    "message": "Starting replay of task:\n\n\"$TASK$\"",
+    "placeholders": {
+      "task": {
+        "content": "$1",
+        "example": "Navigate to example.com"
+      }
+    }
+  },
+  "replay_failed": {
+    "message": "Replay failed: $ERROR_MESSAGE$",
+    "placeholders": {
+      "error_message": {
+        "content": "$1",
+        "example": "Connection timeout"
+      }
+    }
+  },
+  "debug_state_printed": {
+    "message": "State printed to console"
+  },
+  "debug_highlight_removed": {
+    "message": "highlight removed"
+  },
+  "accessibility_navigation_backToChat": {
+    "message": "Back to chat"
+  },
+  "accessibility_navigation_newChat": {
+    "message": "New Chat"
+  },
+  "accessibility_navigation_loadHistory": {
+    "message": "Load History"
+  },
+  "accessibility_navigation_settings": {
+    "message": "Settings"
   }
 }

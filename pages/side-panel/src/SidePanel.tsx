@@ -126,11 +126,11 @@ const SidePanel = () => {
 
   const appendMessage = useCallback((newMessage: Message, sessionId?: string | null) => {
     // Don't save progress messages
-    const isProgressMessage = newMessage.content === t('progressShowing');
+    const isProgressMessage = newMessage.content === t('ui_status_progressShowing');
 
     setMessages(prev => {
       const filteredMessages = prev.filter(
-        (msg, idx) => !(msg.content === t('progressShowing') && idx === prev.length - 1),
+        (msg, idx) => !(msg.content === t('ui_status_progressShowing') && idx === prev.length - 1),
       );
       return [...filteredMessages, newMessage];
     });
@@ -276,7 +276,7 @@ const SidePanel = () => {
       if (displayProgress) {
         appendMessage({
           actor,
-          content: t('progressShowing'),
+          content: t('ui_status_progressShowing'),
           timestamp: timestamp,
         });
       }
@@ -315,7 +315,7 @@ const SidePanel = () => {
           // Handle error messages from service worker
           appendMessage({
             actor: Actors.SYSTEM,
-            content: message.error || t('errorsUnknownError'),
+            content: message.error || t('errors_general_unknown'),
             timestamp: Date.now(),
           });
           setInputEnabled(true);
@@ -330,7 +330,7 @@ const SidePanel = () => {
           // Handle speech-to-text error
           appendMessage({
             actor: Actors.SYSTEM,
-            content: message.error || t('errorsSpeechRecognitionFailed'),
+            content: message.error || t('errors_speech_recognitionFailed'),
             timestamp: Date.now(),
           });
           setIsProcessingSpeech(false);
@@ -372,7 +372,7 @@ const SidePanel = () => {
       console.error('Failed to establish connection:', error);
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('errorsServiceWorkerConnectionFailed'),
+        content: t('errors_connection_serviceWorkerFailed'),
         timestamp: Date.now(),
       });
       // Clear any references since connection failed
@@ -405,7 +405,7 @@ const SidePanel = () => {
       if (!replayEnabled) {
         appendMessage({
           actor: Actors.SYSTEM,
-          content: t('replayDisabledMessage'),
+          content: t('replay_disabled'),
           timestamp: Date.now(),
         });
         return;
@@ -416,7 +416,7 @@ const SidePanel = () => {
       if (!historyData) {
         appendMessage({
           actor: Actors.SYSTEM,
-          content: t('replayNoHistoryMessage', historySessionId.substring(0, 20)),
+          content: t('replay_noHistory', historySessionId.substring(0, 20)),
           timestamp: Date.now(),
         });
         return;
@@ -476,7 +476,7 @@ const SidePanel = () => {
 
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('replayStartingMessage', historyData.task),
+        content: t('replay_starting', historyData.task),
         timestamp: Date.now(),
       });
       setIsReplaying(true);
@@ -484,7 +484,7 @@ const SidePanel = () => {
       const errorMessage = err instanceof Error ? err.message : String(err);
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('replayFailedMessage', errorMessage),
+        content: t('replay_failed', errorMessage),
         timestamp: Date.now(),
       });
     }
@@ -520,7 +520,7 @@ const SidePanel = () => {
         if (parts.length !== 2) {
           appendMessage({
             actor: Actors.SYSTEM,
-            content: t('commandsInvalidFormat'),
+            content: t('commands_invalidFormat'),
             timestamp: Date.now(),
           });
           return true;
@@ -534,7 +534,7 @@ const SidePanel = () => {
       // Unsupported command
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('commandsUnsupportedCommand', command),
+        content: t('commands_unsupportedCommand', command),
         timestamp: Date.now(),
       });
       return true;
@@ -856,7 +856,7 @@ const SidePanel = () => {
       if (permissionStatus.state === 'denied') {
         appendMessage({
           actor: Actors.SYSTEM,
-          content: t('microphonePermissionDenied'),
+          content: t('voice_microphone_permissionDenied'),
           timestamp: Date.now(),
         });
         return;
@@ -950,7 +950,7 @@ const SidePanel = () => {
               console.error('Failed to send audio for speech-to-text:', error);
               appendMessage({
                 actor: Actors.SYSTEM,
-                content: t('speechProcessingFailed'),
+                content: t('voice_errors_processingFailed'),
                 timestamp: Date.now(),
               });
               setIsRecording(false);
@@ -978,12 +978,12 @@ const SidePanel = () => {
     } catch (error) {
       console.error('Error accessing microphone:', error);
 
-      let errorMessage = t('microphoneAccessFailed');
+      let errorMessage = t('voice_microphone_accessFailed');
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          errorMessage += t('microphoneGrantPermission');
+          errorMessage += t('voice_microphone_grantPermission');
         } else if (error.name === 'NotFoundError') {
-          errorMessage += t('microphoneNotFound');
+          errorMessage += t('voice_microphone_notFound');
         } else {
           errorMessage += error.message;
         }
@@ -1009,8 +1009,8 @@ const SidePanel = () => {
                 type="button"
                 onClick={() => handleBackToChat(false)}
                 className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
-                aria-label={t('accessibilityBackToChat')}>
-                {t('navigationBack')}
+                aria-label={t('accessibility_navigation_backToChat')}>
+                {t('navigation_back')}
               </button>
             ) : (
               <img src="/icon-128.png" alt="Extension Logo" className="size-6" />
@@ -1024,7 +1024,7 @@ const SidePanel = () => {
                   onClick={handleNewChat}
                   onKeyDown={e => e.key === 'Enter' && handleNewChat()}
                   className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
-                  aria-label={t('accessibilityNewChat')}
+                  aria-label={t('accessibility_navigation_newChat')}
                   tabIndex={0}>
                   <PiPlusBold size={20} />
                 </button>
@@ -1033,7 +1033,7 @@ const SidePanel = () => {
                   onClick={handleLoadHistory}
                   onKeyDown={e => e.key === 'Enter' && handleLoadHistory()}
                   className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
-                  aria-label={t('accessibilityLoadHistory')}
+                  aria-label={t('accessibility_navigation_loadHistory')}
                   tabIndex={0}>
                   <GrHistory size={20} />
                 </button>
@@ -1051,7 +1051,7 @@ const SidePanel = () => {
               onClick={() => chrome.runtime.openOptionsPage()}
               onKeyDown={e => e.key === 'Enter' && chrome.runtime.openOptionsPage()}
               className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
-              aria-label={t('accessibilitySettings')}
+              aria-label={t('accessibility_navigation_settings')}
               tabIndex={0}>
               <FiSettings size={20} />
             </button>
@@ -1076,7 +1076,7 @@ const SidePanel = () => {
                 className={`flex flex-1 items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
                 <div className="text-center">
                   <div className="mx-auto mb-4 size-8 animate-spin rounded-full border-2 border-sky-400 border-t-transparent"></div>
-                  <p>{t('statusCheckingConfiguration')}</p>
+                  <p>{t('ui_status_checkingConfiguration')}</p>
                 </div>
               </div>
             )}
@@ -1088,15 +1088,15 @@ const SidePanel = () => {
                 <div className="max-w-md text-center">
                   <img src="/icon-128.png" alt="Nanobrowser Logo" className="mx-auto mb-4 size-12" />
                   <h3 className={`mb-2 text-lg font-semibold ${isDarkMode ? 'text-sky-200' : 'text-sky-700'}`}>
-                    {t('welcomeTitle')}
+                    {t('navigation_welcome_title')}
                   </h3>
-                  <p className="mb-4">{t('welcomeSetupInstruction')}</p>
+                  <p className="mb-4">{t('navigation_welcome_setupInstruction')}</p>
                   <button
                     onClick={() => chrome.runtime.openOptionsPage()}
                     className={`my-4 rounded-lg px-4 py-2 font-medium transition-colors ${
                       isDarkMode ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-sky-500 text-white hover:bg-sky-600'
                     }`}>
-                    {t('buttonsOpenSettings')}
+                    {t('ui_buttons_openSettings')}
                   </button>
                   <div className="mt-4 text-sm opacity-75">
                     <a
@@ -1104,7 +1104,7 @@ const SidePanel = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
-                      {t('linksQuickStartGuide')}
+                      {t('ui_links_quickStartGuide')}
                     </a>
                     <span className="mx-2">•</span>
                     <a
@@ -1112,7 +1112,7 @@ const SidePanel = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
-                      {t('linksJoinCommunity')}
+                      {t('ui_links_joinCommunity')}
                     </a>
                   </div>
                 </div>

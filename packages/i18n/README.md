@@ -101,7 +101,7 @@ Just import the `t` function and use it to translate the key.
 ```typescript
 import { t } from '@extension/i18n';
 
-console.log(t('loading')); // Loading...
+console.log(t('ui_loading')); // Loading...
 ```
 
 ```typescript jsx
@@ -110,7 +110,7 @@ import { t } from '@extension/i18n';
 const Component = () => {
   return (
     <button>
-      {t('toggleTheme')} // Toggle Theme
+      {t('navigation_toggleTheme')} // Toggle Theme
     </button>
   );
 };
