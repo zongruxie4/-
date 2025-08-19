@@ -7,6 +7,7 @@ import { createLogger } from '@src/background/log';
 import type { Action } from '../actions/builder';
 import { convertInputMessages, extractJsonFromModelOutput, removeThinkTags } from '../messages/utils';
 import { isAbortedError, RequestCancelledError } from './errors';
+import { ProviderTypeEnum } from '@extension/storage';
 
 const logger = createLogger('agent');
 
@@ -18,6 +19,7 @@ export interface BaseAgentOptions {
   chatLLM: BaseChatModel;
   context: AgentContext;
   prompt: BasePrompt;
+  provider?: string;
 }
 export interface ExtraAgentOptions {
   id?: string;
@@ -40,6 +42,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
   protected toolCallingMethod: string | null;
   protected chatModelLibrary: string;
   protected modelName: string;
+  protected provider: string;
   protected withStructuredOutput: boolean;
   protected callOptions?: CallOptions;
   protected modelOutputToolName: string;
@@ -51,6 +54,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     this.chatLLM = options.chatLLM;
     this.prompt = options.prompt;
     this.context = options.context;
+    this.provider = options.provider || '';
     // TODO: fix this, the name is not correct in production environment
     this.chatModelLibrary = this.chatLLM.constructor.name;
     this.modelName = this.getModelName();
@@ -94,29 +98,55 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     return toolCallingMethod || null;
   }
 
+  // Check if model is a Llama model (only for Llama-specific handling)
+  private isLlamaModel(modelName: string): boolean {
+    return modelName.includes('Llama-4') || modelName.includes('Llama-3.3') || modelName.includes('llama-3.3');
+  }
+
   // Set whether to use structured output based on the model name
   private setWithStructuredOutput(): boolean {
     if (this.modelName === 'deepseek-reasoner' || this.modelName === 'deepseek-r1') {
       return false;
     }
+
+    // Llama API models don't support json_schema response format
+    if (this.provider === ProviderTypeEnum.Llama || this.isLlamaModel(this.modelName)) {
+      logger.debug(`[${this.modelName}] Llama API doesn't support structured output, using manual JSON extraction`);
+      return false;
+    }
+
     return true;
   }
 
   async invoke(inputMessages: BaseMessage[]): Promise<this['ModelOutput']> {
     // Use structured output
     if (this.withStructuredOutput) {
+      logger.debug(`[${this.modelName}] Preparing structured output call with schema:`, {
+        schemaName: this.modelOutputToolName,
+        messageCount: inputMessages.length,
+        modelProvider: this.provider,
+      });
+
       const structuredLlm = this.chatLLM.withStructuredOutput(this.modelOutputSchema, {
         includeRaw: true,
         name: this.modelOutputToolName,
       });
 
       try {
+        logger.debug(`[${this.modelName}] Invoking LLM with structured output...`);
         const response = await structuredLlm.invoke(inputMessages, {
           signal: this.context.controller.signal,
           ...this.callOptions,
         });
 
+        logger.debug(`[${this.modelName}] LLM response received:`, {
+          hasParsed: !!response.parsed,
+          hasRaw: !!response.raw,
+          rawContent: response.raw?.content?.slice(0, 500) + (response.raw?.content?.length > 500 ? '...' : ''),
+        });
+
         if (response.parsed) {
+          logger.debug(`[${this.modelName}] Successfully parsed structured output`);
           return response.parsed;
         }
         logger.error('Failed to parse response', response);
@@ -125,29 +155,39 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
         if (isAbortedError(error)) {
           throw error;
         }
+        logger.error(`[${this.modelName}] LLM call failed with error:`, error);
         const errorMessage = `Failed to invoke ${this.modelName} with structured output: ${error}`;
         throw new Error(errorMessage);
       }
     }
 
     // Without structured output support, need to extract JSON from model output manually
+    logger.debug(`[${this.modelName}] Using manual JSON extraction fallback method`);
     const convertedInputMessages = convertInputMessages(inputMessages, this.modelName);
-    const response = await this.chatLLM.invoke(convertedInputMessages, {
-      signal: this.context.controller.signal,
-      ...this.callOptions,
-    });
-    if (typeof response.content === 'string') {
-      response.content = removeThinkTags(response.content);
-      try {
-        const extractedJson = extractJsonFromModelOutput(response.content);
-        const parsed = this.validateModelOutput(extractedJson);
-        if (parsed) {
-          return parsed;
+
+    try {
+      const response = await this.chatLLM.invoke(convertedInputMessages, {
+        signal: this.context.controller.signal,
+        ...this.callOptions,
+      });
+
+      if (typeof response.content === 'string') {
+        response.content = removeThinkTags(response.content);
+        try {
+          const extractedJson = extractJsonFromModelOutput(response.content);
+          const parsed = this.validateModelOutput(extractedJson);
+          if (parsed) {
+            return parsed;
+          }
+        } catch (error) {
+          logger.error(`[${this.modelName}] Failed to extract JSON from response:`, error);
+          const errorMessage = `Failed to extract JSON from response: ${error}`;
+          throw new Error(errorMessage);
         }
-      } catch (error) {
-        const errorMessage = `Failed to extract JSON from response: ${error}`;
-        throw new Error(errorMessage);
       }
+    } catch (error) {
+      logger.error(`[${this.modelName}] LLM call failed in manual extraction mode:`, error);
+      throw error;
     }
     const errorMessage = `Failed to parse response: ${response}`;
     logger.error(errorMessage);

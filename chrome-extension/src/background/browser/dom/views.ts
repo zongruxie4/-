@@ -1,5 +1,23 @@
 import type { CoordinateSet, HashedDomElement, ViewportInfo } from './history/view';
 import { HistoryTreeProcessor } from './history/service';
+import { capTextLength } from '../util';
+
+export const DEFAULT_INCLUDE_ATTRIBUTES = [
+  'title',
+  'type',
+  'checked',
+  'name',
+  'role',
+  'value',
+  'placeholder',
+  'data-date-format',
+  'data-state',
+  'alt',
+  'aria-checked',
+  'aria-label',
+  'aria-expanded',
+  'href',
+];
 
 export abstract class DOMBaseNode {
   isVisible: boolean;
@@ -189,8 +207,15 @@ export class DOMElementNode extends DOMBaseNode {
     return textParts.join('\n').trim();
   }
 
-  clickableElementsToString(includeAttributes: string[] = []): string {
+  clickableElementsToString(includeAttributes: string[] | null = null): string {
+    /**
+     * Convert the processed DOM content to HTML.
+     */
     const formattedText: string[] = [];
+
+    if (!includeAttributes) {
+      includeAttributes = DEFAULT_INCLUDE_ATTRIBUTES;
+    }
 
     const processNode = (node: DOMBaseNode, depth: number): void => {
       let nextDepth = depth;
@@ -202,49 +227,75 @@ export class DOMElementNode extends DOMBaseNode {
           nextDepth += 1;
 
           const text = node.getAllTextTillNextClickableElement();
-          let attributesHtmlStr = '';
+          let attributesHtmlStr: string | null = null;
 
-          if (includeAttributes.length) {
-            // Create a new object to store attributes
+          if (includeAttributes) {
             const attributesToInclude: Record<string, string> = {};
 
-            for (const key of includeAttributes) {
-              // Include the attribute even if it's an empty string
-              if (key in node.attributes) {
-                attributesToInclude[key] = String(node.attributes[key]);
+            for (const [key, value] of Object.entries(node.attributes)) {
+              if (includeAttributes.includes(key) && String(value).trim() !== '') {
+                attributesToInclude[key] = String(value).trim();
+              }
+            }
+
+            // If value of any of the attributes is the same as ANY other value attribute only include the one that appears first in includeAttributes
+            // WARNING: heavy vibes, but it seems good enough for saving tokens (it kicks in hard when it's long text)
+
+            // Pre-compute ordered keys that exist in both lists (faster than repeated lookups)
+            const orderedKeys = includeAttributes.filter(key => key in attributesToInclude);
+
+            if (orderedKeys.length > 1) {
+              // Only process if we have multiple attributes
+              const keysToRemove = new Set<string>(); // Use set for O(1) lookups
+              const seenValues: Record<string, string> = {}; // value -> first_key_with_this_value
+
+              for (const key of orderedKeys) {
+                const value = attributesToInclude[key];
+                if (value.length > 5) {
+                  // to not remove false, true, etc
+                  if (value in seenValues) {
+                    // This value was already seen with an earlier key, so remove this key
+                    keysToRemove.add(key);
+                  } else {
+                    // First time seeing this value, record it
+                    seenValues[value] = key;
+                  }
+                }
+              }
+
+              // Remove duplicate keys (no need to check existence since we know they exist)
+              for (const key of keysToRemove) {
+                delete attributesToInclude[key];
               }
             }
 
             // Easy LLM optimizations
             // if tag == role attribute, don't include it
             if (node.tagName === attributesToInclude.role) {
-              // Use null instead of delete
-              attributesToInclude.role = null as unknown as string;
+              delete attributesToInclude.role;
             }
 
-            // if aria-label == text of the node, don't include it
-            if ('aria-label' in attributesToInclude && attributesToInclude['aria-label'].trim() === text.trim()) {
-              // Use null instead of delete
-              attributesToInclude['aria-label'] = null as unknown as string;
-            }
-
-            // if placeholder == text of the node, don't include it
-            if ('placeholder' in attributesToInclude && attributesToInclude.placeholder.trim() === text.trim()) {
-              // Use null instead of delete
-              attributesToInclude.placeholder = null as unknown as string;
+            // Remove attributes that duplicate the node's text content
+            const attrsToRemoveIfTextMatches = ['aria-label', 'placeholder', 'title'];
+            for (const attr of attrsToRemoveIfTextMatches) {
+              if (
+                attributesToInclude[attr] &&
+                attributesToInclude[attr].trim().toLowerCase() === text.trim().toLowerCase()
+              ) {
+                delete attributesToInclude[attr];
+              }
             }
 
             if (Object.keys(attributesToInclude).length > 0) {
               // Format as key1='value1' key2='value2'
               attributesHtmlStr = Object.entries(attributesToInclude)
-                .filter(([, value]) => value !== null)
-                .map(([key, value]) => `${key}='${value}'`)
+                .map(([key, value]) => `${key}=${capTextLength(value, 15)}`)
                 .join(' ');
             }
           }
 
           // Build the line
-          const highlightIndicator = node.isNew ? `*[${node.highlightIndex}]*` : `[${node.highlightIndex}]`;
+          const highlightIndicator = node.isNew ? `*[${node.highlightIndex}]` : `[${node.highlightIndex}]`;
 
           let line = `${depthStr}${highlightIndicator}<${node.tagName}`;
 
@@ -254,16 +305,18 @@ export class DOMElementNode extends DOMBaseNode {
 
           if (text) {
             // Add space before >text only if there were NO attributes added before
+            const trimmedText = text.trim();
             if (!attributesHtmlStr) {
               line += ' ';
             }
-            line += `>${text}`;
+            line += `>${trimmedText}`;
           }
           // Add space before /> only if neither attributes NOR text were added
           else if (!attributesHtmlStr) {
             line += ' ';
           }
 
+          // makes sense to have if the website has lots of text -> so the LLM knows which things are part of the same clickable element and which are not
           line += ' />'; // 1 token
           formattedText.push(line);
         }
@@ -274,7 +327,11 @@ export class DOMElementNode extends DOMBaseNode {
         }
       } else if (node instanceof DOMTextNode) {
         // Add text only if it doesn't have a highlighted parent
-        if (!node.hasParentWithHighlightIndex() && node.parent && node.parent.isVisible && node.parent.isTopElement) {
+        if (node.hasParentWithHighlightIndex()) {
+          return;
+        }
+
+        if (node.parent && node.parent.isVisible && node.parent.isTopElement) {
           formattedText.push(`${depthStr}${node.text}`);
         }
       }

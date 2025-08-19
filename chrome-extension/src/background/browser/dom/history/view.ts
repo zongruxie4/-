@@ -26,8 +26,8 @@ export interface CoordinateSet {
 }
 
 export interface ViewportInfo {
-  scrollX: number;
-  scrollY: number;
+  scrollX: number | null;
+  scrollY: number | null;
   width: number;
   height: number;
 }

@@ -4,107 +4,16 @@ window.buildDomTree = (
     focusHighlightIndex: -1,
     viewportExpansion: 0,
     debugMode: false,
+    startId: 0,
+    startHighlightIndex: 0,
   },
 ) => {
-  const { showHighlightElements, focusHighlightIndex, viewportExpansion, debugMode } = args;
+  const { showHighlightElements, focusHighlightIndex, viewportExpansion, startHighlightIndex, startId, debugMode } =
+    args;
   // Make sure to do highlight elements always, but we can hide the highlights if needed
   const doHighlightElements = true;
 
-  let highlightIndex = 0; // Reset highlight index
-
-  // Add timing stack to handle recursion
-  const TIMING_STACK = {
-    nodeProcessing: [],
-    treeTraversal: [],
-    highlighting: [],
-    current: null,
-  };
-
-  function pushTiming(type) {
-    TIMING_STACK[type] = TIMING_STACK[type] || [];
-    TIMING_STACK[type].push(performance.now());
-  }
-
-  function popTiming(type) {
-    const start = TIMING_STACK[type].pop();
-    const duration = performance.now() - start;
-    return duration;
-  }
-
-  // Only initialize performance tracking if in debug mode
-  const PERF_METRICS = debugMode
-    ? {
-        buildDomTreeCalls: 0,
-        timings: {
-          buildDomTree: 0,
-          highlightElement: 0,
-          isInteractiveElement: 0,
-          isElementVisible: 0,
-          isTopElement: 0,
-          isInExpandedViewport: 0,
-          isTextNodeVisible: 0,
-          getEffectiveScroll: 0,
-        },
-        cacheMetrics: {
-          boundingRectCacheHits: 0,
-          boundingRectCacheMisses: 0,
-          computedStyleCacheHits: 0,
-          computedStyleCacheMisses: 0,
-          getBoundingClientRectTime: 0,
-          getComputedStyleTime: 0,
-          boundingRectHitRate: 0,
-          computedStyleHitRate: 0,
-          overallHitRate: 0,
-          clientRectsCacheHits: 0,
-          clientRectsCacheMisses: 0,
-        },
-        nodeMetrics: {
-          totalNodes: 0,
-          processedNodes: 0,
-          skippedNodes: 0,
-        },
-        buildDomTreeBreakdown: {
-          totalTime: 0,
-          totalSelfTime: 0,
-          buildDomTreeCalls: 0,
-          domOperations: {
-            getBoundingClientRect: 0,
-            getComputedStyle: 0,
-          },
-          domOperationCounts: {
-            getBoundingClientRect: 0,
-            getComputedStyle: 0,
-          },
-        },
-      }
-    : null;
-
-  // Simple timing helper that only runs in debug mode
-  function measureTime(fn) {
-    if (!debugMode) return fn;
-    return function (...args) {
-      const start = performance.now();
-      const result = fn.apply(this, args);
-      const duration = performance.now() - start;
-      return result;
-    };
-  }
-
-  // Helper to measure DOM operations
-  function measureDomOperation(operation, name) {
-    if (!debugMode) return operation();
-
-    const start = performance.now();
-    const result = operation();
-    const duration = performance.now() - start;
-
-    if (PERF_METRICS && name in PERF_METRICS.buildDomTreeBreakdown.domOperations) {
-      PERF_METRICS.buildDomTreeBreakdown.domOperations[name] += duration;
-      PERF_METRICS.buildDomTreeBreakdown.domOperationCounts[name]++;
-    }
-
-    return result;
-  }
+  let highlightIndex = startHighlightIndex; // Reset highlight index
 
   // Add caching mechanisms at the top level
   const DOM_CACHE = {
@@ -118,33 +27,20 @@ window.buildDomTree = (
     },
   };
 
-  // Cache helper functions
+  /**
+   * Gets the cached bounding rect for an element.
+   *
+   * @param {HTMLElement} element - The element to get the bounding rect for.
+   * @returns {DOMRect | null} The cached bounding rect, or null if the element is not found.
+   */
   function getCachedBoundingRect(element) {
     if (!element) return null;
 
     if (DOM_CACHE.boundingRects.has(element)) {
-      if (debugMode && PERF_METRICS) {
-        PERF_METRICS.cacheMetrics.boundingRectCacheHits++;
-      }
       return DOM_CACHE.boundingRects.get(element);
     }
 
-    if (debugMode && PERF_METRICS) {
-      PERF_METRICS.cacheMetrics.boundingRectCacheMisses++;
-    }
-
-    let rect;
-    if (debugMode) {
-      const start = performance.now();
-      rect = element.getBoundingClientRect();
-      const duration = performance.now() - start;
-      if (PERF_METRICS) {
-        PERF_METRICS.buildDomTreeBreakdown.domOperations.getBoundingClientRect += duration;
-        PERF_METRICS.buildDomTreeBreakdown.domOperationCounts.getBoundingClientRect++;
-      }
-    } else {
-      rect = element.getBoundingClientRect();
-    }
+    const rect = element.getBoundingClientRect();
 
     if (rect) {
       DOM_CACHE.boundingRects.set(element, rect);
@@ -152,32 +48,20 @@ window.buildDomTree = (
     return rect;
   }
 
+  /**
+   * Gets the cached computed style for an element.
+   *
+   * @param {HTMLElement} element - The element to get the computed style for.
+   * @returns {CSSStyleDeclaration | null} The cached computed style, or null if the element is not found.
+   */
   function getCachedComputedStyle(element) {
     if (!element) return null;
 
     if (DOM_CACHE.computedStyles.has(element)) {
-      if (debugMode && PERF_METRICS) {
-        PERF_METRICS.cacheMetrics.computedStyleCacheHits++;
-      }
       return DOM_CACHE.computedStyles.get(element);
     }
 
-    if (debugMode && PERF_METRICS) {
-      PERF_METRICS.cacheMetrics.computedStyleCacheMisses++;
-    }
-
-    let style;
-    if (debugMode) {
-      const start = performance.now();
-      style = window.getComputedStyle(element);
-      const duration = performance.now() - start;
-      if (PERF_METRICS) {
-        PERF_METRICS.buildDomTreeBreakdown.domOperations.getComputedStyle += duration;
-        PERF_METRICS.buildDomTreeBreakdown.domOperationCounts.getComputedStyle++;
-      }
-    } else {
-      style = window.getComputedStyle(element);
-    }
+    const style = window.getComputedStyle(element);
 
     if (style) {
       DOM_CACHE.computedStyles.set(element, style);
@@ -185,19 +69,17 @@ window.buildDomTree = (
     return style;
   }
 
-  // Add a new function to get cached client rects
+  /**
+   * Gets the cached client rects for an element.
+   *
+   * @param {HTMLElement} element - The element to get the client rects for.
+   * @returns {DOMRectList | null} The cached client rects, or null if the element is not found.
+   */
   function getCachedClientRects(element) {
     if (!element) return null;
 
     if (DOM_CACHE.clientRects.has(element)) {
-      if (debugMode && PERF_METRICS) {
-        PERF_METRICS.cacheMetrics.clientRectsCacheHits++;
-      }
       return DOM_CACHE.clientRects.get(element);
-    }
-
-    if (debugMode && PERF_METRICS) {
-      PERF_METRICS.cacheMetrics.clientRectsCacheMisses++;
     }
 
     const rects = element.getClientRects();
@@ -215,33 +97,38 @@ window.buildDomTree = (
    */
   const DOM_HASH_MAP = {};
 
-  const ID = { current: 0 };
+  const ID = { current: startId };
 
   const HIGHLIGHT_CONTAINER_ID = 'playwright-highlight-container';
 
   // Add a WeakMap cache for XPath strings
   const xpathCache = new WeakMap();
 
-  // Initialize once and reuse
-  const viewportObserver = new IntersectionObserver(
-    entries => {
-      entries.forEach(entry => {
-        elementVisibilityMap.set(entry.target, entry.isIntersecting);
-      });
-    },
-    { rootMargin: `${viewportExpansion}px` },
-  );
+  // // Initialize once and reuse
+  // const viewportObserver = new IntersectionObserver(
+  //   (entries) => {
+  //     entries.forEach(entry => {
+  //       elementVisibilityMap.set(entry.target, entry.isIntersecting);
+  //     });
+  //   },
+  //   { rootMargin: `${viewportExpansion}px` }
+  // );
 
   /**
    * Highlights an element in the DOM and returns the index of the next element.
+   *
+   * @param {HTMLElement} element - The element to highlight.
+   * @param {number} index - The index of the element.
+   * @param {HTMLElement | null} parentIframe - The parent iframe node.
+   * @returns {number} The index of the next element.
    */
   function highlightElement(element, index, parentIframe = null) {
-    pushTiming('highlighting');
-
     if (!element) return index;
 
-    // Store overlays and the single label for updating
     const overlays = [];
+    /**
+     * @type {HTMLElement | null}
+     */
     let label = null;
     let labelWidth = 20;
     let labelHeight = 16;
@@ -259,7 +146,8 @@ window.buildDomTree = (
         container.style.left = '0';
         container.style.width = '100%';
         container.style.height = '100%';
-        container.style.zIndex = '2147483640';
+        // Use the maximum valid value in zIndex to ensure the element is not blocked by overlapping elements.
+        container.style.zIndex = '2147483647';
         container.style.backgroundColor = 'transparent';
         // Show or hide the container based on the showHighlightElements flag
         container.style.display = showHighlightElements ? 'block' : 'none';
@@ -334,7 +222,7 @@ window.buildDomTree = (
       label.style.padding = '1px 4px';
       label.style.borderRadius = '4px';
       label.style.fontSize = `${Math.min(12, Math.max(8, firstRect.height / 2))}px`;
-      label.textContent = index;
+      label.textContent = index.toString();
 
       labelWidth = label.offsetWidth > 0 ? label.offsetWidth : labelWidth; // Update actual width if possible
       labelHeight = label.offsetHeight > 0 ? label.offsetHeight : labelHeight; // Update actual height if possible
@@ -454,7 +342,6 @@ window.buildDomTree = (
 
       return index + 1;
     } finally {
-      popTiming('highlighting');
       // Store cleanup function for later use
       if (cleanupFn) {
         // Keep a reference to cleanup functions in a global array
@@ -463,18 +350,24 @@ window.buildDomTree = (
     }
   }
 
-  // Add this function to perform cleanup when needed
-  function cleanupHighlights() {
-    if (window._highlightCleanupFunctions && window._highlightCleanupFunctions.length) {
-      window._highlightCleanupFunctions.forEach(fn => fn());
-      window._highlightCleanupFunctions = [];
-    }
+  // // Add this function to perform cleanup when needed
+  // function cleanupHighlights() {
+  //   if (window._highlightCleanupFunctions && window._highlightCleanupFunctions.length) {
+  //     window._highlightCleanupFunctions.forEach(fn => fn());
+  //     window._highlightCleanupFunctions = [];
+  //   }
 
-    // Also remove the container
-    const container = document.getElementById(HIGHLIGHT_CONTAINER_ID);
-    if (container) container.remove();
-  }
+  //   // Also remove the container
+  //   const container = document.getElementById(HIGHLIGHT_CONTAINER_ID);
+  //   if (container) container.remove();
+  // }
 
+  /**
+   * Gets the position of an element in its parent.
+   *
+   * @param {HTMLElement} currentElement - The element to get the position for.
+   * @returns {number} The position of the element in its parent.
+   */
   function getElementPosition(currentElement) {
     if (!currentElement.parentElement) {
       return 0; // No parent means no siblings
@@ -494,9 +387,6 @@ window.buildDomTree = (
     return index;
   }
 
-  /**
-   * Returns an XPath tree string for an element.
-   */
   function getXPathTree(element, stopAtBoundary = true) {
     if (xpathCache.has(element)) return xpathCache.get(element);
 
@@ -527,6 +417,9 @@ window.buildDomTree = (
 
   /**
    * Checks if a text node is visible.
+   *
+   * @param {Text} textNode - The text node to check.
+   * @returns {boolean} Whether the text node is visible.
    */
   function isTextNodeVisible(textNode) {
     try {
@@ -603,7 +496,12 @@ window.buildDomTree = (
     }
   }
 
-  // Helper function to check if element is accepted
+  /**
+   * Checks if an element is accepted.
+   *
+   * @param {HTMLElement} element - The element to check.
+   * @returns {boolean} Whether the element is accepted.
+   */
   function isElementAccepted(element) {
     if (!element || !element.tagName) return false;
 
@@ -620,11 +518,14 @@ window.buildDomTree = (
 
   /**
    * Checks if an element is visible.
+   *
+   * @param {HTMLElement} element - The element to check.
+   * @returns {boolean} Whether the element is visible.
    */
   function isElementVisible(element) {
     const style = getCachedComputedStyle(element);
     return (
-      element.offsetWidth > 0 && element.offsetHeight > 0 && style.visibility !== 'hidden' && style.display !== 'none'
+      element.offsetWidth > 0 && element.offsetHeight > 0 && style?.visibility !== 'hidden' && style?.display !== 'none'
     );
   }
 
@@ -634,6 +535,8 @@ window.buildDomTree = (
    * lots of comments, and uncommented code - to show the logic of what we already tried
    *
    * One of the things we tried at the beginning was also to use event listeners, and other fancy class, style stuff -> what actually worked best was just combining most things with computed cursor style :)
+   *
+   * @param {HTMLElement} element - The element to check.
    */
   function isInteractiveElement(element) {
     if (!element || element.nodeType !== Node.ELEMENT_NODE) {
@@ -691,10 +594,16 @@ window.buildDomTree = (
       // 'auto',        // Browser default
     ]);
 
+    /**
+     * Checks if an element has an interactive pointer.
+     *
+     * @param {HTMLElement} element - The element to check.
+     * @returns {boolean} Whether the element has an interactive pointer.
+     */
     function doesElementHaveInteractivePointer(element) {
       if (element.tagName.toLowerCase() === 'html') return false;
 
-      if (interactiveCursors.has(style.cursor)) return true;
+      if (style?.cursor && interactiveCursors.has(style.cursor)) return true;
 
       return false;
     }
@@ -738,7 +647,7 @@ window.buildDomTree = (
     // handle inputs, select, checkbox, radio, textarea, button and make sure they are not cursor style disabled/not-allowed
     if (interactiveElements.has(tagName)) {
       // Check for non-interactive cursor
-      if (nonInteractiveCursors.has(style.cursor)) {
+      if (style?.cursor && nonInteractiveCursors.has(style.cursor)) {
         return false;
       }
 
@@ -794,7 +703,9 @@ window.buildDomTree = (
     const interactiveRoles = new Set([
       'button', // Directly clickable element
       // 'link',            // Clickable link
-      // 'menuitem',        // Clickable menu item
+      'menu', // Menu container (ARIA menus)
+      'menubar', // Menu bar container
+      'menuitem', // Clickable menu item
       'menuitemradio', // Radio-style menu item (selectable)
       'menuitemcheckbox', // Checkbox-style menu item (toggleable)
       'radio', // Radio button (selectable)
@@ -806,14 +717,16 @@ window.buildDomTree = (
       'combobox', // Dropdown with text input
       'searchbox', // Search input field
       'textbox', // Text input field
-      // 'listbox',         // Selectable list
+      'listbox', // Selectable list
       'option', // Selectable option in a list
       'scrollbar', // Scrollable control
     ]);
 
     // Basic role/attribute checks
     const hasInteractiveRole =
-      interactiveElements.has(tagName) || interactiveRoles.has(role) || interactiveRoles.has(ariaRole);
+      interactiveElements.has(tagName) ||
+      (role && interactiveRoles.has(role)) ||
+      (ariaRole && interactiveRoles.has(ariaRole));
 
     if (hasInteractiveRole) return true;
 
@@ -829,7 +742,8 @@ window.buildDomTree = (
         }
       }
 
-      const getEventListenersForNode = window.getEventListenersForNode;
+      const getEventListenersForNode =
+        element?.ownerDocument?.defaultView?.getEventListenersForNode || window.getEventListenersForNode;
       if (typeof getEventListenersForNode === 'function') {
         const listeners = getEventListenersForNode(element);
         const interactionEvents = [
@@ -869,6 +783,9 @@ window.buildDomTree = (
 
   /**
    * Checks if an element is the topmost element at its position.
+   *
+   * @param {HTMLElement} element - The element to check.
+   * @returns {boolean} Whether the element is the topmost element at its position.
    */
   function isTopElement(element) {
     // Special case: when viewportExpansion is -1, consider all elements as "top" elements
@@ -922,7 +839,7 @@ window.buildDomTree = (
       const centerY = rects[Math.floor(rects.length / 2)].top + rects[Math.floor(rects.length / 2)].height / 2;
 
       try {
-        const topEl = measureDomOperation(() => shadowRoot.elementFromPoint(centerX, centerY), 'elementFromPoint');
+        const topEl = shadowRoot.elementFromPoint(centerX, centerY);
         if (!topEl) return false;
 
         let current = topEl;
@@ -936,27 +853,43 @@ window.buildDomTree = (
       }
     }
 
-    // For elements in viewport, check if they're topmost
-    const centerX = rects[Math.floor(rects.length / 2)].left + rects[Math.floor(rects.length / 2)].width / 2;
-    const centerY = rects[Math.floor(rects.length / 2)].top + rects[Math.floor(rects.length / 2)].height / 2;
+    const margin = 5;
+    const rect = rects[Math.floor(rects.length / 2)];
 
-    try {
-      const topEl = document.elementFromPoint(centerX, centerY);
-      if (!topEl) return false;
+    // For elements in viewport, check if they're topmost. Do the check in the
+    // center of the element and at the corners to ensure we catch more cases.
+    const checkPoints = [
+      // Initially only this was used, but it was not enough
+      { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+      { x: rect.left + margin, y: rect.top + margin }, // top left
+      // { x: rect.right - margin, y: rect.top + margin },    // top right
+      // { x: rect.left + margin, y: rect.bottom - margin },  // bottom left
+      { x: rect.right - margin, y: rect.bottom - margin }, // bottom right
+    ];
 
-      let current = topEl;
-      while (current && current !== document.documentElement) {
-        if (current === element) return true;
-        current = current.parentElement;
+    return checkPoints.some(({ x, y }) => {
+      try {
+        const topEl = document.elementFromPoint(x, y);
+        if (!topEl) return false;
+
+        let current = topEl;
+        while (current && current !== document.documentElement) {
+          if (current === element) return true;
+          current = current.parentElement;
+        }
+        return false;
+      } catch (e) {
+        return true;
       }
-      return false;
-    } catch (e) {
-      return true;
-    }
+    });
   }
 
   /**
    * Checks if an element is within the expanded viewport.
+   *
+   * @param {HTMLElement} element - The element to check.
+   * @param {number} viewportExpansion - The viewport expansion.
+   * @returns {boolean} Whether the element is within the expanded viewport.
    */
   function isInExpandedViewport(element, viewportExpansion) {
     if (viewportExpansion === -1) {
@@ -999,29 +932,37 @@ window.buildDomTree = (
     return false; // No rects were found in the viewport
   }
 
-  // Add this new helper function
-  function getEffectiveScroll(element) {
-    let currentEl = element;
-    let scrollX = 0;
-    let scrollY = 0;
+  // /**
+  //  * Gets the effective scroll of an element.
+  //  *
+  //  * @param {HTMLElement} element - The element to get the effective scroll for.
+  //  * @returns {Object} The effective scroll of the element.
+  //  */
+  // function getEffectiveScroll(element) {
+  //   let currentEl = element;
+  //   let scrollX = 0;
+  //   let scrollY = 0;
 
-    return measureDomOperation(() => {
-      while (currentEl && currentEl !== document.documentElement) {
-        if (currentEl.scrollLeft || currentEl.scrollTop) {
-          scrollX += currentEl.scrollLeft;
-          scrollY += currentEl.scrollTop;
-        }
-        currentEl = currentEl.parentElement;
-      }
+  //   while (currentEl && currentEl !== document.documentElement) {
+  //     if (currentEl.scrollLeft || currentEl.scrollTop) {
+  //       scrollX += currentEl.scrollLeft;
+  //       scrollY += currentEl.scrollTop;
+  //     }
+  //     currentEl = currentEl.parentElement;
+  //   }
 
-      scrollX += window.scrollX;
-      scrollY += window.scrollY;
+  //   scrollX += window.scrollX;
+  //   scrollY += window.scrollY;
 
-      return { scrollX, scrollY };
-    }, 'scrollOperations');
-  }
+  //   return { scrollX, scrollY };
+  // }
 
-  // Add these helper functions at the top level
+  /**
+   * Checks if an element is an interactive candidate.
+   *
+   * @param {HTMLElement} element - The element to check.
+   * @returns {boolean} Whether the element is an interactive candidate.
+   */
   function isInteractiveCandidate(element) {
     if (!element || element.nodeType !== Node.ELEMENT_NODE) return false;
 
@@ -1082,6 +1023,9 @@ window.buildDomTree = (
    *
    * This function helps detect deeply nested actionable elements (e.g., menu items within a button)
    * that may not be picked up by strict interactivity checks.
+   *
+   * @param {HTMLElement} element - The element to check.
+   * @returns {boolean} Whether the element is heuristically interactive.
    */
   function isHeuristicallyInteractive(element) {
     if (!element || element.nodeType !== Node.ELEMENT_NODE) return false;
@@ -1119,6 +1063,9 @@ window.buildDomTree = (
   /**
    * Checks if an element likely represents a distinct interaction
    * separate from its parent (if the parent is also interactive).
+   *
+   * @param {HTMLElement} element - The element to check.
+   * @returns {boolean} Whether the element is a distinct interaction.
    */
   function isElementDistinctInteraction(element) {
     if (!element || element.nodeType !== Node.ELEMENT_NODE) {
@@ -1154,9 +1101,12 @@ window.buildDomTree = (
       return true;
     }
 
+    // return false
+
     // Check for other common interaction event listeners
     try {
-      const getEventListenersForNode = window.getEventListenersForNode;
+      const getEventListenersForNode =
+        element?.ownerDocument?.defaultView?.getEventListenersForNode || window.getEventListenersForNode;
       if (typeof getEventListenersForNode === 'function') {
         const listeners = getEventListenersForNode(element);
         const interactionEvents = [
@@ -1212,6 +1162,23 @@ window.buildDomTree = (
 
   /**
    * Handles the logic for deciding whether to highlight an element and performing the highlight.
+   * @param {
+    {
+        tagName: string;
+        attributes: Record<string, string>;
+        xpath: any;
+        children: never[];
+        isVisible?: boolean;
+        isTopElement?: boolean;
+        isInteractive?: boolean;
+        isInViewport?: boolean;
+        highlightIndex?: number;
+        shadowRoot?: boolean;
+   }} nodeData - The node data object.
+   * @param {HTMLElement} node - The node to highlight.
+   * @param {HTMLElement | null} parentIframe - The parent iframe node.
+   * @param {boolean} isParentHighlighted - Whether the parent node is highlighted.
+   * @returns {boolean} Whether the element was highlighted.
    */
   function handleHighlighting(nodeData, node, parentIframe, isParentHighlighted) {
     if (!nodeData.isInteractive) return false; // Not interactive, definitely don't highlight
@@ -1259,6 +1226,11 @@ window.buildDomTree = (
 
   /**
    * Creates a node data object for a given node and its descendants.
+   *
+   * @param {HTMLElement} node - The node to process.
+   * @param {HTMLElement | null} parentIframe - The parent iframe node.
+   * @param {boolean} isParentHighlighted - Whether the parent node is highlighted.
+   * @returns {string | null} The ID of the node data object, or null if the node is not processed.
    */
   function buildDomTree(node, parentIframe = null, isParentHighlighted = false) {
     // Fast rejection checks first
@@ -1267,14 +1239,10 @@ window.buildDomTree = (
       node.id === HIGHLIGHT_CONTAINER_ID ||
       (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.TEXT_NODE)
     ) {
-      if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
       return null;
     }
 
-    if (debugMode) PERF_METRICS.nodeMetrics.totalNodes++;
-
     if (!node || node.id === HIGHLIGHT_CONTAINER_ID) {
-      if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
       return null;
     }
 
@@ -1295,28 +1263,24 @@ window.buildDomTree = (
 
       const id = `${ID.current++}`;
       DOM_HASH_MAP[id] = nodeData;
-      if (debugMode) PERF_METRICS.nodeMetrics.processedNodes++;
       return id;
     }
 
     // Early bailout for non-element nodes except text
     if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.TEXT_NODE) {
-      if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
       return null;
     }
 
     // Process text nodes
     if (node.nodeType === Node.TEXT_NODE) {
-      const textContent = node.textContent.trim();
+      const textContent = node.textContent?.trim();
       if (!textContent) {
-        if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
         return null;
       }
 
       // Only check visibility for text nodes that might be visible
       const parentElement = node.parentElement;
       if (!parentElement || parentElement.tagName.toLowerCase() === 'script') {
-        if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
         return null;
       }
 
@@ -1326,18 +1290,17 @@ window.buildDomTree = (
         text: textContent,
         isVisible: isTextNodeVisible(node),
       };
-      if (debugMode) PERF_METRICS.nodeMetrics.processedNodes++;
       return id;
     }
 
     // Quick checks for element nodes
     if (node.nodeType === Node.ELEMENT_NODE && !isElementAccepted(node)) {
-      if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
       return null;
     }
 
     // Early viewport check - only filter out elements clearly outside viewport
-    if (viewportExpansion !== -1) {
+    // The getBoundingClientRect() of the Shadow DOM host element may return width/height = 0
+    if (viewportExpansion !== -1 && !node.shadowRoot) {
       const rect = getCachedBoundingRect(node); // Keep for initial quick check
       const style = getCachedComputedStyle(node);
 
@@ -1359,12 +1322,26 @@ window.buildDomTree = (
             rect.left > window.innerWidth + viewportExpansion))
       ) {
         // console.log("Skipping node outside viewport (quick check):", node.tagName, rect);
-        if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
         return null;
       }
     }
 
-    // Process element node
+    /**
+     * @type {
+      {
+          tagName: string;
+          attributes: Record<string, string | null>;
+          xpath: any;
+          children: never[];
+          isVisible?: boolean;
+          isTopElement?: boolean;
+          isInteractive?: boolean;
+          isInViewport?: boolean;
+          highlightIndex?: number;
+          shadowRoot?: boolean;
+      }
+    } nodeData - The node data object.
+     */
     const nodeData = {
       tagName: node.tagName.toLowerCase(),
       attributes: {},
@@ -1380,7 +1357,8 @@ window.buildDomTree = (
     ) {
       const attributeNames = node.getAttributeNames?.() || [];
       for (const name of attributeNames) {
-        nodeData.attributes[name] = node.getAttribute(name);
+        const value = node.getAttribute(name);
+        nodeData.attributes[name] = value;
       }
     }
 
@@ -1390,7 +1368,12 @@ window.buildDomTree = (
       nodeData.isVisible = isElementVisible(node); // isElementVisible uses offsetWidth/Height, which is fine
       if (nodeData.isVisible) {
         nodeData.isTopElement = isTopElement(node);
-        if (nodeData.isTopElement) {
+
+        // Special handling for ARIA menu containers - check interactivity even if not top element
+        const role = node.getAttribute('role');
+        const isMenuContainer = role === 'menu' || role === 'menubar' || role === 'listbox';
+
+        if (nodeData.isTopElement || isMenuContainer) {
           nodeData.isInteractive = isInteractiveElement(node);
           // Call the dedicated highlighting function
           nodeWasHighlighted = handleHighlighting(nodeData, node, parentIframe, isParentHighlighted);
@@ -1404,6 +1387,9 @@ window.buildDomTree = (
 
       // Handle iframes
       if (tagName === 'iframe') {
+        const rect = getCachedBoundingRect(node);
+        nodeData.attributes['computedHeight'] = String(Math.ceil(rect.height));
+        nodeData.attributes['computedWidth'] = String(Math.ceil(rect.width));
         try {
           const iframeDoc = node.contentDocument || node.contentWindow?.document;
           if (iframeDoc) {
@@ -1413,6 +1399,7 @@ window.buildDomTree = (
             }
           }
         } catch (e) {
+          nodeData.attributes['error'] = e.message;
           console.warn('Unable to access iframe:', e);
         }
       }
@@ -1448,86 +1435,26 @@ window.buildDomTree = (
       }
     }
 
-    // Skip empty anchor tags
+    // Skip empty anchor tags only if they have no dimensions and no children
     if (nodeData.tagName === 'a' && nodeData.children.length === 0 && !nodeData.attributes.href) {
-      if (debugMode) PERF_METRICS.nodeMetrics.skippedNodes++;
-      return null;
+      // Check if the anchor has actual dimensions
+      const rect = getCachedBoundingRect(node);
+      const hasSize = (rect && rect.width > 0 && rect.height > 0) || node.offsetWidth > 0 || node.offsetHeight > 0;
+
+      if (!hasSize) {
+        return null;
+      }
     }
 
     const id = `${ID.current++}`;
     DOM_HASH_MAP[id] = nodeData;
-    if (debugMode) PERF_METRICS.nodeMetrics.processedNodes++;
     return id;
   }
-
-  // After all functions are defined, wrap them with performance measurement
-  // Remove buildDomTree from here as we measure it separately
-  highlightElement = measureTime(highlightElement);
-  isInteractiveElement = measureTime(isInteractiveElement);
-  isElementVisible = measureTime(isElementVisible);
-  isTopElement = measureTime(isTopElement);
-  isInExpandedViewport = measureTime(isInExpandedViewport);
-  isTextNodeVisible = measureTime(isTextNodeVisible);
-  getEffectiveScroll = measureTime(getEffectiveScroll);
 
   const rootId = buildDomTree(document.body);
 
   // Clear the cache before starting
   DOM_CACHE.clearCache();
 
-  // Only process metrics in debug mode
-  if (debugMode && PERF_METRICS) {
-    // Convert timings to seconds and add useful derived metrics
-    Object.keys(PERF_METRICS.timings).forEach(key => {
-      PERF_METRICS.timings[key] = PERF_METRICS.timings[key] / 1000;
-    });
-
-    Object.keys(PERF_METRICS.buildDomTreeBreakdown).forEach(key => {
-      if (typeof PERF_METRICS.buildDomTreeBreakdown[key] === 'number') {
-        PERF_METRICS.buildDomTreeBreakdown[key] = PERF_METRICS.buildDomTreeBreakdown[key] / 1000;
-      }
-    });
-
-    // Add some useful derived metrics
-    if (PERF_METRICS.buildDomTreeBreakdown.buildDomTreeCalls > 0) {
-      PERF_METRICS.buildDomTreeBreakdown.averageTimePerNode =
-        PERF_METRICS.buildDomTreeBreakdown.totalTime / PERF_METRICS.buildDomTreeBreakdown.buildDomTreeCalls;
-    }
-
-    PERF_METRICS.buildDomTreeBreakdown.timeInChildCalls =
-      PERF_METRICS.buildDomTreeBreakdown.totalTime - PERF_METRICS.buildDomTreeBreakdown.totalSelfTime;
-
-    // Add average time per operation to the metrics
-    Object.keys(PERF_METRICS.buildDomTreeBreakdown.domOperations).forEach(op => {
-      const time = PERF_METRICS.buildDomTreeBreakdown.domOperations[op];
-      const count = PERF_METRICS.buildDomTreeBreakdown.domOperationCounts[op];
-      if (count > 0) {
-        PERF_METRICS.buildDomTreeBreakdown.domOperations[`${op}Average`] = time / count;
-      }
-    });
-
-    // Calculate cache hit rates
-    const boundingRectTotal =
-      PERF_METRICS.cacheMetrics.boundingRectCacheHits + PERF_METRICS.cacheMetrics.boundingRectCacheMisses;
-    const computedStyleTotal =
-      PERF_METRICS.cacheMetrics.computedStyleCacheHits + PERF_METRICS.cacheMetrics.computedStyleCacheMisses;
-
-    if (boundingRectTotal > 0) {
-      PERF_METRICS.cacheMetrics.boundingRectHitRate =
-        PERF_METRICS.cacheMetrics.boundingRectCacheHits / boundingRectTotal;
-    }
-
-    if (computedStyleTotal > 0) {
-      PERF_METRICS.cacheMetrics.computedStyleHitRate =
-        PERF_METRICS.cacheMetrics.computedStyleCacheHits / computedStyleTotal;
-    }
-
-    if (boundingRectTotal + computedStyleTotal > 0) {
-      PERF_METRICS.cacheMetrics.overallHitRate =
-        (PERF_METRICS.cacheMetrics.boundingRectCacheHits + PERF_METRICS.cacheMetrics.computedStyleCacheHits) /
-        (boundingRectTotal + computedStyleTotal);
-    }
-  }
-
-  return debugMode ? { rootId, map: DOM_HASH_MAP, perfMetrics: PERF_METRICS } : { rootId, map: DOM_HASH_MAP };
+  return { rootId, map: DOM_HASH_MAP };
 };

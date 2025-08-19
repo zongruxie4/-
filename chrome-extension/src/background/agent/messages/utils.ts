@@ -35,6 +35,71 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
   try {
     let processedContent = content;
 
+    // Handle Llama's tool call format first
+    if (processedContent.includes('<|tool_call_start_id|>')) {
+      // Extract content between tool call tags
+      const startTag = '<|tool_call_start_id|>';
+      const endTag = '<|tool_call_end_id|>';
+      const startIndex = processedContent.indexOf(startTag) + startTag.length;
+      let endIndex = processedContent.indexOf(endTag);
+
+      if (endIndex === -1) {
+        // If no end tag found, take everything after start tag
+        endIndex = processedContent.length;
+      }
+
+      processedContent = processedContent.substring(startIndex, endIndex).trim();
+
+      // Parse the tool call structure
+      const toolCall = JSON.parse(processedContent);
+
+      // Extract the actual parameters (which contains the agent output)
+      if (toolCall.parameters) {
+        // The parameters field contains an escaped JSON string
+        const parametersJson = JSON.parse(toolCall.parameters);
+        return parametersJson;
+      }
+
+      throw new Error('Tool call structure does not contain parameters');
+    }
+
+    // Handle Llama's python tag format
+    if (processedContent.includes('<|python_tag|>')) {
+      // Extract content between python tags
+      const startTag = '<|python_tag|>';
+      const endTag = '<|/python_tag|>';
+      const startIndex = processedContent.indexOf(startTag) + startTag.length;
+      let endIndex = processedContent.indexOf(endTag);
+
+      if (endIndex === -1) {
+        // If no end tag found, take everything after start tag
+        endIndex = processedContent.length;
+      }
+
+      processedContent = processedContent.substring(startIndex, endIndex).trim();
+
+      // Parse the python tag structure
+      const pythonCall = JSON.parse(processedContent);
+
+      // Extract the actual parameters (which contains the agent output)
+      if (pythonCall.parameters && pythonCall.parameters.output) {
+        // Try to parse the output if it's a JSON string
+        if (typeof pythonCall.parameters.output === 'string') {
+          try {
+            const outputJson = JSON.parse(pythonCall.parameters.output);
+            return outputJson;
+          } catch (e) {
+            // If it's not valid JSON, return as is
+            return { output: pythonCall.parameters.output };
+          }
+        }
+
+        return pythonCall.parameters;
+      }
+
+      throw new Error('Python tag structure does not contain valid parameters');
+    }
+
     // If content is wrapped in code blocks, extract just the JSON part
     if (processedContent.includes('```')) {
       // Find the JSON content between code blocks

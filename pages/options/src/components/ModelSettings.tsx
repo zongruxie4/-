@@ -389,6 +389,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     } else if (providerType === ProviderTypeEnum.OpenRouter) {
       // OpenRouter needs API Key and optionally Base URL (has default)
       hasInput = Boolean(config?.apiKey?.trim()) && Boolean(config?.baseUrl?.trim());
+    } else if (providerType === ProviderTypeEnum.Llama) {
+      // Llama needs API Key and Base URL
+      hasInput = Boolean(config?.apiKey?.trim()) && Boolean(config?.baseUrl?.trim());
     } else {
       // Other built-in providers just need API Key
       hasInput = Boolean(config?.apiKey?.trim());
@@ -419,7 +422,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         (providers[provider].type === ProviderTypeEnum.CustomOpenAI ||
           providers[provider].type === ProviderTypeEnum.Ollama ||
           providers[provider].type === ProviderTypeEnum.AzureOpenAI ||
-          providers[provider].type === ProviderTypeEnum.OpenRouter) &&
+          providers[provider].type === ProviderTypeEnum.OpenRouter ||
+          providers[provider].type === ProviderTypeEnum.Llama) &&
         (!providers[provider].baseUrl || !providers[provider].baseUrl.trim())
       ) {
         alert(`Base URL is required for ${getDefaultDisplayNameFromProviderId(provider)}. Please enter it.`);
@@ -1294,11 +1298,12 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         </div>
                       )}
 
-                    {/* Base URL input (for custom_openai, ollama, azure_openai, and openrouter) */}
+                    {/* Base URL input (for custom_openai, ollama, azure_openai, openrouter, and llama) */}
                     {(providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
                       providerConfig.type === ProviderTypeEnum.Ollama ||
                       providerConfig.type === ProviderTypeEnum.AzureOpenAI ||
-                      providerConfig.type === ProviderTypeEnum.OpenRouter) && (
+                      providerConfig.type === ProviderTypeEnum.OpenRouter ||
+                      providerConfig.type === ProviderTypeEnum.Llama) && (
                       <div className="flex flex-col">
                         <div className="flex items-center">
                           <label
@@ -1324,7 +1329,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                                     'https://YOUR_RESOURCE_NAME.openai.azure.com/'
                                   : providerConfig.type === ProviderTypeEnum.OpenRouter
                                     ? 'OpenRouter Base URL (optional, defaults to https://openrouter.ai/api/v1)'
-                                    : 'Ollama base URL'
+                                    : providerConfig.type === ProviderTypeEnum.Llama
+                                      ? 'Llama API Base URL (defaults to https://api.llama.com/v1)'
+                                      : 'Ollama base URL'
                             }
                             value={providerConfig.baseUrl || ''}
                             onChange={e => handleApiKeyChange(providerId, providerConfig.apiKey || '', e.target.value)}

@@ -45,6 +45,9 @@
     "cross-env": "^7.0.3",
     "esbuild": "^0.25.1",
     "eslint": "9.0.0",
+     master
+    "eslint": "9.30.1",
+     snyk-fix-71c9946eca57e009a976c85ef4822517
     "eslint-config-airbnb-typescript": "18.0.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "2.29.1",
