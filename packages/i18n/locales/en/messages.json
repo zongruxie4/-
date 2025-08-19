@@ -208,111 +208,159 @@
   "options_general_replayHistoricalTasks_desc": {
     "message": "Enable storing and replaying of agent step history (experimental, may have issues)"
   },
-  "settings_models_llmProviders_title": {
+
+  "options_models_providers_header": {
     "message": "LLM Providers"
   },
-  "settings_models_selection_title": {
-    "message": "Model Selection"
+  "options_models_providers_notConfigured": {
+    "message": "No providers configured yet. Add a provider to get started."
   },
-  "settings_models_speechToText_title": {
-    "message": "Speech-to-Text Model"
+  "options_models_providers_btnCancel": {
+    "message": "Cancel"
   },
-  "settings_models_speechToText_description": {
-    "message": "Configure the Gemini model used for converting speech to text when using the microphone feature."
+  "options_models_providers_btnSave": {
+    "message": "Save"
   },
-  "settings_models_chooseModel": {
-    "message": "Choose model"
+  "options_models_providers_btnDelete": {
+    "message": "Delete"
   },
-  "settings_parameters_temperature": {
-    "message": "Temperature"
+  "options_models_providers_setupInstructions": {
+    "message": "Enter your API key and click Save to set it up."
   },
-  "settings_parameters_topP": {
-    "message": "Top P"
+  "options_models_providers_custom_name": {
+    "message": "Name"
   },
-  "settings_parameters_reasoning": {
-    "message": "Reasoning",
-    "low": {
-      "message": "Low (Faster)"
-    },
-    "medium": {
-      "message": "Medium (Balanced)"
-    },
-    "high": {
-      "message": "High (More thorough)"
-    }
+  "options_models_providers_custom_name_desc": {
+    "message": "Provider name (spaces are not allowed when saving)"
   },
-  "settings_placeholders_providerName": {
+  "options_models_providers_custom_name_placeholder": {
     "message": "Provider name"
   },
-  "settings_placeholders_azureModelName": {
-    "message": "Enter Azure model name (e.g. gpt-4o, gpt-4o-mini)"
+
+  "options_models_providers_apiKey": {
+    "message": "API Key"
   },
-  "settings_placeholders_apiVersion": {
-    "message": "e.g., 2024-02-15-preview"
+  "options_models_providers_apiKey_placeholder_optional": {
+    "message": "API Key (optional)"
   },
-  "agents_navigator_description": {
+  "options_models_providers_apiKey_placeholder_required": {
+    "message": "API Key (required)"
+  },
+  "options_models_providers_apiKey_placeholder_ollama": {
+    "message": "API Key (leave empty for Ollama)"
+  },
+  "options_models_providers_apiKey_hide": {
+    "message": "Hide API key"
+  },
+  "options_models_providers_apiKey_show": {
+    "message": "Show API key"
+  },
+
+  "options_models_selection_header": {
+    "message": "Model Selection"
+  },
+  "options_models_speechToText_header": {
+    "message": "Speech-to-Text Model"
+  },
+
+  "options_agents_navigator_desc": {
     "message": "Navigates websites and performs actions"
   },
-  "agents_planner_description": {
+  "options_agents_planner_desc": {
     "message": "Develops and refines strategies to complete tasks"
   },
-  "agents_validator_description": {
+  "options_agents_validator_desc": {
     "message": "Checks if tasks are completed successfully"
   },
-  "agents_context_prefix": {
-    "message": "Context for the task: $CONTEXT$",
+
+  "options_models_labels_model": {
+    "message": "Model"
+  },
+  "options_models_labels_temperature": {
+    "message": "Temperature"
+  },
+  "options_models_labels_topP": {
+    "message": "Top P"
+  },
+  "options_models_labels_reasoning": {
+    "message": "Reasoning"
+  },
+  "options_models_stt_desc": {
+    "message": "Configure the Gemini model used for converting speech to text when using the microphone feature."
+  },
+  "options_models_chooseModel": {
+    "message": "Choose Model"
+  },
+  "options_models_addNewProvider": {
+    "message": "Add New Provider"
+  },
+  "options_models_providers_openaiCompatible": {
+    "message": "OpenAI-compatible API Provider"
+  },
+  "options_models_providers_baseUrl": {
+    "message": "Base URL"
+  },
+  "options_models_providers_endpoint": {
+    "message": "Endpoint"
+  },
+  "options_models_providers_deployment": {
+    "message": "Deployment"
+  },
+  "options_models_providers_apiVersion": {
+    "message": "API Version"
+  },
+  "options_models_providers_models": {
+    "message": "Models"
+  },
+  "options_models_providers_placeholders_baseUrl_custom": {
+    "message": "Required OpenAI-compatible API endpoint"
+  },
+  "options_models_providers_placeholders_baseUrl_azure": {
+    "message": "https://YOUR_RESOURCE_NAME.openai.azure.com/"
+  },
+  "options_models_providers_placeholders_baseUrl_openrouter": {
+    "message": "OpenRouter Base URL (optional, defaults to https://openrouter.ai/api/v1)"
+  },
+  "options_models_providers_placeholders_baseUrl_llama": {
+    "message": "Llama API Base URL (defaults to https://api.llama.com/v1)"
+  },
+  "options_models_providers_placeholders_baseUrl_ollama": {
+    "message": "Ollama base URL"
+  },
+  "options_models_providers_placeholders_azureDeployment": {
+    "message": "Enter Azure model name (e.g. gpt-4o, gpt-4o-mini)"
+  },
+  "options_models_providers_placeholders_azureApiVersion": {
+    "message": "e.g., 2024-02-15-preview"
+  },
+  "options_models_providers_deployment_desc": {
+    "message": "Type model name and press Enter or Space to set. Deployment name should match OpenAI model name (e.g., gpt-4o) for best compatibility."
+  },
+  "options_models_providers_models_instructions": {
+    "message": "Type and Press Enter or Space to add."
+  },
+  "options_models_providers_models_openrouter_empty": {
+    "message": "No models selected. Add model names manually if needed."
+  },
+  "options_models_providers_ollama_reminder": {
+    "message": "environment variable MUST be set for the Ollama server."
+  },
+  "options_models_providers_ollama_learnMore": {
+    "message": "Learn more"
+  },
+  "options_models_providers_errors_spacesNotAllowed": {
+    "message": "Spaces are not allowed in provider names. Please use underscores or other characters instead."
+  },
+  "options_models_providers_errors_baseUrlRequired": {
+    "message": "Base URL is required for $PROVIDER$. Please enter it.",
     "placeholders": {
-      "context": {
+      "provider": {
         "content": "$1",
-        "example": "User is on example.com"
+        "example": "Custom OpenAI"
       }
     }
   },
-  "agents_sensitiveData_info": {
-    "message": "Here are placeholders for sensitive data: $PLACEHOLDERS$",
-    "placeholders": {
-      "placeholders": {
-        "content": "$1",
-        "example": "username, password"
-      }
-    }
-  },
-  "agents_sensitiveData_usage": {
-    "message": "To use them, write <secret>the placeholder name</secret>"
-  },
-  "agents_exampleOutput_label": {
-    "message": "Example output:"
-  },
-  "agents_history_startMarker": {
-    "message": "[Your task history memory starts here]"
-  },
-  "agents_availableFilepaths": {
-    "message": "Here are file paths you can use: $PATHS$",
-    "placeholders": {
-      "paths": {
-        "content": "$1",
-        "example": "/home/user/documents"
-      }
-    }
-  },
-  "agents_task_instructions": {
-    "message": "Your ultimate task is: \"\"\"$TASK$\"\"\". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.",
-    "placeholders": {
-      "task": {
-        "content": "$1",
-        "example": "Navigate to example.com and fill the form"
-      }
-    }
-  },
-  "agents_task_followupInstructions": {
-    "message": "Your new ultimate task is: \"\"\"$NEW_TASK$\"\"\". This is a follow-up of the previous tasks. Make sure to take all of the previous context into account and finish your new ultimate task.",
-    "placeholders": {
-      "new_task": {
-        "content": "$1",
-        "example": "Submit the form and verify success"
-      }
-    }
-  },
+
   "firewall_title": {
     "message": "Firewall"
   },

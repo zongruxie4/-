@@ -20,8 +20,8 @@ import {
   getDefaultProviderConfig,
   getDefaultAgentModelParams,
   type ProviderConfig,
-  type SpeechToTextModelConfig,
 } from '@extension/storage';
+import { t } from '@extension/i18n';
 
 // Helper function to check if a model is an O-series model
 function isOpenAIOModel(modelName: string): boolean {
@@ -365,7 +365,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       return {
         theme: isDarkMode ? 'dark' : 'light',
         variant: 'danger' as const,
-        children: 'Delete',
+        children: t('options_models_providers_btnDelete'),
         disabled: false,
       };
     }
@@ -400,7 +400,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     return {
       theme: isDarkMode ? 'dark' : 'light',
       variant: 'primary' as const,
-      children: 'Save',
+      children: t('options_models_providers_btnSave'),
       disabled: !hasInput || !isModified,
     };
   };
@@ -411,7 +411,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       if (providers[provider].type === ProviderTypeEnum.CustomOpenAI && providers[provider].name?.includes(' ')) {
         setNameErrors(prev => ({
           ...prev,
-          [provider]: 'Spaces are not allowed in provider names. Please use underscores or other characters instead.',
+          [provider]: t('options_models_providers_errors_spacesNotAllowed'),
         }));
         return;
       }
@@ -426,7 +426,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           providers[provider].type === ProviderTypeEnum.Llama) &&
         (!providers[provider].baseUrl || !providers[provider].baseUrl.trim())
       ) {
-        alert(`Base URL is required for ${getDefaultDisplayNameFromProviderId(provider)}. Please enter it.`);
+        alert(t('options_models_providers_errors_baseUrlRequired', getDefaultDisplayNameFromProviderId(provider)));
         return;
       }
 
@@ -710,7 +710,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           <label
             htmlFor={`${agentName}-model`}
             className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            Model
+            {t('options_models_labels_model')}
           </label>
           <select
             id={`${agentName}-model`}
@@ -719,7 +719,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             value={selectedModels[agentName] || ''} // Use the stored provider>model value directly
             onChange={e => handleModelChange(agentName, e.target.value)}>
             <option key="default" value="">
-              Choose model
+              {t('options_models_chooseModel')}
             </option>
             {availableModels.map(({ provider, providerName, model }) => (
               <option key={`${provider}>${model}`} value={`${provider}>${model}`}>
@@ -734,7 +734,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           <label
             htmlFor={`${agentName}-temperature`}
             className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            Temperature
+            {t('options_models_labels_temperature')}
           </label>
           <div className="flex flex-1 items-center space-x-2">
             <input
@@ -778,7 +778,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           <label
             htmlFor={`${agentName}-topP`}
             className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            Top P
+            {t('options_models_labels_topP')}
           </label>
           <div className="flex flex-1 items-center space-x-2">
             <input
@@ -823,7 +823,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             <label
               htmlFor={`${agentName}-reasoning-effort`}
               className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Reasoning
+              {t('options_models_labels_reasoning')}
             </label>
             <div className="flex flex-1 items-center space-x-2">
               <select
@@ -831,9 +831,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                 value={reasoningEffort[agentName] || 'medium'}
                 onChange={e => handleReasoningEffortChange(agentName, e.target.value as 'low' | 'medium' | 'high')}
                 className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}>
-                <option value="low">Low (Faster)</option>
-                <option value="medium">Medium (Balanced)</option>
-                <option value="high">High (More thorough)</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
               </select>
             </div>
           </div>
@@ -845,11 +845,11 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   const getAgentDescription = (agentName: AgentNameEnum) => {
     switch (agentName) {
       case AgentNameEnum.Navigator:
-        return 'Navigates websites and performs actions';
+        return t('options_agents_navigator_desc');
       case AgentNameEnum.Planner:
-        return 'Develops and refines strategies to complete tasks';
+        return t('options_agents_planner_desc');
       case AgentNameEnum.Validator:
-        return 'Checks if tasks are completed successfully';
+        return t('options_agents_validator_desc');
       default:
         return '';
     }
@@ -1127,12 +1127,12 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       <div
         className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-gray-50'} p-6 text-left shadow-sm`}>
         <h2 className={`mb-4 text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          LLM Providers
+          {t('options_models_providers_header')}
         </h2>
         <div className="space-y-6">
           {getSortedProviders().length === 0 ? (
             <div className="py-8 text-center text-gray-500">
-              <p className="mb-4">No providers configured yet. Add a provider to get started.</p>
+              <p className="mb-4">{t('options_models_providers_notConfigured')}</p>
             </div>
           ) : (
             getSortedProviders().map(([providerId, providerConfig]) => {
@@ -1155,7 +1155,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       {/* Show Cancel button for newly added providers */}
                       {modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) && (
                         <Button variant="secondary" onClick={() => handleCancelProvider(providerId)}>
-                          Cancel
+                          {t('options_models_providers_btnCancel')}
                         </Button>
                       )}
                       <Button
@@ -1174,7 +1174,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                   {/* Show message for newly added providers */}
                   {modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) && (
                     <div className={`mb-2 text-sm ${isDarkMode ? 'text-teal-300' : 'text-teal-700'}`}>
-                      <p>This provider is newly added. Enter your API key and click Save to configure it.</p>
+                      <p>{t('options_models_providers_setupInstructions')}</p>
                     </div>
                   )}
 
@@ -1186,12 +1186,12 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           <label
                             htmlFor={`${providerId}-name`}
                             className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            Name
+                            {t('options_models_providers_custom_name')}
                           </label>
                           <input
                             id={`${providerId}-name`}
                             type="text"
-                            placeholder="Provider name"
+                            placeholder={t('options_models_providers_custom_name_placeholder')}
                             value={providerConfig.name || ''}
                             onChange={e => {
                               console.log('Name input changed:', e.target.value);
@@ -1214,7 +1214,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           </p>
                         ) : (
                           <p className={`ml-20 mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            Provider name (spaces are not allowed when saving)
+                            {t('options_models_providers_custom_name_desc')}
                           </p>
                         )}
                       </div>
@@ -1225,7 +1225,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       <label
                         htmlFor={`${providerId}-api-key`}
                         className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        API Key
+                        {t('options_models_providers_apiKey')}
                         {/* Show asterisk only if required */}
                         {providerConfig.type !== ProviderTypeEnum.CustomOpenAI &&
                         providerConfig.type !== ProviderTypeEnum.Ollama
@@ -1238,10 +1238,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           type="password"
                           placeholder={
                             providerConfig.type === ProviderTypeEnum.CustomOpenAI
-                              ? `${providerConfig.name || providerId} API key (optional)`
+                              ? t('options_models_providers_apiKey_placeholder_optional')
                               : providerConfig.type === ProviderTypeEnum.Ollama
-                                ? 'API Key (leave empty for Ollama)'
-                                : `${providerConfig.name || providerId} API key (required)`
+                                ? t('options_models_providers_apiKey_placeholder_ollama')
+                                : t('options_models_providers_apiKey_placeholder_required')
                           }
                           value={providerConfig.apiKey || ''}
                           onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
@@ -1255,7 +1255,11 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                               isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
                             }`}
                             onClick={() => toggleApiKeyVisibility(providerId)}
-                            aria-label={visibleApiKeys[providerId] ? 'Hide API key' : 'Show API key'}>
+                            aria-label={
+                              visibleApiKeys[providerId]
+                                ? t('options_models_providers_apiKey_hide')
+                                : t('options_models_providers_apiKey_show')
+                            }>
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
@@ -1266,7 +1270,11 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                               strokeLinejoin="round"
                               className="size-5"
                               aria-hidden="true">
-                              <title>{visibleApiKeys[providerId] ? 'Hide API key' : 'Show API key'}</title>
+                              <title>
+                                {visibleApiKeys[providerId]
+                                  ? t('options_models_providers_apiKey_hide')
+                                  : t('options_models_providers_apiKey_show')}
+                              </title>
                               {visibleApiKeys[providerId] ? (
                                 <>
                                   <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
@@ -1310,7 +1318,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             htmlFor={`${providerId}-base-url`}
                             className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                             {/* Adjust Label based on provider */}
-                            {providerConfig.type === ProviderTypeEnum.AzureOpenAI ? 'Endpoint' : 'Base URL'}
+                            {providerConfig.type === ProviderTypeEnum.AzureOpenAI
+                              ? t('options_models_providers_endpoint')
+                              : t('options_models_providers_baseUrl')}
                             {/* Show asterisk only if required */}
                             {/* OpenRouter has a default, so not strictly required, but needed for save button */}
                             {providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
@@ -1323,15 +1333,14 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             type="text"
                             placeholder={
                               providerConfig.type === ProviderTypeEnum.CustomOpenAI
-                                ? 'Required OpenAI-compatible API endpoint'
+                                ? t('options_models_providers_placeholders_baseUrl_custom')
                                 : providerConfig.type === ProviderTypeEnum.AzureOpenAI
-                                  ? // Updated Azure placeholder
-                                    'https://YOUR_RESOURCE_NAME.openai.azure.com/'
+                                  ? t('options_models_providers_placeholders_baseUrl_azure')
                                   : providerConfig.type === ProviderTypeEnum.OpenRouter
-                                    ? 'OpenRouter Base URL (optional, defaults to https://openrouter.ai/api/v1)'
+                                    ? t('options_models_providers_placeholders_baseUrl_openrouter')
                                     : providerConfig.type === ProviderTypeEnum.Llama
-                                      ? 'Llama API Base URL (defaults to https://api.llama.com/v1)'
-                                      : 'Ollama base URL'
+                                      ? t('options_models_providers_placeholders_baseUrl_llama')
+                                      : t('options_models_providers_placeholders_baseUrl_ollama')
                             }
                             value={providerConfig.baseUrl || ''}
                             onChange={e => handleApiKeyChange(providerId, providerConfig.apiKey || '', e.target.value)}
@@ -1347,7 +1356,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         <label
                           htmlFor={`${providerId}-azure-deployment`}
                           className={`w-20 pt-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          Deployment*
+                          {t('options_models_providers_deployment')}*
                         </label>
                         <div className="flex-1 space-y-2">
                           <div
@@ -1372,7 +1381,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             <input
                               id={`${providerId}-azure-deployment-input`}
                               type="text"
-                              placeholder="Enter Azure model name (e.g. gpt-4o, gpt-4o-mini)"
+                              placeholder={t('options_models_providers_placeholders_azureDeployment')}
                               value={newModelInputs[providerId] || ''}
                               onChange={e => handleModelsChange(providerId, e.target.value)}
                               onKeyDown={e => {
@@ -1393,8 +1402,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             />
                           </div>
                           <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            Type model name and press Enter or Space to set. Deployment name should match OpenAI model
-                            name (e.g., gpt-4o) for best compatibility.
+                            {t('options_models_providers_deployment_desc')}
                           </p>
                         </div>
                       </div>
@@ -1406,12 +1414,12 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         <label
                           htmlFor={`${providerId}-azure-version`}
                           className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          API Version*
+                          {t('options_models_providers_apiVersion')}*
                         </label>
                         <input
                           id={`${providerId}-azure-version`}
                           type="text"
-                          placeholder="e.g., 2024-02-15-preview" // Common example
+                          placeholder={t('options_models_providers_placeholders_azureApiVersion')}
                           value={providerConfig.azureApiVersion || ''}
                           onChange={e => handleAzureApiVersionChange(providerId, e.target.value)}
                           className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
@@ -1425,7 +1433,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         <label
                           htmlFor={`${providerId}-models-label`}
                           className={`w-20 pt-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          Models
+                          {t('options_models_providers_models')}
                         </label>
                         <div className="flex-1 space-y-2">
                           {/* Conditional UI for OpenRouter */}
@@ -1450,7 +1458,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                                   ))
                                 ) : (
                                   <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    No models selected. Add model names manually if needed.
+                                    {t('options_models_providers_models_openrouter_empty')}
                                   </span>
                                 )}
                                 <input
@@ -1464,7 +1472,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                                 />
                               </div>
                               <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                Type and Press Enter or Space to add.
+                                {t('options_models_providers_models_instructions')}
                               </p>
                             </>
                           ) : (
@@ -1503,7 +1511,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                                 />
                               </div>
                               <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                Type and Press Enter or Space to add.
+                                {t('options_models_providers_models_instructions')}
                               </p>
                             </>
                           )}
@@ -1517,18 +1525,20 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       <div
                         className={`mt-4 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-blue-100 bg-blue-50'} p-3`}>
                         <p className={`text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                          <strong>Remember:</strong> Add{' '}
-                          <code
-                            className={`rounded italic ${isDarkMode ? 'bg-slate-600 px-1 py-0.5' : 'bg-blue-100 px-1 py-0.5'}`}>
-                            OLLAMA_ORIGINS=chrome-extension://*
-                          </code>{' '}
-                          environment variable for the Ollama server.
+                          <strong>
+                            {' '}
+                            <code
+                              className={`rounded italic ${isDarkMode ? 'bg-slate-600 px-1 py-0.5' : 'bg-blue-100 px-1 py-0.5'}`}>
+                              OLLAMA_ORIGINS=chrome-extension://*
+                            </code>{' '}
+                          </strong>
+                          {t('options_models_providers_ollama_reminder')}
                           <a
                             href="https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-allow-additional-web-origins-to-access-ollama"
                             target="_blank"
                             rel="noopener noreferrer"
                             className={`ml-1 ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>
-                            Learn more
+                            {t('options_models_providers_ollama_learnMore')}
                           </a>
                         </p>
                       </div>
@@ -1554,7 +1564,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                   ? 'border-blue-700 bg-blue-600 text-white hover:bg-blue-500'
                   : 'border-blue-200 bg-blue-100 text-blue-800 hover:bg-blue-200'
               }`}>
-              <span className="mr-2 text-sm">+</span> <span className="text-sm">Add New Provider</span>
+              <span className="mr-2 text-sm">+</span>{' '}
+              <span className="text-sm">{t('options_models_addNewProvider')}</span>
             </Button>
 
             {isProviderSelectorOpen && (
@@ -1598,7 +1609,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
                     } transition-colors duration-150`}
                     onClick={() => handleProviderSelection(ProviderTypeEnum.CustomOpenAI)}>
-                    <span className="font-medium">OpenAI-compatible API Provider</span>
+                    <span className="font-medium">{t('options_models_providers_openaiCompatible')}</span>
                   </button>
                 </div>
               </div>
@@ -1611,7 +1622,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       <div
         className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-gray-50'} p-6 text-left shadow-sm`}>
         <h2 className={`mb-4 text-left text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          Model Selection
+          {t('options_models_selection_header')}
         </h2>
         <div className="space-y-4">
           {[AgentNameEnum.Planner, AgentNameEnum.Navigator, AgentNameEnum.Validator].map(agentName => (
@@ -1624,10 +1635,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       <div
         className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-gray-50'} p-6 text-left shadow-sm`}>
         <h2 className={`mb-4 text-left text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          Speech-to-Text Model
+          {t('options_models_speechToText_header')}
         </h2>
         <p className={`mb-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          Configure the Gemini model used for converting speech to text when using the microphone feature.
+          {t('options_models_stt_desc')}
         </p>
 
         <div
@@ -1636,17 +1647,17 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             <label
               htmlFor="speech-to-text-model"
               className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Model
+              {t('options_models_labels_model')}
             </label>
             <select
               id="speech-to-text-model"
               className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
               value={selectedSpeechToTextModel}
               onChange={e => handleSpeechToTextModelChange(e.target.value)}>
-              <option value="">Choose Model</option>
+              <option value="">{t('options_models_chooseModel')}</option>
               {/* Filter available models to show only Gemini models */}
               {availableModels
-                .filter(({ provider, model }) => {
+                .filter(({ provider }) => {
                   const providerConfig = providers[provider];
                   return providerConfig?.type === ProviderTypeEnum.Gemini;
                 })
