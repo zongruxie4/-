@@ -41,7 +41,7 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
       {sessions.length === 0 ? (
         <div
           className={`rounded-lg ${isDarkMode ? 'bg-slate-800 text-gray-400' : 'bg-white/30 text-gray-500'} p-4 text-center backdrop-blur-sm`}>
-          {t('chat_history_emptyState')}
+          {t('chat_history_empty')}
         </div>
       ) : (
         <div className="space-y-2">
@@ -72,7 +72,7 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
                       ? 'bg-slate-700 text-sky-400 hover:bg-slate-600'
                       : 'bg-white text-sky-500 hover:bg-gray-100'
                   }`}
-                  aria-label={t('chat_history_accessibilityBookmark')}
+                  aria-label={t('chat_history_bookmark')}
                   type="button">
                   <BsBookmark size={14} />
                 </button>
@@ -89,7 +89,7 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
                     ? 'bg-slate-700 text-gray-400 hover:bg-slate-600'
                     : 'bg-white text-gray-500 hover:bg-gray-100'
                 }`}
-                aria-label={t('chat_history_accessibilityDelete')}
+                aria-label={t('chat_history_delete')}
                 type="button">
                 <FaTrash size={14} />
               </button>

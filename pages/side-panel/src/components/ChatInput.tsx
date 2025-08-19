@@ -95,7 +95,7 @@ export default function ChatInput({
     <form
       onSubmit={handleSubmit}
       className={`overflow-hidden rounded-lg border transition-colors ${disabled ? 'cursor-not-allowed' : 'focus-within:border-sky-400 hover:border-sky-400'} ${isDarkMode ? 'border-slate-700' : ''}`}
-      aria-label={t('chat_input_accessibilityForm')}>
+      aria-label={t('chat_input_form')}>
       <div className="flex flex-col">
         <textarea
           ref={textareaRef}
@@ -115,7 +115,7 @@ export default function ChatInput({
                 : 'bg-white'
           }`}
           placeholder={t('chat_input_placeholder')}
-          aria-label={t('chat_input_accessibilityMessage')}
+          aria-label={t('chat_input_editor')}
         />
 
         <div
@@ -158,7 +158,7 @@ export default function ChatInput({
               type="button"
               onClick={onStopTask}
               className="rounded-md bg-red-500 px-3 py-1 text-white transition-colors hover:bg-red-600">
-              {t('ui_buttons_stop')}
+              {t('chat_buttons_stop')}
             </button>
           ) : historicalSessionId ? (
             <button
@@ -167,7 +167,7 @@ export default function ChatInput({
               disabled={!historicalSessionId}
               aria-disabled={!historicalSessionId}
               className={`rounded-md bg-green-500 px-3 py-1 text-white transition-colors hover:enabled:bg-green-600 ${!historicalSessionId ? 'cursor-not-allowed opacity-50' : ''}`}>
-              {t('ui_buttons_replay')}
+              {t('chat_buttons_replay')}
             </button>
           ) : (
             <button
@@ -175,7 +175,7 @@ export default function ChatInput({
               disabled={isSendButtonDisabled}
               aria-disabled={isSendButtonDisabled}
               className={`rounded-md bg-[#19C2FF] px-3 py-1 text-white transition-colors hover:enabled:bg-[#0073DC] ${isSendButtonDisabled ? 'cursor-not-allowed opacity-50' : ''}`}>
-              {t('ui_buttons_send')}
+              {t('chat_buttons_send')}
             </button>
           )}
         </div>

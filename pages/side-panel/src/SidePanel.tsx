@@ -22,6 +22,7 @@ declare global {
 }
 
 const SidePanel = () => {
+  const progressMessage = 'Showing progress...';
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputEnabled, setInputEnabled] = useState(true);
   const [showStopButton, setShowStopButton] = useState(false);
@@ -126,12 +127,10 @@ const SidePanel = () => {
 
   const appendMessage = useCallback((newMessage: Message, sessionId?: string | null) => {
     // Don't save progress messages
-    const isProgressMessage = newMessage.content === t('ui_status_progressShowing');
+    const isProgressMessage = newMessage.content === progressMessage;
 
     setMessages(prev => {
-      const filteredMessages = prev.filter(
-        (msg, idx) => !(msg.content === t('ui_status_progressShowing') && idx === prev.length - 1),
-      );
+      const filteredMessages = prev.filter((msg, idx) => !(msg.content === progressMessage && idx === prev.length - 1));
       return [...filteredMessages, newMessage];
     });
 
@@ -276,7 +275,7 @@ const SidePanel = () => {
       if (displayProgress) {
         appendMessage({
           actor,
-          content: t('ui_status_progressShowing'),
+          content: progressMessage,
           timestamp: timestamp,
         });
       }
@@ -520,7 +519,7 @@ const SidePanel = () => {
         if (parts.length !== 2) {
           appendMessage({
             actor: Actors.SYSTEM,
-            content: t('commands_invalidFormat'),
+            content: t('erros_replay_invalidArgs'),
             timestamp: Date.now(),
           });
           return true;
@@ -534,7 +533,7 @@ const SidePanel = () => {
       // Unsupported command
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('commands_unsupportedCommand', command),
+        content: t('errors_unsupportedCommand', command),
         timestamp: Date.now(),
       });
       return true;
@@ -1009,8 +1008,8 @@ const SidePanel = () => {
                 type="button"
                 onClick={() => handleBackToChat(false)}
                 className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
-                aria-label={t('accessibility_navigation_backToChat')}>
-                {t('navigation_back')}
+                aria-label={t('nav_back_a11y')}>
+                {t('nav_back')}
               </button>
             ) : (
               <img src="/icon-128.png" alt="Extension Logo" className="size-6" />
@@ -1024,7 +1023,7 @@ const SidePanel = () => {
                   onClick={handleNewChat}
                   onKeyDown={e => e.key === 'Enter' && handleNewChat()}
                   className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
-                  aria-label={t('accessibility_navigation_newChat')}
+                  aria-label={t('nav_newChat_a11y')}
                   tabIndex={0}>
                   <PiPlusBold size={20} />
                 </button>
@@ -1033,7 +1032,7 @@ const SidePanel = () => {
                   onClick={handleLoadHistory}
                   onKeyDown={e => e.key === 'Enter' && handleLoadHistory()}
                   className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
-                  aria-label={t('accessibility_navigation_loadHistory')}
+                  aria-label={t('nav_loadHistory_a11y')}
                   tabIndex={0}>
                   <GrHistory size={20} />
                 </button>
@@ -1051,7 +1050,7 @@ const SidePanel = () => {
               onClick={() => chrome.runtime.openOptionsPage()}
               onKeyDown={e => e.key === 'Enter' && chrome.runtime.openOptionsPage()}
               className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
-              aria-label={t('accessibility_navigation_settings')}
+              aria-label={t('nav_settings_a11y')}
               tabIndex={0}>
               <FiSettings size={20} />
             </button>
@@ -1076,7 +1075,7 @@ const SidePanel = () => {
                 className={`flex flex-1 items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
                 <div className="text-center">
                   <div className="mx-auto mb-4 size-8 animate-spin rounded-full border-2 border-sky-400 border-t-transparent"></div>
-                  <p>{t('ui_status_checkingConfiguration')}</p>
+                  <p>{t('status_checkingConfig')}</p>
                 </div>
               </div>
             )}
@@ -1088,15 +1087,15 @@ const SidePanel = () => {
                 <div className="max-w-md text-center">
                   <img src="/icon-128.png" alt="Nanobrowser Logo" className="mx-auto mb-4 size-12" />
                   <h3 className={`mb-2 text-lg font-semibold ${isDarkMode ? 'text-sky-200' : 'text-sky-700'}`}>
-                    {t('navigation_welcome_title')}
+                    {t('welcome_title')}
                   </h3>
-                  <p className="mb-4">{t('navigation_welcome_setupInstruction')}</p>
+                  <p className="mb-4">{t('welcome_instruction')}</p>
                   <button
                     onClick={() => chrome.runtime.openOptionsPage()}
                     className={`my-4 rounded-lg px-4 py-2 font-medium transition-colors ${
                       isDarkMode ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-sky-500 text-white hover:bg-sky-600'
                     }`}>
-                    {t('ui_buttons_openSettings')}
+                    {t('welcome_openSettings')}
                   </button>
                   <div className="mt-4 text-sm opacity-75">
                     <a
@@ -1104,7 +1103,7 @@ const SidePanel = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
-                      {t('ui_links_quickStartGuide')}
+                      {t('welcome_quickStart')}
                     </a>
                     <span className="mx-2">•</span>
                     <a
@@ -1112,7 +1111,7 @@ const SidePanel = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
-                      {t('ui_links_joinCommunity')}
+                      {t('welcome_joinCommunity')}
                     </a>
                   </div>
                 </div>

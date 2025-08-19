@@ -62,7 +62,7 @@ const Options = () => {
         className={`w-48 border-r ${isDarkMode ? 'border-slate-700 bg-slate-800/80' : 'border-white/20 bg-[#0EA5E9]/10'} backdrop-blur-sm`}>
         <div className="p-4">
           <h1 className={`mb-6 text-xl font-bold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-            {t('settings_title')}
+            {t('settings_header')}
           </h1>
           <ul className="space-y-2">
             {TABS.map(item => (
