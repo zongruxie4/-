@@ -142,70 +142,70 @@
   "permissions_microphone_alreadyGrantedButton": {
     "message": "Permission Already Granted"
   },
-  "settings_header": {
+  "options_nav_header": {
     "message": "Settings"
   },
-  "settings_tabs_general": {
+  "options_tabs_general": {
     "message": "General"
   },
-  "settings_tabs_models": {
+  "options_tabs_models": {
     "message": "Models"
   },
-  "settings_tabs_firewall": {
+  "options_tabs_firewall": {
     "message": "Firewall"
   },
-  "settings_tabs_help": {
+  "options_tabs_help": {
     "message": "Help"
   },
-  "settings_general_title": {
+  "options_general_header": {
     "message": "General"
   },
-  "settings_general_maxSteps_label": {
+  "options_general_maxSteps": {
     "message": "Max Steps per Task"
   },
-  "settings_general_maxSteps_description": {
+  "options_general_maxSteps_desc": {
     "message": "Step limit per task"
   },
-  "settings_general_maxActions_label": {
+  "options_general_maxActions": {
     "message": "Max Actions per Step"
   },
-  "settings_general_maxActions_description": {
+  "options_general_maxActions_desc": {
     "message": "Action limit per step"
   },
-  "settings_general_failureTolerance_label": {
+  "options_general_maxFailures": {
     "message": "Failure Tolerance"
   },
-  "settings_general_failureTolerance_description": {
+  "options_general_maxFailures_desc": {
     "message": "How many consecutive failures before stopping"
   },
-  "settings_general_enableVision_label": {
+  "options_general_enableVision": {
     "message": "Enable Vision"
   },
-  "settings_general_enableVision_description": {
+  "options_general_enableVision_desc": {
     "message": "Use vision capability of LLMs (consumes more tokens for better results)"
   },
-  "settings_general_displayHighlights_label": {
+  "options_general_displayHighlights": {
     "message": "Display Highlights"
   },
-  "settings_general_displayHighlights_description": {
+  "options_general_displayHighlights_desc": {
     "message": "Show visual highlights on interactive elements (e.g. buttons, links, etc.)"
   },
-  "settings_general_replanningFrequency_label": {
+  "options_general_planningInterval": {
     "message": "Replanning Frequency"
   },
-  "settings_general_replanningFrequency_description": {
+  "options_general_planningInterval_desc": {
     "message": "Reconsider and update the plan every [Number] steps"
   },
-  "settings_general_pageLoadWait_label": {
+  "options_general_minWaitPageLoad": {
     "message": "Page Load Wait Time"
   },
-  "settings_general_pageLoadWait_description": {
+  "options_general_minWaitPageLoad_desc": {
     "message": "Minimum wait time after page loads (250-5000ms)"
   },
-  "settings_general_replayTasks_label": {
+  "options_general_replayHistoricalTasks": {
     "message": "Replay Historical Tasks( experimental )"
   },
-  "settings_general_replayTasks_description": {
+  "options_general_replayHistoricalTasks_desc": {
     "message": "Enable storing and replaying of agent step history (experimental, may have issues)"
   },
   "settings_models_llmProviders_title": {
