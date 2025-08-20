@@ -1,5 +1,6 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { type ActionResult, AgentContext, type AgentOptions } from './types';
+import { t } from '@extension/i18n';
 import { NavigatorAgent, NavigatorActionRegistry } from './agents/navigator';
 import { PlannerAgent, type PlannerOutput } from './agents/planner';
 import { ValidatorAgent } from './agents/validator';
@@ -207,7 +208,7 @@ export class Executor {
           context.consecutiveValidatorFailures++;
           if (context.consecutiveValidatorFailures >= context.options.maxValidatorFailures) {
             logger.error(`Stopping due to ${context.options.maxValidatorFailures} consecutive validator failures`);
-            throw new Error(chrome.i18n.getMessage('exec_errors_tooManyValidationFailures'));
+            throw new Error(t('exec_errors_tooManyValidationFailures'));
           }
         }
       }
@@ -216,38 +217,18 @@ export class Executor {
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, this.context.taskId);
       } else if (step >= allowedMaxSteps) {
         logger.info('❌ Task failed: Max steps reached');
-        this.context.emitEvent(
-          Actors.SYSTEM,
-          ExecutionState.TASK_FAIL,
-          chrome.i18n.getMessage('exec_errors_maxStepsReached'),
-        );
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_maxStepsReached'));
       } else if (this.context.stopped) {
-        this.context.emitEvent(
-          Actors.SYSTEM,
-          ExecutionState.TASK_CANCEL,
-          chrome.i18n.getMessage('exec_errors_taskCancelled'),
-        );
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_errors_taskCancelled'));
       } else {
-        this.context.emitEvent(
-          Actors.SYSTEM,
-          ExecutionState.TASK_PAUSE,
-          chrome.i18n.getMessage('exec_errors_taskPaused'),
-        );
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_PAUSE, t('exec_errors_taskPaused'));
       }
     } catch (error) {
       if (error instanceof RequestCancelledError) {
-        this.context.emitEvent(
-          Actors.SYSTEM,
-          ExecutionState.TASK_CANCEL,
-          chrome.i18n.getMessage('exec_errors_taskCancelled'),
-        );
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_errors_taskCancelled'));
       } else {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        this.context.emitEvent(
-          Actors.SYSTEM,
-          ExecutionState.TASK_FAIL,
-          chrome.i18n.getMessage('exec_errors_taskFailed', [errorMessage]),
-        );
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_taskFailed', [errorMessage]));
       }
     } finally {
       if (import.meta.env.DEV) {
@@ -299,7 +280,7 @@ export class Executor {
       context.consecutiveFailures++;
       logger.error(`Failed to execute step: ${error}`);
       if (context.consecutiveFailures >= context.options.maxFailures) {
-        throw new Error(chrome.i18n.getMessage('exec_errors_maxFailuresReached'));
+        throw new Error(t('exec_errors_maxFailuresReached'));
       }
     }
     return false;
@@ -373,12 +354,12 @@ export class Executor {
     try {
       const historyFromStorage = await chatHistoryStore.loadAgentStepHistory(sessionId);
       if (!historyFromStorage) {
-        throw new Error(chrome.i18n.getMessage('exec_errors_historyNotFound'));
+        throw new Error(t('exec_errors_historyNotFound'));
       }
 
       const history = JSON.parse(historyFromStorage.history) as AgentStepHistory;
       if (history.history.length === 0) {
-        throw new Error(chrome.i18n.getMessage('exec_errors_historyEmpty'));
+        throw new Error(t('exec_errors_historyEmpty'));
       }
       logger.debug(`🔄 Replaying history: ${JSON.stringify(history, null, 2)}`);
       this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
@@ -411,26 +392,14 @@ export class Executor {
       }
 
       if (this.context.stopped) {
-        this.context.emitEvent(
-          Actors.SYSTEM,
-          ExecutionState.TASK_CANCEL,
-          chrome.i18n.getMessage('exec_errors_replayCancelled'),
-        );
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_errors_replayCancelled'));
       } else {
-        this.context.emitEvent(
-          Actors.SYSTEM,
-          ExecutionState.TASK_OK,
-          chrome.i18n.getMessage('exec_errors_replayCompleted'),
-        );
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, t('exec_errors_replayCompleted'));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       replayLogger.error(`Replay failed: ${errorMessage}`);
-      this.context.emitEvent(
-        Actors.SYSTEM,
-        ExecutionState.TASK_FAIL,
-        chrome.i18n.getMessage('exec_errors_replayFailed', [errorMessage]),
-      );
+      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_replayFailed', [errorMessage]));
     }
 
     return results;
