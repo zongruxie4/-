@@ -517,5 +517,50 @@
   },
   "bg_setup_chooseNavigatorModel": {
     "message": "Please choose a model for the navigator in the settings first"
+  },
+  "exec_errors_tooManyValidationFailures": {
+    "message": "Too many failures of validation"
+  },
+  "exec_errors_maxStepsReached": {
+    "message": "Task failed: Max steps reached"
+  },
+  "exec_errors_taskCancelled": {
+    "message": "Task cancelled"
+  },
+  "exec_errors_taskPaused": {
+    "message": "Task paused"
+  },
+  "exec_errors_maxFailuresReached": {
+    "message": "Max failures reached"
+  },
+  "exec_errors_historyNotFound": {
+    "message": "History not found"
+  },
+  "exec_errors_historyEmpty": {
+    "message": "History is empty"
+  },
+  "exec_errors_replayCancelled": {
+    "message": "Replay cancelled"
+  },
+  "exec_errors_replayCompleted": {
+    "message": "Replay completed"
+  },
+  "exec_errors_taskFailed": {
+    "message": "Task failed: $ERROR_MESSAGE$",
+    "placeholders": {
+      "error_message": {
+        "content": "$1",
+        "example": "Connection timeout"
+      }
+    }
+  },
+  "exec_errors_replayFailed": {
+    "message": "Replay failed: $ERROR_MESSAGE$",
+    "placeholders": {
+      "error_message": {
+        "content": "$1",
+        "example": "Network error"
+      }
+    }
   }
 }
