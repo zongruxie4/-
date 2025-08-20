@@ -2,6 +2,7 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { HumanMessage } from '@langchain/core/messages';
 import { createLogger } from '../log';
 import { type ProviderConfig, speechToTextModelStore } from '@extension/storage';
+import { t } from '@extension/i18n';
 
 const logger = createLogger('SpeechToText');
 
@@ -17,16 +18,14 @@ export class SpeechToTextService {
       const config = await speechToTextModelStore.getSpeechToTextModel();
 
       if (!config?.provider || !config?.modelName) {
-        throw new Error('No speech-to-text model configured. Please configure a Gemini model in settings.');
+        throw new Error(t('chat_stt_model_notFound'));
       }
 
       const provider = providers[config.provider];
       logger.info('Found provider for speech-to-text:', provider ? 'yes' : 'no', provider?.type);
 
       if (!provider || provider.type !== 'gemini') {
-        throw new Error(
-          'Speech-to-text model provider not found or not a Gemini provider. Please configure a Gemini model in settings.',
-        );
+        throw new Error(t('chat_stt_model_notFound'));
       }
 
       const llm = new ChatGoogleGenerativeAI({

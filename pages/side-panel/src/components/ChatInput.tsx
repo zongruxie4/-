@@ -130,10 +130,10 @@ export default function ChatInput({
                 disabled={disabled || isProcessingSpeech}
                 aria-label={
                   isProcessingSpeech
-                    ? t('voice_processing')
+                    ? t('chat_stt_processing')
                     : isRecording
-                      ? t('voice_recording_stop')
-                      : t('voice_input_start')
+                      ? t('chat_stt_recording_stop')
+                      : t('chat_stt_input_start')
                 }
                 className={`rounded-md p-1.5 transition-colors ${
                   disabled || isProcessingSpeech

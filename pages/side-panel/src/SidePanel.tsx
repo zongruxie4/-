@@ -314,7 +314,7 @@ const SidePanel = () => {
           // Handle error messages from service worker
           appendMessage({
             actor: Actors.SYSTEM,
-            content: message.error || t('errors_general_unknown'),
+            content: message.error || t('errors_unknown'),
             timestamp: Date.now(),
           });
           setInputEnabled(true);
@@ -329,7 +329,7 @@ const SidePanel = () => {
           // Handle speech-to-text error
           appendMessage({
             actor: Actors.SYSTEM,
-            content: message.error || t('errors_speech_recognitionFailed'),
+            content: message.error || t('chat_stt_recognitionFailed'),
             timestamp: Date.now(),
           });
           setIsProcessingSpeech(false);
@@ -371,7 +371,7 @@ const SidePanel = () => {
       console.error('Failed to establish connection:', error);
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('errors_connection_serviceWorkerFailed'),
+        content: t('errors_conn_serviceWorker'),
         timestamp: Date.now(),
       });
       // Clear any references since connection failed
@@ -404,7 +404,7 @@ const SidePanel = () => {
       if (!replayEnabled) {
         appendMessage({
           actor: Actors.SYSTEM,
-          content: t('replay_disabled'),
+          content: t('chat_replay_disabled'),
           timestamp: Date.now(),
         });
         return;
@@ -415,7 +415,7 @@ const SidePanel = () => {
       if (!historyData) {
         appendMessage({
           actor: Actors.SYSTEM,
-          content: t('replay_noHistory', historySessionId.substring(0, 20)),
+          content: t('chat_replay_noHistory', historySessionId.substring(0, 20)),
           timestamp: Date.now(),
         });
         return;
@@ -475,7 +475,7 @@ const SidePanel = () => {
 
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('replay_starting', historyData.task),
+        content: t('chat_replay_starting', historyData.task),
         timestamp: Date.now(),
       });
       setIsReplaying(true);
@@ -483,7 +483,7 @@ const SidePanel = () => {
       const errorMessage = err instanceof Error ? err.message : String(err);
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('replay_failed', errorMessage),
+        content: t('chat_replay_failed', errorMessage),
         timestamp: Date.now(),
       });
     }
@@ -519,7 +519,7 @@ const SidePanel = () => {
         if (parts.length !== 2) {
           appendMessage({
             actor: Actors.SYSTEM,
-            content: t('erros_replay_invalidArgs'),
+            content: t('chat_replay_invalidArgs'),
             timestamp: Date.now(),
           });
           return true;
@@ -855,7 +855,7 @@ const SidePanel = () => {
       if (permissionStatus.state === 'denied') {
         appendMessage({
           actor: Actors.SYSTEM,
-          content: t('voice_microphone_permissionDenied'),
+          content: t('chat_stt_microphone_permissionDenied'),
           timestamp: Date.now(),
         });
         return;
@@ -949,7 +949,7 @@ const SidePanel = () => {
               console.error('Failed to send audio for speech-to-text:', error);
               appendMessage({
                 actor: Actors.SYSTEM,
-                content: t('voice_errors_processingFailed'),
+                content: t('chat_stt_processingFailed'),
                 timestamp: Date.now(),
               });
               setIsRecording(false);
@@ -977,12 +977,12 @@ const SidePanel = () => {
     } catch (error) {
       console.error('Error accessing microphone:', error);
 
-      let errorMessage = t('voice_microphone_accessFailed');
+      let errorMessage = t('chat_stt_microphone_accessFailed');
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          errorMessage += t('voice_microphone_grantPermission');
+          errorMessage += t('chat_stt_microphone_grantPermission');
         } else if (error.name === 'NotFoundError') {
-          errorMessage += t('voice_microphone_notFound');
+          errorMessage += t('chat_stt_microphone_notFound');
         } else {
           errorMessage += error.message;
         }

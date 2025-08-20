@@ -85,28 +85,67 @@
   "chat_bookmarks_delete": {
     "message": "Delete bookmark"
   },
-  "voice_processing": {
+  "chat_replay_starting": {
+    "message": "Starting replay of task:\n\n\"$TASK$\"",
+    "placeholders": {
+      "task": {
+        "content": "$1",
+        "example": "Navigate to example.com"
+      }
+    }
+  },
+  "chat_replay_failed": {
+    "message": "Replay failed: $ERROR_MESSAGE$",
+    "placeholders": {
+      "error_message": {
+        "content": "$1",
+        "example": "Connection timeout"
+      }
+    }
+  },
+  "chat_replay_invalidArgs": {
+    "message": "Invalid arguments. Please use the format: /replay <historySessionId>"
+  },
+  "chat_replay_disabled": {
+    "message": "Replay is disabled in general settings. Please enable \"Replay Historical Tasks\" in the extension settings to use this feature."
+  },
+  "chat_replay_noHistory": {
+    "message": "No action history found for session \"$SESSION_ID$...\". This session may not contain replayable actions.\n\nIt's a replay session itself (replay sessions cannot be replayed again), or it was created before the replay feature was available.",
+    "placeholders": {
+      "session_id": {
+        "content": "$1",
+        "example": "abc123def456789"
+      }
+    }
+  },
+  "chat_stt_processing": {
     "message": "Processing speech..."
   },
-  "voice_recording_stop": {
+  "chat_stt_recording_stop": {
     "message": "Stop recording"
   },
-  "voice_input_start": {
+  "chat_stt_input_start": {
     "message": "Start voice input"
   },
-  "voice_errors_processingFailed": {
+  "chat_stt_processingFailed": {
     "message": "Failed to process speech recording"
   },
-  "voice_microphone_permissionDenied": {
+  "chat_stt_model_notFound": {
+    "message": "No speech-to-text model configured or not a Gemini model. Please configure a Gemini model in settings."
+  },
+  "chat_stt_recognitionFailed": {
+    "message": "Speech recognition failed"
+  },
+  "chat_stt_microphone_permissionDenied": {
     "message": "Microphone access denied. Please enable microphone permissions in Chrome settings."
   },
-  "voice_microphone_accessFailed": {
+  "chat_stt_microphone_accessFailed": {
     "message": "Failed to access microphone. "
   },
-  "voice_microphone_grantPermission": {
+  "chat_stt_microphone_grantPermission": {
     "message": "Please grant microphone permission."
   },
-  "voice_microphone_notFound": {
+  "chat_stt_microphone_notFound": {
     "message": "No microphone found."
   },
   "permissions_microphone_title": {
@@ -397,97 +436,11 @@
   "options_firewall_howItWorks": {
     "message": "The firewall contains a deny list and an allow list.\nIf both lists are empty, all URLs are allowed\nDeny list takes priority - if a URL matches any deny list entry, it's blocked\nWhen allow list is empty, all non-denied URLs are allowed\nWhen allow list is not empty, only matching URLs are allowed\nWildcards are NOT supported yet\nAllow list is preferred over deny list"
   },
-  "actions_google_searching": {
-    "message": "Searching for \"$QUERY$\" in Google",
-    "placeholders": {
-      "query": {
-        "content": "$1",
-        "example": "cat videos"
-      }
-    }
-  },
-  "actions_google_searched": {
-    "message": "Searched for \"$QUERY$\" in Google",
-    "placeholders": {
-      "query": {
-        "content": "$1",
-        "example": "cat videos"
-      }
-    }
-  },
-  "actions_dropdown_selectIntent": {
-    "message": "Select option \"$TEXT$\" from dropdown with index $INDEX$",
-    "placeholders": {
-      "text": {
-        "content": "$1",
-        "example": "Option 1"
-      },
-      "index": {
-        "content": "$2",
-        "example": "0"
-      }
-    }
-  },
-  "actions_dropdown_selectedSuccess": {
-    "message": "Selected option \"$TEXT$\" from dropdown with index $INDEX$",
-    "placeholders": {
-      "text": {
-        "content": "$1",
-        "example": "Option 1"
-      },
-      "index": {
-        "content": "$2",
-        "example": "0"
-      }
-    }
-  },
-  "validation_task_completed": {
-    "message": "Task completed"
-  },
-  "validation_task_completedReason": {
-    "message": "The task is completed"
-  },
-  "errors_general_unknown": {
+  "errors_unknown": {
     "message": "Unknown error occurred"
   },
-  "errors_speech_recognitionFailed": {
-    "message": "Speech recognition failed"
-  },
-  "errors_connection_serviceWorkerFailed": {
+  "errors_conn_serviceWorker": {
     "message": "Failed to connect to service worker"
-  },
-  "errors_validation_noTask": {
-    "message": "No task provided"
-  },
-  "errors_validation_noTabId": {
-    "message": "No tab ID provided"
-  },
-  "errors_validation_noFollowupTask": {
-    "message": "No follow up task provided"
-  },
-  "errors_execution_executorCleanedUp": {
-    "message": "Executor was cleaned up, can not add follow-up task"
-  },
-  "errors_execution_noTaskCancel": {
-    "message": "No task to cancel"
-  },
-  "errors_execution_noTaskResume": {
-    "message": "No task to resume"
-  },
-  "errors_execution_noTaskPause": {
-    "message": "No task to pause"
-  },
-  "errors_state_failedGetState": {
-    "message": "Failed to get state"
-  },
-  "errors_setup_configureApiKeys": {
-    "message": "Please configure API keys in the settings first"
-  },
-  "errors_setup_chooseNavigatorModel": {
-    "message": "Please choose a model for the navigator in the settings first"
-  },
-  "erros_replay_invalidArgs": {
-    "message": "Invalid replay command arguments. Usage: /replay <historySessionId>"
   },
   "errors_unsupportedCommand": {
     "message": "Unsupported command: $COMMAND$.\n\nAvailable commands: /state, /nohighlight, /replay <historySessionId>",
@@ -495,36 +448,6 @@
       "command": {
         "content": "$1",
         "example": "/unknown"
-      }
-    }
-  },
-  "replay_disabled": {
-    "message": "Replay is disabled in general settings. Please enable \"Replay Historical Tasks\" in the extension settings to use this feature."
-  },
-  "replay_noHistory": {
-    "message": "No action history found for session \"$SESSION_ID$...\". This session may not contain replayable actions.\n\nIt's a replay session itself (replay sessions cannot be replayed again), or it was created before the replay feature was available.",
-    "placeholders": {
-      "session_id": {
-        "content": "$1",
-        "example": "abc123def456789"
-      }
-    }
-  },
-  "replay_starting": {
-    "message": "Starting replay of task:\n\n\"$TASK$\"",
-    "placeholders": {
-      "task": {
-        "content": "$1",
-        "example": "Navigate to example.com"
-      }
-    }
-  },
-  "replay_failed": {
-    "message": "Replay failed: $ERROR_MESSAGE$",
-    "placeholders": {
-      "error_message": {
-        "content": "$1",
-        "example": "Connection timeout"
       }
     }
   }
