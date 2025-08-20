@@ -450,5 +450,72 @@
         "example": "/unknown"
       }
     }
+  },
+
+  "bg_errors_noTask": {
+    "message": "No task provided"
+  },
+  "bg_errors_noTabId": {
+    "message": "No tab ID provided"
+  },
+  "bg_errors_noFollowUpTask": {
+    "message": "No follow up task provided"
+  },
+  "bg_errors_executorCleanedUp": {
+    "message": "Executor was cleaned up, can not add follow-up task"
+  },
+  "bg_errors_noTaskToCancel": {
+    "message": "No task to cancel"
+  },
+  "bg_errors_noTaskToResume": {
+    "message": "No task to resume"
+  },
+  "bg_errors_noTaskToPause": {
+    "message": "No task to pause"
+  },
+  "bg_errors_statePrinted": {
+    "message": "State printed to console"
+  },
+  "bg_errors_failedGetState": {
+    "message": "Failed to get state"
+  },
+  "bg_errors_highlightRemoved": {
+    "message": "highlight removed"
+  },
+  "bg_errors_noAudioData": {
+    "message": "No audio data provided"
+  },
+  "bg_errors_speechRecognitionFailed": {
+    "message": "Speech recognition failed"
+  },
+  "bg_errors_noTaskId": {
+    "message": "No task ID provided"
+  },
+  "bg_errors_noHistorySessionId": {
+    "message": "No history session ID provided"
+  },
+  "bg_errors_replayFailed": {
+    "message": "Replay failed"
+  },
+  "bg_errors_unknownMessageType": {
+    "message": "Unknown message type"
+  },
+  "bg_errors_unknownError": {
+    "message": "Unknown error"
+  },
+  "bg_setup_configureApiKeys": {
+    "message": "Please configure API keys in the settings first"
+  },
+  "bg_setup_providerNotFound": {
+    "message": "Provider $PROVIDER$ not found in the settings",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "openai"
+      }
+    }
+  },
+  "bg_setup_chooseNavigatorModel": {
+    "message": "Please choose a model for the navigator in the settings first"
   }
 }
