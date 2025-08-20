@@ -845,11 +845,11 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   const getAgentDescription = (agentName: AgentNameEnum) => {
     switch (agentName) {
       case AgentNameEnum.Navigator:
-        return t('options_agents_navigator_desc');
+        return t('options_models_agents_navigator');
       case AgentNameEnum.Planner:
-        return t('options_agents_planner_desc');
+        return t('options_models_agents_planner');
       case AgentNameEnum.Validator:
-        return t('options_agents_validator_desc');
+        return t('options_models_agents_validator');
       default:
         return '';
     }
