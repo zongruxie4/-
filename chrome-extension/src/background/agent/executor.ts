@@ -216,19 +216,19 @@ export class Executor {
       if (done) {
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, this.context.taskId);
       } else if (step >= allowedMaxSteps) {
-        logger.info('❌ Task failed: Max steps reached');
+        logger.error('❌ Task failed: Max steps reached');
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_maxStepsReached'));
       } else if (this.context.stopped) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_errors_taskCancelled'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_task_cancel'));
       } else {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_PAUSE, t('exec_errors_taskPaused'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_PAUSE, t('exec_task_pause'));
       }
     } catch (error) {
       if (error instanceof RequestCancelledError) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_errors_taskCancelled'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_task_cancel'));
       } else {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_taskFailed', [errorMessage]));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_task_fail', [errorMessage]));
       }
     } finally {
       if (import.meta.env.DEV) {
@@ -354,12 +354,12 @@ export class Executor {
     try {
       const historyFromStorage = await chatHistoryStore.loadAgentStepHistory(sessionId);
       if (!historyFromStorage) {
-        throw new Error(t('exec_errors_historyNotFound'));
+        throw new Error(t('exec_replay_historyNotFound'));
       }
 
       const history = JSON.parse(historyFromStorage.history) as AgentStepHistory;
       if (history.history.length === 0) {
-        throw new Error(t('exec_errors_historyEmpty'));
+        throw new Error(t('exec_replay_historyEmpty'));
       }
       logger.debug(`🔄 Replaying history: ${JSON.stringify(history, null, 2)}`);
       this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
@@ -392,14 +392,14 @@ export class Executor {
       }
 
       if (this.context.stopped) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_errors_replayCancelled'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_replay_cancel'));
       } else {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, t('exec_errors_replayCompleted'));
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, t('exec_replay_ok'));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       replayLogger.error(`Replay failed: ${errorMessage}`);
-      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_replayFailed', [errorMessage]));
+      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_replay_fail', [errorMessage]));
     }
 
     return results;

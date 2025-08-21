@@ -72,7 +72,7 @@ chrome.runtime.onConnect.addListener(port => {
             break;
 
           case 'new_task': {
-            if (!message.task) return port.postMessage({ type: 'error', error: t('bg_errors_noTask') });
+            if (!message.task) return port.postMessage({ type: 'error', error: t('bg_cmd_newTask_noTask') });
             if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
             logger.info('new_task', message.tabId, message.task);
@@ -85,7 +85,7 @@ chrome.runtime.onConnect.addListener(port => {
           }
 
           case 'follow_up_task': {
-            if (!message.task) return port.postMessage({ type: 'error', error: t('bg_errors_noFollowUpTask') });
+            if (!message.task) return port.postMessage({ type: 'error', error: t('bg_cmd_followUpTask_noTask') });
             if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
             logger.info('follow_up_task', message.tabId, message.task);
@@ -100,25 +100,25 @@ chrome.runtime.onConnect.addListener(port => {
             } else {
               // executor was cleaned up, can not add follow-up task
               logger.info('follow_up_task: executor was cleaned up, can not add follow-up task');
-              return port.postMessage({ type: 'error', error: t('bg_errors_executorCleanedUp') });
+              return port.postMessage({ type: 'error', error: t('bg_cmd_followUpTask_cleaned') });
             }
             break;
           }
 
           case 'cancel_task': {
-            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_errors_noTaskToCancel') });
+            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_errors_noRunningTask') });
             await currentExecutor.cancel();
             break;
           }
 
           case 'resume_task': {
-            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_errors_noTaskToResume') });
+            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_cmd_resumeTask_noTask') });
             await currentExecutor.resume();
             return port.postMessage({ type: 'success' });
           }
 
           case 'pause_task': {
-            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_errors_noTaskToPause') });
+            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_errors_noRunningTask') });
             await currentExecutor.pause();
             return port.postMessage({ type: 'success' });
           }
@@ -140,17 +140,17 @@ chrome.runtime.onConnect.addListener(port => {
 
               logger.info('state', browserState);
               logger.info('interactive elements', elementsText);
-              return port.postMessage({ type: 'success', msg: t('bg_errors_statePrinted') });
+              return port.postMessage({ type: 'success', msg: t('bg_cmd_state_printed') });
             } catch (error) {
               logger.error('Failed to get state:', error);
-              return port.postMessage({ type: 'error', error: t('bg_errors_failedGetState') });
+              return port.postMessage({ type: 'error', error: t('bg_cmd_state_failed') });
             }
           }
 
           case 'nohighlight': {
             const page = await browserContext.getCurrentPage();
             await page.removeHighlight();
-            return port.postMessage({ type: 'success', msg: t('bg_errors_highlightRemoved') });
+            return port.postMessage({ type: 'success', msg: t('bg_cmd_nohighlight_ok') });
           }
 
           case 'speech_to_text': {
@@ -158,7 +158,7 @@ chrome.runtime.onConnect.addListener(port => {
               if (!message.audio) {
                 return port.postMessage({
                   type: 'speech_to_text_error',
-                  error: t('bg_errors_noAudioData'),
+                  error: t('bg_cmd_stt_noAudioData'),
                 });
               }
 
@@ -188,7 +188,7 @@ chrome.runtime.onConnect.addListener(port => {
               logger.error('Speech-to-text failed:', error);
               return port.postMessage({
                 type: 'speech_to_text_error',
-                error: error instanceof Error ? error.message : t('bg_errors_speechRecognitionFailed'),
+                error: error instanceof Error ? error.message : t('bg_cmd_stt_failed'),
               });
             }
           }
@@ -197,7 +197,7 @@ chrome.runtime.onConnect.addListener(port => {
             if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
             if (!message.taskId) return port.postMessage({ type: 'error', error: t('bg_errors_noTaskId') });
             if (!message.historySessionId)
-              return port.postMessage({ type: 'error', error: t('bg_errors_noHistorySessionId') });
+              return port.postMessage({ type: 'error', error: t('bg_cmd_replay_noHistory') });
             logger.info('replay', message.tabId, message.taskId, message.historySessionId);
 
             try {
@@ -214,20 +214,20 @@ chrome.runtime.onConnect.addListener(port => {
               logger.error('Replay failed:', error);
               return port.postMessage({
                 type: 'error',
-                error: error instanceof Error ? error.message : t('bg_errors_replayFailed'),
+                error: error instanceof Error ? error.message : t('bg_cmd_replay_failed'),
               });
             }
             break;
           }
 
           default:
-            return port.postMessage({ type: 'error', error: t('bg_errors_unknownMessageType') });
+            return port.postMessage({ type: 'error', error: t('errors_cmd_unknown', [message.type]) });
         }
       } catch (error) {
         console.error('Error handling port message:', error);
         port.postMessage({
           type: 'error',
-          error: error instanceof Error ? error.message : t('bg_errors_unknownError'),
+          error: error instanceof Error ? error.message : t('errors_unknown'),
         });
       }
     });
@@ -245,19 +245,19 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   const providers = await llmProviderStore.getAllProviders();
   // if no providers, need to display the options page
   if (Object.keys(providers).length === 0) {
-    throw new Error(t('bg_setup_configureApiKeys'));
+    throw new Error(t('bg_setup_noApiKeys'));
   }
   const agentModels = await agentModelStore.getAllAgentModels();
   // verify if every provider used in the agent models exists in the providers
   for (const agentModel of Object.values(agentModels)) {
     if (!providers[agentModel.provider]) {
-      throw new Error(t('bg_setup_providerNotFound', [agentModel.provider]));
+      throw new Error(t('bg_setup_noProvider', [agentModel.provider]));
     }
   }
 
   const navigatorModel = agentModels[AgentNameEnum.Navigator];
   if (!navigatorModel) {
-    throw new Error(t('bg_setup_chooseNavigatorModel'));
+    throw new Error(t('bg_setup_noNavigatorModel'));
   }
   // Log the provider config being used for the navigator
   const navigatorProviderConfig = providers[navigatorModel.provider];

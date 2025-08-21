@@ -7,6 +7,21 @@
     "description": "Extension name",
     "message": "Nanobrowser: AI Web Agent & Automation"
   },
+  "errors_unknown": {
+    "message": "Unknown error occurred"
+  },
+  "errors_conn_serviceWorker": {
+    "message": "Failed to connect to service worker"
+  },
+  "errors_cmd_unknown": {
+    "message": "Unsupported command: $COMMAND$.\n\nAvailable commands: /state, /nohighlight, /replay <historySessionId>",
+    "placeholders": {
+      "command": {
+        "content": "$1",
+        "example": "/unknown"
+      }
+    }
+  },
   "nav_newChat_a11y": {
     "message": "New Chat"
   },
@@ -436,77 +451,53 @@
   "options_firewall_howItWorks": {
     "message": "The firewall contains a deny list and an allow list.\nIf both lists are empty, all URLs are allowed\nDeny list takes priority - if a URL matches any deny list entry, it's blocked\nWhen allow list is empty, all non-denied URLs are allowed\nWhen allow list is not empty, only matching URLs are allowed\nWildcards are NOT supported yet\nAllow list is preferred over deny list"
   },
-  "errors_unknown": {
-    "message": "Unknown error occurred"
-  },
-  "errors_conn_serviceWorker": {
-    "message": "Failed to connect to service worker"
-  },
-  "errors_unsupportedCommand": {
-    "message": "Unsupported command: $COMMAND$.\n\nAvailable commands: /state, /nohighlight, /replay <historySessionId>",
-    "placeholders": {
-      "command": {
-        "content": "$1",
-        "example": "/unknown"
-      }
-    }
-  },
 
-  "bg_errors_noTask": {
-    "message": "No task provided"
-  },
   "bg_errors_noTabId": {
     "message": "No tab ID provided"
-  },
-  "bg_errors_noFollowUpTask": {
-    "message": "No follow up task provided"
-  },
-  "bg_errors_executorCleanedUp": {
-    "message": "Executor was cleaned up, can not add follow-up task"
-  },
-  "bg_errors_noTaskToCancel": {
-    "message": "No task to cancel"
-  },
-  "bg_errors_noTaskToResume": {
-    "message": "No task to resume"
-  },
-  "bg_errors_noTaskToPause": {
-    "message": "No task to pause"
-  },
-  "bg_errors_statePrinted": {
-    "message": "State printed to console"
-  },
-  "bg_errors_failedGetState": {
-    "message": "Failed to get state"
-  },
-  "bg_errors_highlightRemoved": {
-    "message": "highlight removed"
-  },
-  "bg_errors_noAudioData": {
-    "message": "No audio data provided"
-  },
-  "bg_errors_speechRecognitionFailed": {
-    "message": "Speech recognition failed"
   },
   "bg_errors_noTaskId": {
     "message": "No task ID provided"
   },
-  "bg_errors_noHistorySessionId": {
+  "bg_errors_noRunningTask": {
+    "message": "No running task"
+  },
+  "bg_cmd_newTask_noTask": {
+    "message": "No task provided"
+  },
+  "bg_cmd_followUpTask_noTask": {
+    "message": "No follow up task provided"
+  },
+  "bg_cmd_followUpTask_cleaned": {
+    "message": "Executor was cleaned up, can not add follow-up task"
+  },
+  "bg_cmd_resumeTask_noTask": {
+    "message": "No task to resume"
+  },
+  "bg_cmd_state_printed": {
+    "message": "State printed to console"
+  },
+  "bg_cmd_state_failed": {
+    "message": "Failed to get state"
+  },
+  "bg_cmd_nohighlight_ok": {
+    "message": "highlight removed"
+  },
+  "bg_cmd_stt_noAudioData": {
+    "message": "No audio data provided"
+  },
+  "bg_cmd_stt_failed": {
+    "message": "Speech recognition failed"
+  },
+  "bg_cmd_replay_noHistory": {
     "message": "No history session ID provided"
   },
-  "bg_errors_replayFailed": {
+  "bg_cmd_replay_failed": {
     "message": "Replay failed"
   },
-  "bg_errors_unknownMessageType": {
-    "message": "Unknown message type"
-  },
-  "bg_errors_unknownError": {
-    "message": "Unknown error"
-  },
-  "bg_setup_configureApiKeys": {
+  "bg_setup_noApiKeys": {
     "message": "Please configure API keys in the settings first"
   },
-  "bg_setup_providerNotFound": {
+  "bg_setup_noProvider": {
     "message": "Provider $PROVIDER$ not found in the settings",
     "placeholders": {
       "provider": {
@@ -515,37 +506,25 @@
       }
     }
   },
-  "bg_setup_chooseNavigatorModel": {
+  "bg_setup_noNavigatorModel": {
     "message": "Please choose a model for the navigator in the settings first"
   },
   "exec_errors_tooManyValidationFailures": {
     "message": "Too many failures of validation"
   },
   "exec_errors_maxStepsReached": {
-    "message": "Task failed: Max steps reached"
-  },
-  "exec_errors_taskCancelled": {
-    "message": "Task cancelled"
-  },
-  "exec_errors_taskPaused": {
-    "message": "Task paused"
+    "message": "Max steps reached"
   },
   "exec_errors_maxFailuresReached": {
     "message": "Max failures reached"
   },
-  "exec_errors_historyNotFound": {
-    "message": "History not found"
+  "exec_task_cancel": {
+    "message": "Task cancelled"
   },
-  "exec_errors_historyEmpty": {
-    "message": "History is empty"
+  "exec_task_pause": {
+    "message": "Task paused"
   },
-  "exec_errors_replayCancelled": {
-    "message": "Replay cancelled"
-  },
-  "exec_errors_replayCompleted": {
-    "message": "Replay completed"
-  },
-  "exec_errors_taskFailed": {
+  "exec_task_fail": {
     "message": "Task failed: $ERROR_MESSAGE$",
     "placeholders": {
       "error_message": {
@@ -554,12 +533,444 @@
       }
     }
   },
-  "exec_errors_replayFailed": {
+  "exec_replay_cancel": {
+    "message": "Replay cancelled"
+  },
+  "exec_replay_ok": {
+    "message": "Replay completed"
+  },
+  "exec_replay_fail": {
     "message": "Replay failed: $ERROR_MESSAGE$",
     "placeholders": {
       "error_message": {
         "content": "$1",
         "example": "Network error"
+      }
+    }
+  },
+  "exec_replay_historyNotFound": {
+    "message": "History not found"
+  },
+  "exec_replay_historyEmpty": {
+    "message": "History is empty"
+  },
+
+  "act_searchGoogle_start": {
+    "message": "Searching for \"$QUERY$\" in Google",
+    "placeholders": {
+      "query": {
+        "content": "$1",
+        "example": "weather today"
+      }
+    }
+  },
+  "act_searchGoogle_ok": {
+    "message": "Searched for \"$QUERY$\" in Google",
+    "placeholders": {
+      "query": {
+        "content": "$1",
+        "example": "weather today"
+      }
+    }
+  },
+  "act_goToUrl_start": {
+    "message": "Navigating to $URL$",
+    "placeholders": {
+      "url": {
+        "content": "$1",
+        "example": "https://example.com"
+      }
+    }
+  },
+  "act_goToUrl_ok": {
+    "message": "Navigated to $URL$",
+    "placeholders": {
+      "url": {
+        "content": "$1",
+        "example": "https://example.com"
+      }
+    }
+  },
+  "act_goBack_start": {
+    "message": "Navigating back"
+  },
+  "act_goBack_ok": {
+    "message": "Navigated back"
+  },
+  "act_wait_start": {
+    "message": "Waiting for $SECONDS$ seconds",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "act_wait_ok": {
+    "message": "$SECONDS$ seconds elapsed",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "act_click_start": {
+    "message": "Click element with index $INDEX$",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_errors_elementNotExist": {
+    "message": "Element with index $INDEX$ does not exist - retry or use alternative actions",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_errors_elementNoLongerAvailable": {
+    "message": "Element no longer available with index $INDEX$ - most likely the page changed",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_click_fileUploader": {
+    "message": "Index $INDEX$ - has an element which opens file upload dialog. To upload files please use a specific function to upload files",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_click_ok": {
+    "message": "Clicked button with index $INDEX$: $TEXT$",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      },
+      "text": {
+        "content": "$2",
+        "example": "Submit Button"
+      }
+    }
+  },
+  "act_click_newTabOpened": {
+    "message": "New tab opened - switching to it"
+  },
+  "act_inputText_start": {
+    "message": "Input text into index $INDEX$",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_inputText_ok": {
+    "message": "Input $TEXT$ into index $INDEX$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Hello World"
+      },
+      "index": {
+        "content": "$2",
+        "example": "5"
+      }
+    }
+  },
+  "act_switchTab_start": {
+    "message": "Switching to tab $TAB_ID$",
+    "placeholders": {
+      "tab_id": {
+        "content": "$1",
+        "example": "123456"
+      }
+    }
+  },
+  "act_switchTab_ok": {
+    "message": "Switched to tab $TAB_ID$",
+    "placeholders": {
+      "tab_id": {
+        "content": "$1",
+        "example": "123456"
+      }
+    }
+  },
+  "act_openTab_start": {
+    "message": "Opening $URL$ in new tab",
+    "placeholders": {
+      "url": {
+        "content": "$1",
+        "example": "https://example.com"
+      }
+    }
+  },
+  "act_openTab_ok": {
+    "message": "Opened $URL$ in new tab",
+    "placeholders": {
+      "url": {
+        "content": "$1",
+        "example": "https://example.com"
+      }
+    }
+  },
+  "act_closeTab_start": {
+    "message": "Closing tab $TAB_ID$",
+    "placeholders": {
+      "tab_id": {
+        "content": "$1",
+        "example": "123456"
+      }
+    }
+  },
+  "act_closeTab_ok": {
+    "message": "Closed tab $TAB_ID$",
+    "placeholders": {
+      "tab_id": {
+        "content": "$1",
+        "example": "123456"
+      }
+    }
+  },
+  "act_cache_start": {
+    "message": "Caching findings: $CONTENT$",
+    "placeholders": {
+      "content": {
+        "content": "$1",
+        "example": "User preferences saved"
+      }
+    }
+  },
+  "act_cache_ok": {
+    "message": "Cached findings: $CONTENT$",
+    "placeholders": {
+      "content": {
+        "content": "$1",
+        "example": "User preferences saved"
+      }
+    }
+  },
+  "act_scrollToPercent_start": {
+    "message": "Scroll to percent: $PERCENT$",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "50"
+      }
+    }
+  },
+  "act_scrollToPercent_ok": {
+    "message": "Scrolled to percent: $PERCENT$",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "50"
+      }
+    }
+  },
+  "act_scrollToTop_start": {
+    "message": "Scroll to top"
+  },
+  "act_scrollToTop_ok": {
+    "message": "Scrolled to top"
+  },
+  "act_scrollToBottom_start": {
+    "message": "Scroll to bottom"
+  },
+  "act_scrollToBottom_ok": {
+    "message": "Scrolled to bottom"
+  },
+  "act_previousPage_start": {
+    "message": "Scroll to previous page"
+  },
+  "act_previousPage_ok": {
+    "message": "Scrolled to previous page"
+  },
+  "act_nextPage_start": {
+    "message": "Scroll to next page"
+  },
+  "act_nextPage_ok": {
+    "message": "Scrolled to next page"
+  },
+  "act_errors_alreadyAtTop": {
+    "message": "Element with index $INDEX$ is already at top, cannot scroll to previous page",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_errors_pageAlreadyAtTop": {
+    "message": "Already at top of page, cannot scroll to previous page"
+  },
+  "act_errors_alreadyAtBottom": {
+    "message": "Element with index $INDEX$ is already at bottom, cannot scroll to next page",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_errors_pageAlreadyAtBottom": {
+    "message": "Already at bottom of page, cannot scroll to next page"
+  },
+  "act_scrollToText_start": {
+    "message": "Scroll to text: $TEXT$, occurrence $OCCURRENCE$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Contact Us"
+      },
+      "occurrence": {
+        "content": "$2",
+        "example": "2"
+      }
+    }
+  },
+  "act_scrollToText_ok": {
+    "message": "Scrolled to text: $TEXT$, occurrence $OCCURRENCE$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Contact Us"
+      },
+      "occurrence": {
+        "content": "$2",
+        "example": "2"
+      }
+    }
+  },
+  "act_scrollToText_notFound": {
+    "message": "Text '$TEXT$' (occurrence $OCCURRENCE$) not found or not visible",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Contact Us"
+      },
+      "occurrence": {
+        "content": "$2",
+        "example": "2"
+      }
+    }
+  },
+  "act_scrollToText_failed": {
+    "message": "Failed to scroll to text: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Element not found"
+      }
+    }
+  },
+  "act_sendKeys_start": {
+    "message": "Send keys: $KEYS$",
+    "placeholders": {
+      "keys": {
+        "content": "$1",
+        "example": "Enter"
+      }
+    }
+  },
+  "act_sendKeys_ok": {
+    "message": "Sent keys: $KEYS$",
+    "placeholders": {
+      "keys": {
+        "content": "$1",
+        "example": "Enter"
+      }
+    }
+  },
+  "act_getDropdownOptions_start": {
+    "message": "Getting options from dropdown with index $INDEX$",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_getDropdownOptions_useExactText": {
+    "message": "Use the exact text string in select_dropdown_option"
+  },
+  "act_getDropdownOptions_ok": {
+    "message": "Got $COUNT$ options from dropdown",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_getDropdownOptions_noOptions": {
+    "message": "No options found in dropdown"
+  },
+  "act_getDropdownOptions_failed": {
+    "message": "Failed to get dropdown options: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Element not found"
+      }
+    }
+  },
+  "act_selectDropdownOption_start": {
+    "message": "Select option \"$TEXT$\" from dropdown with index $INDEX$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Option 1"
+      },
+      "index": {
+        "content": "$2",
+        "example": "5"
+      }
+    }
+  },
+  "act_selectDropdownOption_ok": {
+    "message": "Selected option \"$TEXT$\" from dropdown with index $INDEX$",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "Option 1"
+      },
+      "index": {
+        "content": "$2",
+        "example": "5"
+      }
+    }
+  },
+  "act_selectDropdownOption_notSelect": {
+    "message": "Cannot select option: Element with index $INDEX$ is a $TAG_NAME$, not a SELECT",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      },
+      "tag_name": {
+        "content": "$2",
+        "example": "DIV"
+      }
+    }
+  },
+  "act_selectDropdownOption_failed": {
+    "message": "Failed to select option: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Option not found"
       }
     }
   }

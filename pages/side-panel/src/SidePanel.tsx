@@ -533,7 +533,7 @@ const SidePanel = () => {
       // Unsupported command
       appendMessage({
         actor: Actors.SYSTEM,
-        content: t('errors_unsupportedCommand', command),
+        content: t('errors_cmd_unknown', command),
         timestamp: Date.now(),
       });
       return true;
