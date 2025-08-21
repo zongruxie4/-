@@ -95,7 +95,7 @@ export default function ChatInput({
     <form
       onSubmit={handleSubmit}
       className={`overflow-hidden rounded-lg border transition-colors ${disabled ? 'cursor-not-allowed' : 'focus-within:border-sky-400 hover:border-sky-400'} ${isDarkMode ? 'border-slate-700' : ''}`}
-      aria-label={t('accessibilityChatInputForm')}>
+      aria-label={t('chat_input_form')}>
       <div className="flex flex-col">
         <textarea
           ref={textareaRef}
@@ -114,8 +114,8 @@ export default function ChatInput({
                 ? 'bg-slate-800 text-gray-200'
                 : 'bg-white'
           }`}
-          placeholder={t('inputPlaceholder')}
-          aria-label={t('accessibilityMessageInput')}
+          placeholder={t('chat_input_placeholder')}
+          aria-label={t('chat_input_editor')}
         />
 
         <div
@@ -130,10 +130,10 @@ export default function ChatInput({
                 disabled={disabled || isProcessingSpeech}
                 aria-label={
                   isProcessingSpeech
-                    ? t('voiceProcessingSpeech')
+                    ? t('chat_stt_processing')
                     : isRecording
-                      ? t('voiceStopRecording')
-                      : t('voiceStartVoiceInput')
+                      ? t('chat_stt_recording_stop')
+                      : t('chat_stt_input_start')
                 }
                 className={`rounded-md p-1.5 transition-colors ${
                   disabled || isProcessingSpeech
@@ -158,7 +158,7 @@ export default function ChatInput({
               type="button"
               onClick={onStopTask}
               className="rounded-md bg-red-500 px-3 py-1 text-white transition-colors hover:bg-red-600">
-              {t('buttonsStop')}
+              {t('chat_buttons_stop')}
             </button>
           ) : historicalSessionId ? (
             <button
@@ -167,7 +167,7 @@ export default function ChatInput({
               disabled={!historicalSessionId}
               aria-disabled={!historicalSessionId}
               className={`rounded-md bg-green-500 px-3 py-1 text-white transition-colors hover:enabled:bg-green-600 ${!historicalSessionId ? 'cursor-not-allowed opacity-50' : ''}`}>
-              {t('buttonsReplay')}
+              {t('chat_buttons_replay')}
             </button>
           ) : (
             <button
@@ -175,7 +175,7 @@ export default function ChatInput({
               disabled={isSendButtonDisabled}
               aria-disabled={isSendButtonDisabled}
               className={`rounded-md bg-[#19C2FF] px-3 py-1 text-white transition-colors hover:enabled:bg-[#0073DC] ${isSendButtonDisabled ? 'cursor-not-allowed opacity-50' : ''}`}>
-              {t('buttonsSend')}
+              {t('chat_buttons_send')}
             </button>
           )}
         </div>

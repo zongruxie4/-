@@ -6,6 +6,7 @@ import {
   generalSettingsStore,
   llmProviderStore,
 } from '@extension/storage';
+import { t } from '@extension/i18n';
 import BrowserContext from './browser/context';
 import { Executor } from './agent/executor';
 import { createLogger } from './log';
@@ -71,8 +72,8 @@ chrome.runtime.onConnect.addListener(port => {
             break;
 
           case 'new_task': {
-            if (!message.task) return port.postMessage({ type: 'error', error: 'No task provided' });
-            if (!message.tabId) return port.postMessage({ type: 'error', error: 'No tab ID provided' });
+            if (!message.task) return port.postMessage({ type: 'error', error: t('bg_cmd_newTask_noTask') });
+            if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
             logger.info('new_task', message.tabId, message.task);
             currentExecutor = await setupExecutor(message.taskId, message.task, browserContext);
@@ -84,8 +85,8 @@ chrome.runtime.onConnect.addListener(port => {
           }
 
           case 'follow_up_task': {
-            if (!message.task) return port.postMessage({ type: 'error', error: 'No follow up task provided' });
-            if (!message.tabId) return port.postMessage({ type: 'error', error: 'No tab ID provided' });
+            if (!message.task) return port.postMessage({ type: 'error', error: t('bg_cmd_followUpTask_noTask') });
+            if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
             logger.info('follow_up_task', message.tabId, message.task);
 
@@ -99,31 +100,31 @@ chrome.runtime.onConnect.addListener(port => {
             } else {
               // executor was cleaned up, can not add follow-up task
               logger.info('follow_up_task: executor was cleaned up, can not add follow-up task');
-              return port.postMessage({ type: 'error', error: 'Executor was cleaned up, can not add follow-up task' });
+              return port.postMessage({ type: 'error', error: t('bg_cmd_followUpTask_cleaned') });
             }
             break;
           }
 
           case 'cancel_task': {
-            if (!currentExecutor) return port.postMessage({ type: 'error', error: 'No task to cancel' });
+            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_errors_noRunningTask') });
             await currentExecutor.cancel();
             break;
           }
 
           case 'resume_task': {
-            if (!currentExecutor) return port.postMessage({ type: 'error', error: 'No task to resume' });
+            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_cmd_resumeTask_noTask') });
             await currentExecutor.resume();
             return port.postMessage({ type: 'success' });
           }
 
           case 'pause_task': {
-            if (!currentExecutor) return port.postMessage({ type: 'error', error: 'No task to pause' });
+            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_errors_noRunningTask') });
             await currentExecutor.pause();
             return port.postMessage({ type: 'success' });
           }
 
           case 'screenshot': {
-            if (!message.tabId) return port.postMessage({ type: 'error', error: 'No tab ID provided' });
+            if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
             const page = await browserContext.switchTab(message.tabId);
             const screenshot = await page.takeScreenshot();
             logger.info('screenshot', message.tabId, screenshot);
@@ -139,17 +140,17 @@ chrome.runtime.onConnect.addListener(port => {
 
               logger.info('state', browserState);
               logger.info('interactive elements', elementsText);
-              return port.postMessage({ type: 'success', msg: 'State printed to console' });
+              return port.postMessage({ type: 'success', msg: t('bg_cmd_state_printed') });
             } catch (error) {
               logger.error('Failed to get state:', error);
-              return port.postMessage({ type: 'error', error: 'Failed to get state' });
+              return port.postMessage({ type: 'error', error: t('bg_cmd_state_failed') });
             }
           }
 
           case 'nohighlight': {
             const page = await browserContext.getCurrentPage();
             await page.removeHighlight();
-            return port.postMessage({ type: 'success', msg: 'highlight removed' });
+            return port.postMessage({ type: 'success', msg: t('bg_cmd_nohighlight_ok') });
           }
 
           case 'speech_to_text': {
@@ -157,7 +158,7 @@ chrome.runtime.onConnect.addListener(port => {
               if (!message.audio) {
                 return port.postMessage({
                   type: 'speech_to_text_error',
-                  error: 'No audio data provided',
+                  error: t('bg_cmd_stt_noAudioData'),
                 });
               }
 
@@ -187,16 +188,16 @@ chrome.runtime.onConnect.addListener(port => {
               logger.error('Speech-to-text failed:', error);
               return port.postMessage({
                 type: 'speech_to_text_error',
-                error: error instanceof Error ? error.message : 'Speech recognition failed',
+                error: error instanceof Error ? error.message : t('bg_cmd_stt_failed'),
               });
             }
           }
 
           case 'replay': {
-            if (!message.tabId) return port.postMessage({ type: 'error', error: 'No tab ID provided' });
-            if (!message.taskId) return port.postMessage({ type: 'error', error: 'No task ID provided' });
+            if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
+            if (!message.taskId) return port.postMessage({ type: 'error', error: t('bg_errors_noTaskId') });
             if (!message.historySessionId)
-              return port.postMessage({ type: 'error', error: 'No history session ID provided' });
+              return port.postMessage({ type: 'error', error: t('bg_cmd_replay_noHistory') });
             logger.info('replay', message.tabId, message.taskId, message.historySessionId);
 
             try {
@@ -213,20 +214,20 @@ chrome.runtime.onConnect.addListener(port => {
               logger.error('Replay failed:', error);
               return port.postMessage({
                 type: 'error',
-                error: error instanceof Error ? error.message : 'Replay failed',
+                error: error instanceof Error ? error.message : t('bg_cmd_replay_failed'),
               });
             }
             break;
           }
 
           default:
-            return port.postMessage({ type: 'error', error: 'Unknown message type' });
+            return port.postMessage({ type: 'error', error: t('errors_cmd_unknown', [message.type]) });
         }
       } catch (error) {
         console.error('Error handling port message:', error);
         port.postMessage({
           type: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : t('errors_unknown'),
         });
       }
     });
@@ -244,19 +245,19 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   const providers = await llmProviderStore.getAllProviders();
   // if no providers, need to display the options page
   if (Object.keys(providers).length === 0) {
-    throw new Error('Please configure API keys in the settings first');
+    throw new Error(t('bg_setup_noApiKeys'));
   }
   const agentModels = await agentModelStore.getAllAgentModels();
   // verify if every provider used in the agent models exists in the providers
   for (const agentModel of Object.values(agentModels)) {
     if (!providers[agentModel.provider]) {
-      throw new Error(`Provider ${agentModel.provider} not found in the settings`);
+      throw new Error(t('bg_setup_noProvider', [agentModel.provider]));
     }
   }
 
   const navigatorModel = agentModels[AgentNameEnum.Navigator];
   if (!navigatorModel) {
-    throw new Error('Please choose a model for the navigator in the settings first');
+    throw new Error(t('bg_setup_noNavigatorModel'));
   }
   // Log the provider config being used for the navigator
   const navigatorProviderConfig = providers[navigatorModel.provider];

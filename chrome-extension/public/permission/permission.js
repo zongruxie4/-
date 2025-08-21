@@ -1,16 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
   // Set up i18n text content
-  document.getElementById('title').textContent = chrome.i18n.getMessage('permissionTitle');
-  document.getElementById('description').textContent = chrome.i18n.getMessage('permissionDescription');
+  document.getElementById('title').textContent = chrome.i18n.getMessage('permissions_microphone_title');
+  document.getElementById('description').textContent = chrome.i18n.getMessage('permissions_microphone_description');
 
   const requestButton = document.getElementById('requestPermission');
   const statusText = document.getElementById('status');
 
-  requestButton.textContent = chrome.i18n.getMessage('permissionGrantButton');
+  requestButton.textContent = chrome.i18n.getMessage('permissions_microphone_grantButton');
 
   requestButton.addEventListener('click', async () => {
     try {
-      statusText.textContent = chrome.i18n.getMessage('permissionRequesting');
+      statusText.textContent = chrome.i18n.getMessage('permissions_microphone_requesting');
       statusText.className = '';
 
       // Request microphone permission
@@ -20,9 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
       stream.getTracks().forEach(track => track.stop());
 
       // Update UI
-      statusText.textContent = chrome.i18n.getMessage('permissionGrantedSuccess');
+      statusText.textContent = chrome.i18n.getMessage('permissions_microphone_grantedSuccess');
       statusText.className = 'success';
-      requestButton.textContent = chrome.i18n.getMessage('permissionGrantedButton');
+      requestButton.textContent = chrome.i18n.getMessage('permissions_microphone_grantedButton');
       requestButton.disabled = true;
 
       // Close window after a short delay
@@ -32,12 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Permission denied or error:', error);
 
-      let errorMessage = chrome.i18n.getMessage('permissionDenied');
+      let errorMessage = chrome.i18n.getMessage('permissions_microphone_denied');
 
       if (error.name === 'NotAllowedError') {
-        errorMessage += chrome.i18n.getMessage('permissionAllowHelp');
+        errorMessage += chrome.i18n.getMessage('permissions_microphone_allowHelp');
       } else if (error.name === 'NotFoundError') {
-        errorMessage += chrome.i18n.getMessage('permissionNoMicrophone');
+        errorMessage += chrome.i18n.getMessage('permissions_microphone_notFound');
       } else {
         errorMessage += error.message;
       }
@@ -52,9 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     .query({ name: 'microphone' })
     .then(permissionStatus => {
       if (permissionStatus.state === 'granted') {
-        statusText.textContent = chrome.i18n.getMessage('permissionAlreadyGranted');
+        statusText.textContent = chrome.i18n.getMessage('permissions_microphone_alreadyGranted');
         statusText.className = 'success';
-        requestButton.textContent = chrome.i18n.getMessage('permissionAlreadyGrantedButton');
+        requestButton.textContent = chrome.i18n.getMessage('permissions_microphone_alreadyGrantedButton');
         requestButton.disabled = true;
       }
     })
