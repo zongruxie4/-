@@ -1,7 +1,7 @@
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
-import type { AgentNameEnum } from './types';
+import { AgentNameEnum } from './types';
 import { llmProviderParameters } from './types';
 
 // Interface for a single model configuration
@@ -25,6 +25,7 @@ export type AgentModelStorage = BaseStorage<AgentModelRecord> & {
   hasAgentModel: (agent: AgentNameEnum) => Promise<boolean>;
   getConfiguredAgents: () => Promise<AgentNameEnum[]>;
   getAllAgentModels: () => Promise<Record<AgentNameEnum, ModelConfig>>;
+  cleanupLegacyValidatorSettings: () => Promise<void>;
 };
 
 const storage = createStorage<AgentModelRecord>(
@@ -95,10 +96,27 @@ export const agentModelStore: AgentModelStorage = {
   },
   getConfiguredAgents: async () => {
     const data = await storage.get();
-    return Object.keys(data.agents) as AgentNameEnum[];
+    // Filter out any legacy validator entries for backward compatibility
+    return Object.keys(data.agents).filter(
+      agentKey => agentKey !== 'validator' && Object.values(AgentNameEnum).includes(agentKey as AgentNameEnum),
+    ) as AgentNameEnum[];
   },
   getAllAgentModels: async () => {
     const data = await storage.get();
-    return data.agents;
+    // Filter out any legacy validator entries for backward compatibility
+    const filteredAgents: Partial<Record<AgentNameEnum, ModelConfig>> = {};
+    for (const [agentKey, config] of Object.entries(data.agents)) {
+      if (agentKey !== 'validator' && Object.values(AgentNameEnum).includes(agentKey as AgentNameEnum)) {
+        filteredAgents[agentKey as AgentNameEnum] = config;
+      }
+    }
+    return filteredAgents as Record<AgentNameEnum, ModelConfig>;
+  },
+  cleanupLegacyValidatorSettings: async () => {
+    await storage.set(current => {
+      const newAgents = { ...current.agents };
+      delete newAgents['validator' as keyof typeof newAgents];
+      return { agents: newAgents };
+    });
   },
 };

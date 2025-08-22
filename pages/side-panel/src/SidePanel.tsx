@@ -154,7 +154,6 @@ const SidePanel = () => {
       let skip = true;
       let displayProgress = false;
 
-      console.log('handleTaskState isReplaying', isReplayingRef.current);
       switch (actor) {
         case Actors.SYSTEM:
           switch (state) {
@@ -244,6 +243,7 @@ const SidePanel = () => {
           }
           break;
         case Actors.VALIDATOR:
+          // Handle legacy validator events from historical messages
           switch (state) {
             case ExecutionState.STEP_START:
               displayProgress = true;

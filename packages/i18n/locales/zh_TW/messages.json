@@ -319,9 +319,6 @@
   "options_models_agents_planner": {
     "message": "制定並調整策略以完成任務"
   },
-  "options_models_agents_validator": {
-    "message": "檢查任務是否成功完成"
-  },
   "options_models_labels_model": {
     "message": "模型"
   },
@@ -501,9 +498,6 @@
   },
   "bg_setup_noNavigatorModel": {
     "message": "請先在設定中為導覽代理程式選擇一個模型。"
-  },
-  "exec_errors_tooManyValidationFailures": {
-    "message": "驗證失敗次數過多"
   },
   "exec_errors_maxStepsReached": {
     "message": "已達步驟上限"

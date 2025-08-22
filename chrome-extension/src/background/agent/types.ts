@@ -11,13 +11,11 @@ export interface AgentOptions {
   maxSteps: number;
   maxActionsPerStep: number;
   maxFailures: number;
-  maxValidatorFailures: number;
   retryDelay: number;
   maxInputTokens: number;
   maxErrorLength: number;
   useVision: boolean;
   useVisionForPlanner: boolean;
-  validateOutput: boolean;
   includeAttributes: string[];
   planningInterval: number;
 }
@@ -26,13 +24,11 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
   maxSteps: 100,
   maxActionsPerStep: 10,
   maxFailures: 3,
-  maxValidatorFailures: 3,
   retryDelay: 10,
   maxInputTokens: 128000,
   maxErrorLength: 400,
   useVision: false,
   useVisionForPlanner: true,
-  validateOutput: true,
   includeAttributes: DEFAULT_INCLUDE_ATTRIBUTES,
   planningInterval: 3,
 };
@@ -47,12 +43,12 @@ export class AgentContext {
   paused: boolean;
   stopped: boolean;
   consecutiveFailures: number;
-  consecutiveValidatorFailures: number;
   nSteps: number;
   stepInfo: AgentStepInfo | null;
   actionResults: ActionResult[];
   stateMessageAdded: boolean;
   history: AgentStepHistory;
+  finalAnswer: string | null;
 
   constructor(
     taskId: string,
@@ -72,11 +68,11 @@ export class AgentContext {
     this.stopped = false;
     this.nSteps = 0;
     this.consecutiveFailures = 0;
-    this.consecutiveValidatorFailures = 0;
     this.stepInfo = null;
     this.actionResults = [];
     this.stateMessageAdded = false;
     this.history = new AgentStepHistory();
+    this.finalAnswer = null;
   }
 
   async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string) {
