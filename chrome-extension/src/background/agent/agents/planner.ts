@@ -28,6 +28,7 @@ export const plannerOutputSchema = z.object({
     }),
   ]),
   next_steps: z.string(),
+  final_answer: z.string(),
   reasoning: z.string(),
   web_task: z.union([
     z.boolean(),
@@ -77,7 +78,10 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
       if (!modelOutput) {
         throw new Error('Failed to validate planner output');
       }
-      this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_OK, modelOutput.next_steps);
+
+      // If task is done, emit the final answer; otherwise emit next steps
+      const eventMessage = modelOutput.done ? modelOutput.final_answer : modelOutput.next_steps;
+      this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_OK, eventMessage);
       logger.info('Planner output', JSON.stringify(modelOutput, null, 2));
 
       return {

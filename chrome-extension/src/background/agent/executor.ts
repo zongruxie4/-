@@ -1,12 +1,10 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { type ActionResult, AgentContext, type AgentOptions } from './types';
+import { type ActionResult, AgentContext, type AgentOptions, type AgentOutput } from './types';
 import { t } from '@extension/i18n';
 import { NavigatorAgent, NavigatorActionRegistry } from './agents/navigator';
 import { PlannerAgent, type PlannerOutput } from './agents/planner';
-import { ValidatorAgent } from './agents/validator';
 import { NavigatorPrompt } from './prompts/navigator';
 import { PlannerPrompt } from './prompts/planner';
-import { ValidatorPrompt } from './prompts/validator';
 import { createLogger } from '@src/background/log';
 import MessageManager from './messages/service';
 import type BrowserContext from '../browser/context';
@@ -29,7 +27,6 @@ const logger = createLogger('Executor');
 
 export interface ExecutorExtraArgs {
   plannerLLM?: BaseChatModel;
-  validatorLLM?: BaseChatModel;
   extractorLLM?: BaseChatModel;
   agentOptions?: Partial<AgentOptions>;
   generalSettings?: GeneralSettingsConfig;
@@ -38,11 +35,9 @@ export interface ExecutorExtraArgs {
 export class Executor {
   private readonly navigator: NavigatorAgent;
   private readonly planner: PlannerAgent;
-  private readonly validator: ValidatorAgent;
   private readonly context: AgentContext;
   private readonly plannerPrompt: PlannerPrompt;
   private readonly navigatorPrompt: NavigatorPrompt;
-  private readonly validatorPrompt: ValidatorPrompt;
   private readonly generalSettings: GeneralSettingsConfig | undefined;
   private tasks: string[] = [];
   constructor(
@@ -55,7 +50,6 @@ export class Executor {
     const messageManager = new MessageManager();
 
     const plannerLLM = extraArgs?.plannerLLM ?? navigatorLLM;
-    const validatorLLM = extraArgs?.validatorLLM ?? navigatorLLM;
     const extractorLLM = extraArgs?.extractorLLM ?? navigatorLLM;
     const eventManager = new EventManager();
     const context = new AgentContext(
@@ -70,7 +64,6 @@ export class Executor {
     this.tasks.push(task);
     this.navigatorPrompt = new NavigatorPrompt(context.options.maxActionsPerStep);
     this.plannerPrompt = new PlannerPrompt();
-    this.validatorPrompt = new ValidatorPrompt(task);
 
     const actionBuilder = new ActionBuilder(context, extractorLLM);
     const navigatorActionRegistry = new NavigatorActionRegistry(actionBuilder.buildDefaultActions());
@@ -86,12 +79,6 @@ export class Executor {
       chatLLM: plannerLLM,
       context: context,
       prompt: this.plannerPrompt,
-    });
-
-    this.validator = new ValidatorAgent({
-      chatLLM: validatorLLM,
-      context: context,
-      prompt: this.validatorPrompt,
     });
 
     this.context = context;
@@ -111,11 +98,57 @@ export class Executor {
   addFollowUpTask(task: string): void {
     this.tasks.push(task);
     this.context.messageManager.addNewTask(task);
-    // update validator prompt
-    this.validatorPrompt.addFollowUpTask(task);
 
     // need to reset previous action results that are not included in memory
     this.context.actionResults = this.context.actionResults.filter(result => result.includeInMemory);
+  }
+
+  /**
+   * Helper method to run planner and store its output
+   */
+  private async runPlanner(): Promise<AgentOutput<PlannerOutput> | null> {
+    try {
+      // Add current browser state to memory
+      let positionForPlan = 0;
+      if (this.tasks.length > 1 || this.context.nSteps > 0) {
+        await this.navigator.addStateMessageToMemory();
+        positionForPlan = this.context.messageManager.length() - 1;
+      } else {
+        positionForPlan = this.context.messageManager.length();
+      }
+
+      // Execute planner
+      const planOutput = await this.planner.execute();
+
+      if (planOutput.result) {
+        // Store plan in message history
+        const observation = wrapUntrustedContent(planOutput.result.observation);
+        const plan: PlannerOutput = {
+          ...planOutput.result,
+          observation,
+        };
+        this.context.messageManager.addPlan(JSON.stringify(plan), positionForPlan);
+      }
+
+      return planOutput;
+    } catch (error) {
+      logger.error('Planner execution failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if task is complete based on planner output and handle completion
+   */
+  private checkTaskCompletion(planOutput: AgentOutput<PlannerOutput> | null): boolean {
+    if (planOutput?.result?.done) {
+      logger.info('✅ Planner confirms task completion');
+      if (planOutput.result.final_answer) {
+        this.context.finalAnswer = planOutput.result.final_answer;
+      }
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -133,10 +166,10 @@ export class Executor {
     try {
       this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
 
-      let done = false;
       let step = 0;
-      let validatorFailed = false;
-      let webTask = undefined;
+      let latestPlanOutput: AgentOutput<PlannerOutput> | null = null;
+      let navigatorDone = false;
+
       for (step = 0; step < allowedMaxSteps; step++) {
         context.stepInfo = {
           stepNumber: context.nSteps,
@@ -148,73 +181,33 @@ export class Executor {
           break;
         }
 
-        // Run planner if configured
-        if (this.planner && (context.nSteps % context.options.planningInterval === 0 || validatorFailed)) {
-          validatorFailed = false;
-          // The first planning step is special, we don't want to add the browser state message to memory
-          let positionForPlan = 0;
-          if (this.tasks.length > 1 || step > 0) {
-            await this.navigator.addStateMessageToMemory();
-            positionForPlan = this.context.messageManager.length() - 1;
-          } else {
-            positionForPlan = this.context.messageManager.length();
-          }
+        // Run planner periodically for guidance
+        if (this.planner && (context.nSteps % context.options.planningInterval === 0 || navigatorDone)) {
+          navigatorDone = false;
+          latestPlanOutput = await this.runPlanner();
 
-          const planOutput = await this.planner.execute();
-          if (planOutput.result) {
-            // logger.info(`🔄 Planner output: ${JSON.stringify(planOutput.result, null, 2)}`);
-            // observation in planner is untrusted content, they are not instructions
-            const observation = wrapUntrustedContent(planOutput.result.observation);
-            const plan: PlannerOutput = {
-              ...planOutput.result,
-              observation,
-            };
-            this.context.messageManager.addPlan(JSON.stringify(plan), positionForPlan);
-
-            if (webTask === undefined) {
-              // set the web task, and keep it not change from now on
-              webTask = planOutput.result.web_task;
-            }
-
-            if (planOutput.result.done) {
-              // task is complete, skip navigation
-              done = true;
-              this.validator.setPlan(planOutput.result.next_steps);
-            } else {
-              // task is not complete, let's navigate
-              this.validator.setPlan(null);
-              done = false;
-            }
-
-            if (!webTask && planOutput.result.done) {
-              break;
-            }
-          }
-        }
-
-        // execute the navigation step
-        if (!done) {
-          done = await this.navigate();
-        }
-
-        // validate the output
-        if (done && this.context.options.validateOutput && !this.context.stopped && !this.context.paused) {
-          const validatorOutput = await this.validator.execute();
-          if (validatorOutput.result?.is_valid) {
-            logger.info('✅ Task completed successfully');
+          // Check if task is complete after planner run
+          if (this.checkTaskCompletion(latestPlanOutput)) {
             break;
           }
-          validatorFailed = true;
-          context.consecutiveValidatorFailures++;
-          if (context.consecutiveValidatorFailures >= context.options.maxValidatorFailures) {
-            logger.error(`Stopping due to ${context.options.maxValidatorFailures} consecutive validator failures`);
-            throw new Error(t('exec_errors_tooManyValidationFailures'));
-          }
+        }
+
+        // Execute navigator
+        navigatorDone = await this.navigate();
+
+        // If navigator indicates completion, the next periodic planner run will validate it
+        if (navigatorDone) {
+          logger.info('🔄 Navigator indicates completion - will be validated by next planner run');
         }
       }
 
-      if (done) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, this.context.taskId);
+      // Determine task completion status
+      const isCompleted = latestPlanOutput?.result?.done === true;
+
+      if (isCompleted) {
+        // Emit final answer if available, otherwise use task ID
+        const finalMessage = this.context.finalAnswer || this.context.taskId;
+        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, finalMessage);
       } else if (step >= allowedMaxSteps) {
         logger.error('❌ Task failed: Max steps reached');
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_maxStepsReached'));

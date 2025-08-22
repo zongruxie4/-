@@ -323,9 +323,6 @@
   "options_models_agents_planner": {
     "message": "Develops and refines strategies to complete tasks"
   },
-  "options_models_agents_validator": {
-    "message": "Checks if tasks are completed successfully"
-  },
 
   "options_models_labels_model": {
     "message": "Model"
@@ -508,9 +505,6 @@
   },
   "bg_setup_noNavigatorModel": {
     "message": "Please choose a model for the navigator in the settings first"
-  },
-  "exec_errors_tooManyValidationFailures": {
-    "message": "Too many failures of validation"
   },
   "exec_errors_maxStepsReached": {
     "message": "Max steps reached"

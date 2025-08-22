@@ -247,6 +247,10 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
   if (Object.keys(providers).length === 0) {
     throw new Error(t('bg_setup_noApiKeys'));
   }
+
+  // Clean up any legacy validator settings for backward compatibility
+  await agentModelStore.cleanupLegacyValidatorSettings();
+
   const agentModels = await agentModelStore.getAllAgentModels();
   // verify if every provider used in the agent models exists in the providers
   for (const agentModel of Object.values(agentModels)) {
@@ -271,14 +275,6 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
     plannerLLM = createChatModel(plannerProviderConfig, plannerModel);
   }
 
-  let validatorLLM: BaseChatModel | null = null;
-  const validatorModel = agentModels[AgentNameEnum.Validator];
-  if (validatorModel) {
-    // Log the provider config being used for the validator
-    const validatorProviderConfig = providers[validatorModel.provider];
-    validatorLLM = createChatModel(validatorProviderConfig, validatorModel);
-  }
-
   // Apply firewall settings to browser context
   const firewall = await firewallStore.getFirewall();
   if (firewall.enabled) {
@@ -301,7 +297,6 @@ async function setupExecutor(taskId: string, task: string, browserContext: Brows
 
   const executor = new Executor(task, taskId, browserContext, navigatorLLM, {
     plannerLLM: plannerLLM ?? navigatorLLM,
-    validatorLLM: validatorLLM ?? navigatorLLM,
     agentOptions: {
       maxSteps: generalSettings.maxSteps,
       maxFailures: generalSettings.maxFailures,

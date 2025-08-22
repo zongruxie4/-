@@ -141,13 +141,13 @@ export default function ChatInput({
                     : isRecording
                       ? 'bg-red-500 text-white hover:bg-red-600'
                       : isDarkMode
-                        ? 'hover:bg-slate-700 text-gray-400 hover:text-gray-200'
-                        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                        ? 'text-gray-400 hover:bg-slate-700 hover:text-gray-200'
+                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
                 }`}>
                 {isProcessingSpeech ? (
-                  <AiOutlineLoading3Quarters className="h-4 w-4 animate-spin" />
+                  <AiOutlineLoading3Quarters className="size-4 animate-spin" />
                 ) : (
-                  <FaMicrophone className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
+                  <FaMicrophone className={`size-4 ${isRecording ? 'animate-pulse' : ''}`} />
                 )}
               </button>
             )}
