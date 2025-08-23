@@ -61,11 +61,26 @@ class ChatLlama extends ChatOpenAI {
   }
 }
 
-function isOpenAIOModel(modelName: string): boolean {
+// O series models or GPT-5 models that support reasoning
+function isOpenAIReasoningModel(modelName: string): boolean {
+  let modelNameWithoutProvider = modelName;
   if (modelName.startsWith('openai/')) {
-    return modelName.startsWith('openai/o');
+    modelNameWithoutProvider = modelName.substring(7);
   }
-  return modelName.startsWith('o');
+  return (
+    modelNameWithoutProvider.startsWith('o') ||
+    (modelNameWithoutProvider.startsWith('gpt-5') && !modelNameWithoutProvider.startsWith('gpt-5-chat'))
+  );
+}
+
+// Function to check if a model is an Anthropic Opus model
+function isAnthropicOpusModel(modelName: string): boolean {
+  // Extract the model name without provider prefix if present
+  let modelNameWithoutProvider = modelName;
+  if (modelName.startsWith('anthropic/')) {
+    modelNameWithoutProvider = modelName.substring(10);
+  }
+  return modelNameWithoutProvider.startsWith('claude-opus');
 }
 
 function createOpenAIChatModel(
@@ -81,7 +96,7 @@ function createOpenAIChatModel(
     configuration?: Record<string, unknown>;
     modelKwargs?: {
       max_completion_tokens: number;
-      reasoning_effort?: 'low' | 'medium' | 'high';
+      reasoning_effort?: 'minimal' | 'low' | 'medium' | 'high';
     };
     topP?: number;
     temperature?: number;
@@ -106,7 +121,7 @@ function createOpenAIChatModel(
   }
 
   // O series models have different parameters
-  if (isOpenAIOModel(modelConfig.modelName)) {
+  if (isOpenAIReasoningModel(modelConfig.modelName)) {
     args.modelKwargs = {
       max_completion_tokens: maxTokens,
     };
@@ -182,7 +197,7 @@ function createAzureChatModel(providerConfig: ProviderConfig, modelConfig: Model
   }
 
   // Check if the Azure deployment is using an "o" series model (GPT-4o, etc.)
-  const isOSeriesModel = isOpenAIOModel(deploymentName);
+  const isOSeriesModel = isOpenAIReasoningModel(deploymentName);
 
   // Use AzureChatOpenAI with specific parameters
   const args = {
@@ -231,14 +246,23 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
       return createOpenAIChatModel(providerConfig, modelConfig, undefined);
     }
     case ProviderTypeEnum.Anthropic: {
-      const args = {
-        model: modelConfig.modelName,
-        apiKey: providerConfig.apiKey,
-        maxTokens,
-        temperature,
-        topP,
-        clientOptions: {},
-      };
+      // For Opus models, only include temperature, not topP
+      const args = isAnthropicOpusModel(modelConfig.modelName)
+        ? {
+            model: modelConfig.modelName,
+            apiKey: providerConfig.apiKey,
+            maxTokens,
+            temperature,
+            clientOptions: {},
+          }
+        : {
+            model: modelConfig.modelName,
+            apiKey: providerConfig.apiKey,
+            maxTokens,
+            temperature,
+            topP,
+            clientOptions: {},
+          };
       return new ChatAnthropic(args);
     }
     case ProviderTypeEnum.DeepSeek: {

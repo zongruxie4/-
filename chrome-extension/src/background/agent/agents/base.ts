@@ -6,7 +6,7 @@ import type { BaseMessage } from '@langchain/core/messages';
 import { createLogger } from '@src/background/log';
 import type { Action } from '../actions/builder';
 import { convertInputMessages, extractJsonFromModelOutput, removeThinkTags } from '../messages/utils';
-import { isAbortedError, RequestCancelledError } from './errors';
+import { isAbortedError } from './errors';
 import { ProviderTypeEnum } from '@extension/storage';
 
 const logger = createLogger('agent');
@@ -189,7 +189,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
       logger.error(`[${this.modelName}] LLM call failed in manual extraction mode:`, error);
       throw error;
     }
-    const errorMessage = `Failed to parse response: ${response}`;
+    const errorMessage = `Failed to parse response from ${this.modelName}`;
     logger.error(errorMessage);
     throw new Error('Could not parse response');
   }
