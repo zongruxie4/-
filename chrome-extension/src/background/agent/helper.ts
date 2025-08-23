@@ -61,11 +61,16 @@ class ChatLlama extends ChatOpenAI {
   }
 }
 
-function isOpenAIOModel(modelName: string): boolean {
+// O series models or GPT-5 models that support reasoning
+function isOpenAIReasoningModel(modelName: string): boolean {
+  let modelNameWithoutProvider = modelName;
   if (modelName.startsWith('openai/')) {
-    return modelName.startsWith('openai/o');
+    modelNameWithoutProvider = modelName.substring(7);
   }
-  return modelName.startsWith('o');
+  return (
+    modelNameWithoutProvider.startsWith('o') ||
+    (modelNameWithoutProvider.startsWith('gpt-5') && !modelNameWithoutProvider.startsWith('gpt-5-chat'))
+  );
 }
 
 function createOpenAIChatModel(
@@ -81,7 +86,7 @@ function createOpenAIChatModel(
     configuration?: Record<string, unknown>;
     modelKwargs?: {
       max_completion_tokens: number;
-      reasoning_effort?: 'low' | 'medium' | 'high';
+      reasoning_effort?: 'minimal' | 'low' | 'medium' | 'high';
     };
     topP?: number;
     temperature?: number;
@@ -106,7 +111,7 @@ function createOpenAIChatModel(
   }
 
   // O series models have different parameters
-  if (isOpenAIOModel(modelConfig.modelName)) {
+  if (isOpenAIReasoningModel(modelConfig.modelName)) {
     args.modelKwargs = {
       max_completion_tokens: maxTokens,
     };
@@ -182,7 +187,7 @@ function createAzureChatModel(providerConfig: ProviderConfig, modelConfig: Model
   }
 
   // Check if the Azure deployment is using an "o" series model (GPT-4o, etc.)
-  const isOSeriesModel = isOpenAIOModel(deploymentName);
+  const isOSeriesModel = isOpenAIReasoningModel(deploymentName);
 
   // Use AzureChatOpenAI with specific parameters
   const args = {

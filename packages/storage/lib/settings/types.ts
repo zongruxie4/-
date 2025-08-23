@@ -24,11 +24,11 @@ export enum ProviderTypeEnum {
 
 // Default supported models for each built-in provider
 export const llmProviderModelNames = {
-  [ProviderTypeEnum.OpenAI]: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini', 'o4-mini', 'o3'],
+  [ProviderTypeEnum.OpenAI]: ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4o', 'gpt-4o-mini'],
   [ProviderTypeEnum.Anthropic]: [
-    'claude-sonnet-4-20250514',
+    'claude-opus-4-1',
+    'claude-sonnet-4-0',
     'claude-3-7-sonnet-latest',
-    'claude-3-5-sonnet-latest',
     'claude-3-5-haiku-latest',
   ],
   [ProviderTypeEnum.DeepSeek]: ['deepseek-chat', 'deepseek-reasoner'],
@@ -37,11 +37,10 @@ export const llmProviderModelNames = {
   [ProviderTypeEnum.Ollama]: ['qwen3:14b', 'falcon3:10b', 'qwen2.5-coder:14b', 'mistral-small:24b'],
   [ProviderTypeEnum.AzureOpenAI]: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o', 'gpt-4o-mini', 'o4-mini', 'o3'],
   [ProviderTypeEnum.OpenRouter]: [
-    'openai/gpt-4.1',
-    'openai/gpt-4.1-mini',
-    'openai/o4-mini',
+    'deepseek/deepseek-chat-v3.1',
+    'google/gemini-2.5-pro',
+    'google/gemini-2.5-flash',
     'openai/gpt-4o-2024-11-20',
-    'google/gemini-2.5-flash-preview',
   ],
   [ProviderTypeEnum.Groq]: ['llama-3.3-70b-versatile'],
   [ProviderTypeEnum.Cerebras]: ['llama-3.3-70b'],

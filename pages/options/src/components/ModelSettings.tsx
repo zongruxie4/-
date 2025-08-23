@@ -23,12 +23,21 @@ import {
 } from '@extension/storage';
 import { t } from '@extension/i18n';
 
-// Helper function to check if a model is an O-series model
-function isOpenAIOModel(modelName: string): boolean {
-  if (modelName.startsWith('openai/')) {
-    return modelName.startsWith('openai/o');
+// Helper function to check if a model is an OpenAI reasoning model (O-series or GPT-5 models)
+function isOpenAIReasoningModel(modelName: string): boolean {
+  // Extract the model name without provider prefix if present
+  let modelNameWithoutProvider = modelName;
+  if (modelName.includes('>')) {
+    // Handle "provider>model" format
+    modelNameWithoutProvider = modelName.split('>')[1];
   }
-  return modelName.startsWith('o');
+  if (modelNameWithoutProvider.startsWith('openai/')) {
+    modelNameWithoutProvider = modelNameWithoutProvider.substring(7);
+  }
+  return (
+    modelNameWithoutProvider.startsWith('o') ||
+    (modelNameWithoutProvider.startsWith('gpt-5') && !modelNameWithoutProvider.startsWith('gpt-5-chat'))
+  );
 }
 
 interface ModelSettingsProps {
@@ -49,7 +58,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   });
 
   // State for reasoning effort for O-series models
-  const [reasoningEffort, setReasoningEffort] = useState<Record<AgentNameEnum, 'low' | 'medium' | 'high' | undefined>>({
+  const [reasoningEffort, setReasoningEffort] = useState<
+    Record<AgentNameEnum, 'minimal' | 'low' | 'medium' | 'high' | undefined>
+  >({
     [AgentNameEnum.Navigator]: undefined,
     [AgentNameEnum.Planner]: undefined,
   });
@@ -118,7 +129,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             if (config.reasoningEffort) {
               setReasoningEffort(prev => ({
                 ...prev,
-                [agent]: config.reasoningEffort as 'low' | 'medium' | 'high',
+                [agent]: config.reasoningEffort as 'minimal' | 'low' | 'medium' | 'high',
               }));
             }
           }
@@ -563,11 +574,12 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         }
 
         // Reset reasoning effort if switching models
-        if (isOpenAIOModel(model)) {
-          // Keep existing reasoning effort if already set for O-series models
+        if (isOpenAIReasoningModel(modelValue)) {
+          // Set default reasoning effort based on agent type
+          const defaultReasoningEffort = agentName === AgentNameEnum.Planner ? 'low' : 'minimal';
           setReasoningEffort(prev => ({
             ...prev,
-            [agentName]: prev[agentName] || 'medium', // Default to medium if not set
+            [agentName]: prev[agentName] || defaultReasoningEffort,
           }));
         } else {
           // Clear reasoning effort for non-O-series models
@@ -581,7 +593,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           provider,
           modelName: model,
           parameters: newParameters,
-          reasoningEffort: isOpenAIOModel(model) ? reasoningEffort[agentName] || 'medium' : undefined,
+          reasoningEffort: isOpenAIReasoningModel(modelValue)
+            ? reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')
+            : undefined,
         });
       } else {
         // Reset storage if no model is selected
@@ -592,14 +606,17 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     }
   };
 
-  const handleReasoningEffortChange = async (agentName: AgentNameEnum, value: 'low' | 'medium' | 'high') => {
+  const handleReasoningEffortChange = async (
+    agentName: AgentNameEnum,
+    value: 'minimal' | 'low' | 'medium' | 'high',
+  ) => {
     setReasoningEffort(prev => ({
       ...prev,
       [agentName]: value,
     }));
 
     // Only update if we have a selected model
-    if (selectedModels[agentName] && isOpenAIOModel(selectedModels[agentName])) {
+    if (selectedModels[agentName] && isOpenAIReasoningModel(selectedModels[agentName])) {
       try {
         // Find provider
         const provider = getProviderForModel(selectedModels[agentName]);
@@ -725,96 +742,100 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           </select>
         </div>
 
-        {/* Temperature Slider */}
-        <div className="flex items-center">
-          <label
-            htmlFor={`${agentName}-temperature`}
-            className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            {t('options_models_labels_temperature')}
-          </label>
-          <div className="flex flex-1 items-center space-x-2">
-            <input
-              id={`${agentName}-temperature`}
-              type="range"
-              min="0"
-              max="2"
-              step="0.01"
-              value={modelParameters[agentName].temperature}
-              onChange={e => handleParameterChange(agentName, 'temperature', Number.parseFloat(e.target.value))}
-              style={{
-                background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${(modelParameters[agentName].temperature / 2) * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${(modelParameters[agentName].temperature / 2) * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
-              }}
-              className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
-            />
-            <div className="flex items-center space-x-2">
-              <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                {modelParameters[agentName].temperature.toFixed(2)}
-              </span>
+        {/* Temperature Slider - Only show for non-reasoning models */}
+        {selectedModels[agentName] && !isOpenAIReasoningModel(selectedModels[agentName]) && (
+          <div className="flex items-center">
+            <label
+              htmlFor={`${agentName}-temperature`}
+              className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              {t('options_models_labels_temperature')}
+            </label>
+            <div className="flex flex-1 items-center space-x-2">
               <input
-                type="number"
+                id={`${agentName}-temperature`}
+                type="range"
                 min="0"
                 max="2"
                 step="0.01"
                 value={modelParameters[agentName].temperature}
-                onChange={e => {
-                  const value = Number.parseFloat(e.target.value);
-                  if (!Number.isNaN(value) && value >= 0 && value <= 2) {
-                    handleParameterChange(agentName, 'temperature', value);
-                  }
+                onChange={e => handleParameterChange(agentName, 'temperature', Number.parseFloat(e.target.value))}
+                style={{
+                  background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${(modelParameters[agentName].temperature / 2) * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${(modelParameters[agentName].temperature / 2) * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
                 }}
-                className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
-                aria-label={`${agentName} temperature number input`}
+                className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
               />
+              <div className="flex items-center space-x-2">
+                <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {modelParameters[agentName].temperature.toFixed(2)}
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  max="2"
+                  step="0.01"
+                  value={modelParameters[agentName].temperature}
+                  onChange={e => {
+                    const value = Number.parseFloat(e.target.value);
+                    if (!Number.isNaN(value) && value >= 0 && value <= 2) {
+                      handleParameterChange(agentName, 'temperature', value);
+                    }
+                  }}
+                  className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
+                  aria-label={`${agentName} temperature number input`}
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Top P Slider */}
-        <div className="flex items-center">
-          <label
-            htmlFor={`${agentName}-topP`}
-            className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            {t('options_models_labels_topP')}
-          </label>
-          <div className="flex flex-1 items-center space-x-2">
-            <input
-              id={`${agentName}-topP`}
-              type="range"
-              min="0"
-              max="1"
-              step="0.001"
-              value={modelParameters[agentName].topP}
-              onChange={e => handleParameterChange(agentName, 'topP', Number.parseFloat(e.target.value))}
-              style={{
-                background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
-              }}
-              className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
-            />
-            <div className="flex items-center space-x-2">
-              <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                {modelParameters[agentName].topP.toFixed(3)}
-              </span>
+        {/* Top P Slider - Only show for non-reasoning models */}
+        {selectedModels[agentName] && !isOpenAIReasoningModel(selectedModels[agentName]) && (
+          <div className="flex items-center">
+            <label
+              htmlFor={`${agentName}-topP`}
+              className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              {t('options_models_labels_topP')}
+            </label>
+            <div className="flex flex-1 items-center space-x-2">
               <input
-                type="number"
+                id={`${agentName}-topP`}
+                type="range"
                 min="0"
                 max="1"
                 step="0.001"
                 value={modelParameters[agentName].topP}
-                onChange={e => {
-                  const value = Number.parseFloat(e.target.value);
-                  if (!Number.isNaN(value) && value >= 0 && value <= 1) {
-                    handleParameterChange(agentName, 'topP', value);
-                  }
+                onChange={e => handleParameterChange(agentName, 'topP', Number.parseFloat(e.target.value))}
+                style={{
+                  background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
                 }}
-                className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
-                aria-label={`${agentName} top P number input`}
+                className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
               />
+              <div className="flex items-center space-x-2">
+                <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {modelParameters[agentName].topP.toFixed(3)}
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.001"
+                  value={modelParameters[agentName].topP}
+                  onChange={e => {
+                    const value = Number.parseFloat(e.target.value);
+                    if (!Number.isNaN(value) && value >= 0 && value <= 1) {
+                      handleParameterChange(agentName, 'topP', value);
+                    }
+                  }}
+                  className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
+                  aria-label={`${agentName} top P number input`}
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Reasoning Effort Selector (only for O-series models) */}
-        {selectedModels[agentName] && isOpenAIOModel(selectedModels[agentName]) && (
+        {selectedModels[agentName] && isOpenAIReasoningModel(selectedModels[agentName]) && (
           <div className="flex items-center">
             <label
               htmlFor={`${agentName}-reasoning-effort`}
@@ -824,9 +845,12 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             <div className="flex flex-1 items-center space-x-2">
               <select
                 id={`${agentName}-reasoning-effort`}
-                value={reasoningEffort[agentName] || 'medium'}
-                onChange={e => handleReasoningEffortChange(agentName, e.target.value as 'low' | 'medium' | 'high')}
+                value={reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')}
+                onChange={e =>
+                  handleReasoningEffortChange(agentName, e.target.value as 'minimal' | 'low' | 'medium' | 'high')
+                }
                 className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}>
+                <option value="minimal">Minimal</option>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
