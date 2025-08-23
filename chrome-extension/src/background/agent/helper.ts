@@ -73,6 +73,16 @@ function isOpenAIReasoningModel(modelName: string): boolean {
   );
 }
 
+// Function to check if a model is an Anthropic Opus model
+function isAnthropicOpusModel(modelName: string): boolean {
+  // Extract the model name without provider prefix if present
+  let modelNameWithoutProvider = modelName;
+  if (modelName.startsWith('anthropic/')) {
+    modelNameWithoutProvider = modelName.substring(10);
+  }
+  return modelNameWithoutProvider.startsWith('claude-opus');
+}
+
 function createOpenAIChatModel(
   providerConfig: ProviderConfig,
   modelConfig: ModelConfig,
@@ -236,14 +246,23 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
       return createOpenAIChatModel(providerConfig, modelConfig, undefined);
     }
     case ProviderTypeEnum.Anthropic: {
-      const args = {
-        model: modelConfig.modelName,
-        apiKey: providerConfig.apiKey,
-        maxTokens,
-        temperature,
-        topP,
-        clientOptions: {},
-      };
+      // For Opus models, only include temperature, not topP
+      const args = isAnthropicOpusModel(modelConfig.modelName)
+        ? {
+            model: modelConfig.modelName,
+            apiKey: providerConfig.apiKey,
+            maxTokens,
+            temperature,
+            clientOptions: {},
+          }
+        : {
+            model: modelConfig.modelName,
+            apiKey: providerConfig.apiKey,
+            maxTokens,
+            temperature,
+            topP,
+            clientOptions: {},
+          };
       return new ChatAnthropic(args);
     }
     case ProviderTypeEnum.DeepSeek: {

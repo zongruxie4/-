@@ -40,6 +40,19 @@ function isOpenAIReasoningModel(modelName: string): boolean {
   );
 }
 
+function isAnthropicOpusModel(modelName: string): boolean {
+  // Extract the model name without provider prefix if present
+  let modelNameWithoutProvider = modelName;
+
+  if (modelName.includes('>')) {
+    // Handle "provider>model" format
+    modelNameWithoutProvider = modelName.split('>')[1];
+  }
+
+  // Check if the model starts with 'claude-opus'
+  return modelNameWithoutProvider.startsWith('claude-opus');
+}
+
 interface ModelSettingsProps {
   isDarkMode?: boolean; // Controls dark/light theme styling
 }
@@ -589,10 +602,15 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           }));
         }
 
+        // For Anthropic Opus models, only pass temperature, not topP
+        const parametersToSave = isAnthropicOpusModel(modelValue)
+          ? { temperature: newParameters.temperature }
+          : newParameters;
+
         await agentModelStore.setAgentModel(agentName, {
           provider,
           modelName: model,
-          parameters: newParameters,
+          parameters: parametersToSave,
           reasoningEffort: isOpenAIReasoningModel(modelValue)
             ? reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')
             : undefined,
@@ -673,10 +691,15 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         }
 
         if (provider) {
+          // For Anthropic Opus models, only pass temperature, not topP
+          const parametersToSave = isAnthropicOpusModel(selectedModels[agentName])
+            ? { temperature: newParameters.temperature }
+            : newParameters;
+
           await agentModelStore.setAgentModel(agentName, {
             provider,
             modelName: selectedModels[agentName],
-            parameters: newParameters,
+            parameters: parametersToSave,
           });
         }
       } catch (error) {
@@ -789,50 +812,52 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         )}
 
         {/* Top P Slider - Only show for non-reasoning models */}
-        {selectedModels[agentName] && !isOpenAIReasoningModel(selectedModels[agentName]) && (
-          <div className="flex items-center">
-            <label
-              htmlFor={`${agentName}-topP`}
-              className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              {t('options_models_labels_topP')}
-            </label>
-            <div className="flex flex-1 items-center space-x-2">
-              <input
-                id={`${agentName}-topP`}
-                type="range"
-                min="0"
-                max="1"
-                step="0.001"
-                value={modelParameters[agentName].topP}
-                onChange={e => handleParameterChange(agentName, 'topP', Number.parseFloat(e.target.value))}
-                style={{
-                  background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
-                }}
-                className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
-              />
-              <div className="flex items-center space-x-2">
-                <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {modelParameters[agentName].topP.toFixed(3)}
-                </span>
+        {selectedModels[agentName] &&
+          !isOpenAIReasoningModel(selectedModels[agentName]) &&
+          !isAnthropicOpusModel(selectedModels[agentName]) && (
+            <div className="flex items-center">
+              <label
+                htmlFor={`${agentName}-topP`}
+                className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {t('options_models_labels_topP')}
+              </label>
+              <div className="flex flex-1 items-center space-x-2">
                 <input
-                  type="number"
+                  id={`${agentName}-topP`}
+                  type="range"
                   min="0"
                   max="1"
                   step="0.001"
                   value={modelParameters[agentName].topP}
-                  onChange={e => {
-                    const value = Number.parseFloat(e.target.value);
-                    if (!Number.isNaN(value) && value >= 0 && value <= 1) {
-                      handleParameterChange(agentName, 'topP', value);
-                    }
+                  onChange={e => handleParameterChange(agentName, 'topP', Number.parseFloat(e.target.value))}
+                  style={{
+                    background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
                   }}
-                  className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
-                  aria-label={`${agentName} top P number input`}
+                  className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
                 />
+                <div className="flex items-center space-x-2">
+                  <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {modelParameters[agentName].topP.toFixed(3)}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.001"
+                    value={modelParameters[agentName].topP}
+                    onChange={e => {
+                      const value = Number.parseFloat(e.target.value);
+                      if (!Number.isNaN(value) && value >= 0 && value <= 1) {
+                        handleParameterChange(agentName, 'topP', value);
+                      }
+                    }}
+                    className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
+                    aria-label={`${agentName} top P number input`}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Reasoning Effort Selector (only for O-series models) */}
         {selectedModels[agentName] && isOpenAIReasoningModel(selectedModels[agentName]) && (
