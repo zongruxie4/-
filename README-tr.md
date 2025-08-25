@@ -13,7 +13,7 @@
 
 ## 🌐 Nanobrowser
 
-Nanobrowser, tarayıcınızda çalışan açık kaynaklı bir yapay zeka web otomasyon aracıdır. Esnek LLM seçenekleri ve çoklu ajan sistemiyle birlikte OpenAI Operator’a ücretsiz bir alternatiftir.
+Nanobrowser, tarayıcınızda çalışan açık kaynaklı bir yapay zeka tarayıcı otomasyon aracıdır. Esnek LLM seçenekleri ve çoklu ajan sistemiyle birlikte OpenAI Operator’a ücretsiz bir alternatiftir.
 
 ⬇️ [Nanobrowser’ı Chrome Web Mağazası’ndan ücretsiz edinin](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal)
 
@@ -28,7 +28,7 @@ Nanobrowser, tarayıcınızda çalışan açık kaynaklı bir yapay zeka web oto
 
 ## 🔥Neden Nanobrowser?
 
-OpenAI Operator’ın aylık 200 dolarlık ücretinden kurtulmak mı istiyorsunuz? **Nanobrowser**, bir Chrome uzantısı olarak size premium web otomasyonu yetenekleri sunar ve tam kontrolü elinizde tutmanızı sağlar:
+OpenAI Operator'ın aylık 200 dolarlık ücretinden kurtulmak mı istiyorsunuz? **Nanobrowser**, bir Chrome uzantısı olarak size premium tarayıcı otomasyonu yetenekleri sunar ve tam kontrolü elinizde tutmanızı sağlar:
 
 - **%100 Ücretsiz** - Abonelik ücreti veya gizli maliyetler yok. Sadece yükleyin ve kendi API anahtarlarınızı kullanın, ne kadar kullanırsanız o kadar ödersiniz.
 - **Gizlilik Odaklı** - Her şey yerel tarayıcınızda çalışır. Kimlik bilgileriniz yalnızca sizde kalır, bulut hizmetleriyle paylaşılmaz.
@@ -70,7 +70,7 @@ OpenAI Operator’ın aylık 200 dolarlık ücretinden kurtulmak mı istiyorsunu
    * Araç çubuğundaki Nanobrowser simgesine tıklayın
    * Sağ üstteki `Ayarlar` simgesine tıklayın
    * LLM API anahtarlarınızı ekleyin
-   * Farklı ajanlar (Navigator, Planner, Validator) için hangi modelin kullanılacağını seçin
+   * Farklı ajanlar (Navigator, Planner) için hangi modelin kullanılacağını seçin
 
 ## 🔧 En Son Sürümü Manuel Kur
 
@@ -90,7 +90,7 @@ En yeni özellikleri içeren en güncel sürümü kurmak için:
     * Nanobrowser simgesine tıklayarak yan paneli açın
     * Sağ üstteki `Ayarlar` simgesine tıklayın
     * API anahtarlarınızı ekleyin
-    * Ajanlara model atayın (Navigator, Planner, Validator)
+    * Ajanlara model atayın (Navigator, Planner)
 
 4. **Güncelleme**:
     * Yeni `nanobrowser.zip` dosyasını indirin
@@ -140,22 +140,21 @@ Nanobrowser, her ajan için farklı LLM modelleri ayarlamanıza olanak tanır. B
 
 ### Daha Yüksek Performans
 
-* **Planner & Validator**: Claude 3.7 Sonnet
+* **Planner**: Claude Sonnet 4
 
   * Daha iyi mantıksal düşünme ve planlama
-  * Daha güvenilir görev doğrulama
-* **Navigator**: Claude 3.5 Haiku
+* **Navigator**: Claude Haiku 3.5
 
   * Web gezintisi görevlerinde verimli
   * Performans ve maliyet dengesi
 
 ### Uygun Maliyetli Yapılandırma
 
-* **Planner & Validator**: Claude Haiku veya GPT-4o
+* **Planner**: Claude Haiku veya GPT-4o
 
   * Düşük maliyetle makul performans
   * Karmaşık görevlerde daha fazla yineleme gerekebilir
-* **Navigator**: Gemini 2.0 Flash veya GPT-4o-mini
+* **Navigator**: Gemini 2.5 Flash veya GPT-4o-mini
 
   * Hafif ve ekonomik
   * Temel gezinme görevleri için yeterli
@@ -169,10 +168,11 @@ Nanobrowser, her ajan için farklı LLM modelleri ayarlamanıza olanak tanır. B
 
 * **Önerilen Modeller**:
 
-  * **Qwen3 14B**
+  * **Qwen3-30B-A3B-Instruct-2507**
   * **Falcon3 10B**
   * **Qwen 2.5 Coder 14B**
   * **Mistral Small 24B**
+  * [Topluluktan en son test sonuçları](https://gist.github.com/maximus2600/75d60bf3df62986e2254d5166e2524cb)
   * Diğer yerel modellerle deneyimlerinizi [Discord](https://discord.gg/NN3ABHggMK)'da paylaşabilirsiniz
 
 * **Prompt Mühendisliği**:
@@ -224,7 +224,7 @@ Detaylı yol haritamıza ve gelecek özelliklere [GitHub Discussions](https://gi
   * Kod katkısı için yönergeleri [CONTRIBUTING.md](CONTRIBUTING.md) dosyasında bulabilirsiniz
   * Hatalar, özellikler veya dökümantasyon iyileştirmeleri için pull request gönderin
 
-Açık kaynak ve topluluk iş birliğine inanıyoruz. Web otomasyonunun geleceğini birlikte inşa edelim!
+Açık kaynak ve topluluk iş birliğine inanıyoruz. Tarayıcı otomasyonunun geleceğini birlikte inşa edelim!
 
 ## 🔒 Güvenlik
 

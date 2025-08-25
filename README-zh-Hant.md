@@ -29,7 +29,7 @@ Nanobrowser 是一款在瀏覽器中執行的開放原始碼 AI 網頁自動化�
 
 ## 🔥 為什麼選擇 Nanobrowser？
 
-正在尋找功能強大的 AI 網頁代理，卻不想每月為 OpenAI Operator 支付 200 美元嗎？**Nanobrowser** 作為一款 Chrome 擴充功能，提供進階的網頁自動化能力，同時讓您保有完全的掌控權：
+正在尋找功能強大的 AI 瀏覽器代理，卻不想每月為 OpenAI Operator 支付 200 美元嗎？**Nanobrowser** 作為一款 Chrome 擴充功能，提供進階的網頁自動化能力，同時讓您保有完全的掌控權：
 
 - **100% 免費** - 無訂閱費或隱藏成本。安裝後使用自己的 API 金鑰，只需支付給供應商的 API 使用費。
 - **注重隱私** - 所有處理都在本機瀏覽器內完成。您的認證資訊會儲存在本機，絕不會與任何雲端服務分享。
@@ -74,7 +74,7 @@ Nanobrowser 是一款在瀏覽器中執行的開放原始碼 AI 網頁自動化�
    * 按一下工具列中的 Nanobrowser 圖示以開啟側邊面板
    * 按一下右上角的 `設定` 圖示
    * 新增 LLM API 金鑰
-   * 為不同代理 (Navigator、Planner、Validator) 選擇要使用的模型
+   * 為不同代理 (Navigator、Planner) 選擇要使用的模型
 
 ## 🔧 手動安裝最新版本
 
@@ -94,7 +94,7 @@ Nanobrowser 是一款在瀏覽器中執行的開放原始碼 AI 網頁自動化�
     * 按一下工具列中的 Nanobrowser 圖示以開啟側邊面板
     * 按一下右上角的 `設定` 圖示。
     * 新增 LLM API 金鑰。
-    * 為不同代理 (Navigator、Planner、Validator) 選擇要使用的模型。
+    * 為不同代理 (Navigator、Planner) 選擇要使用的模型。
 
 4. **升級**：
     * 從版本頁面下載最新的 `nanobrowser.zip` 檔案。
@@ -139,18 +139,17 @@ Nanobrowser 是一款在瀏覽器中執行的開放原始碼 AI 網頁自動化�
 Nanobrowser 允許您為每個代理設定不同的 LLM 模型，以平衡效能與成本。以下是建議的設定：
 
 ### 追求高效能
-- **Planner & Validator**：Claude 3.7 Sonnet
+- **Planner**：Claude Sonnet 4
   - 更佳的推理與規劃能力
-  - 更可靠的任務驗證
-- **Navigator**：Claude 3.5 Haiku
+- **Navigator**：Claude Haiku 3.5
   - 有效率地處理網頁導覽任務
   - 在效能與成本之間取得良好平衡
 
 ### 講求成本效益
-- **Planner & Validator**：Claude Haiku 或 GPT-4o
+- **Planner**：Claude Haiku 或 GPT-4o
   - 以較低成本獲得合理的效能
   - 處理複雜任務可能需要更多次的迭代
-- **Navigator**：Gemini 2.0 Flash 或 GPT-4o-mini
+- **Navigator**：Gemini 2.5 Flash 或 GPT-4o-mini
   - 輕量級且具成本效益
   - 適合基本的導覽任務
 
@@ -160,10 +159,11 @@ Nanobrowser 允許您為每個代理設定不同的 LLM 模型，以平衡效能
   - 零 API 成本並確保完全隱私，所有資料都保留在本機電腦
 
 - **推薦模型**：
-  - **Qwen3 14B**
+  - **Qwen3-30B-A3B-Instruct-2507**
   - **Falcon3 10B**
   - **Qwen 2.5 Coder 14B**
   - **Mistral Small 24B**
+  - [社群最新測試結果](https://gist.github.com/maximus2600/75d60bf3df62986e2254d5166e2524cb)
   - 歡迎社群成員在我們的 [Discord](https://discord.gg/NN3ABHggMK) 分享其他本機模型的使用經驗
 
 - **提示詞工程**：

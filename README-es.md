@@ -28,7 +28,7 @@ Nanobrowser es una herramienta de automatización web con IA que se ejecuta en t
 
 ## 🔥 ¿Por qué usar Nanobrowser?
 
-¿Buscas un potente agente web con IA sin el precio de $200/mes de OpenAI Operator? **Nanobrowser**, como extensión de Chrome, ofrece capacidades avanzadas de automatización web mientras tú tienes el control total.
+¿Buscas un potente agente de navegador con IA sin el precio de $200/mes de OpenAI Operator? **Nanobrowser**, como extensión de Chrome, ofrece capacidades avanzadas de automatización web mientras tú tienes el control total.
 
 - **100% Gratis** - Sin suscripciones ni costos ocultos. Solo instala y usa tus propias claves de API, pagando únicamente por lo que tú consumas.
 - **Enfoque En Privacidad** - Todo se ejecuta en tu navegador local. Tus credenciales permanecen contigo y nunca se comparten con ningún servicio en la nube.
@@ -40,7 +40,7 @@ Nanobrowser es una herramienta de automatización web con IA que se ejecuta en t
 
 ## 📊 Funciones Clave
 
-- **Sistema Multiagente**: Agentes de IA especializados colaboran para realizar flujos de trabajo web complejos
+- **Sistema Multiagente**: Agentes de IA especializados colaboran para realizar flujos de trabajo de navegador complejos
 - **Panel Lateral Interactivo**: Interfaz de chat intuitiva con actualizaciones de estado en tiempo real
 - **Automatización de Tareas**: Automatiza sin esfuerzo tareas repetitivas en distintos sitios web
 - **Preguntas de Seguimiento**: Haz preguntas de seguimiento sobre tareas completadas
@@ -61,7 +61,7 @@ Nanobrowser es una herramienta de automatización web con IA que se ejecuta en t
    * Haz clic en el icono de Nanobrowser ubicado en la barra de herramientas para abrir el panel lateral
    * Haz clic en el icono de `Settings` (arriba a la derecha)
    * Agrega tus claves de API del LLM
-   * Elige qué modelo usar para cada agente (Navigator, Planner, Validator)
+   * Elige qué modelo usar para cada agente (Navigator, Planner)
 
 ## 🔧 Instalar Última Versión Manualmente
 
@@ -81,7 +81,7 @@ Para obtener la versión más reciente con todas las funciones nuevas:
     * Haz clic en el icono de Nanobrowser en la barra de herramientas para abrir el panel lateral
     * Haz clic en el icono de `Settings` (arriba a la derecha).
     * Agrega tus claves de API del LLM
-    * Elige qué modelo usar para cada agente (Navigator, Planner, Validator)
+    * Elige qué modelo usar para cada agente (Navigator, Planner)
 
 4. **Actualizar**:
     * Descarga el archivo `nanobrowser.zip` más reciente desde la página de lanzamientos.
@@ -126,18 +126,17 @@ Si prefieres compilar Nanobrowser por ti mismo, sigue estos pasos:
 Nanobrowser te permite configurar distintos modelos LLM para cada agente para equilibrar costo y rendimiento. Aquí están las configuraciones recomendadas:
 
 ### Mejor Rendimiento
-- **Planner & Validator**: Claude 3.7 Sonnet
+- **Planner**: Claude Sonnet 4
   - Mejores capacidades de razonamiento y planificación
-  - Validación de tareas más confiable
-- **Navigator**: Claude 3.5 Haiku
+- **Navigator**: Claude Haiku 3.5
   - Eficiente para tareas de navegación web
   - Buen equilibrio entre rendimiento y costo
 
 ### Configuración Económica
-- **Planner & Validator**: Claude Haiku or GPT-4o
+- **Planner**: Claude Haiku or GPT-4o
   - Rendimiento razonable a menor costo
   - Puede requerir más iteraciones para tareas complejas
-- **Navigator**: Gemini 2.0 Flash or GPT-4o-mini
+- **Navigator**: Gemini 2.5 Flash or GPT-4o-mini
   - Ligero y económico
   - Adecuado para tareas básicas de navegación
 
@@ -147,10 +146,11 @@ Nanobrowser te permite configurar distintos modelos LLM para cada agente para eq
   - Sin costos de API y con privacidad total, sin datos que salgan de tu máquina
 
 - **Modelos Recomendados**:
-  - **Qwen3 14B**
+  - **Qwen3-30B-A3B-Instruct-2507**
   - **Falcon3 10B**
   - **Qwen 2.5 Coder 14B**
   - **Mistral Small 24B**
+  - [Últimos resultados de pruebas de la comunidad](https://gist.github.com/maximus2600/75d60bf3df62986e2254d5166e2524cb)
   - Te invitamos a compartir tu experiencia con otros modelos locales en nuestro [Discord](https://discord.gg/NN3ABHggMK)
 
 - **Ingeniería de Prompts**:

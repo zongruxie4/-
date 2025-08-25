@@ -29,7 +29,7 @@ Nanobrowser is an open-source AI web automation tool that runs in your browser. 
 
 ## 🔥Why Nanobrowser?
 
-Looking for a powerful AI web agent without the $200/month price tag of OpenAI Operator? **Nanobrowser** , as a chrome extension, delivers premium web automation capabilities while keeping you in complete control:
+Looking for a powerful AI browser agent without the $200/month price tag of OpenAI Operator? **Nanobrowser** , as a chrome extension, delivers premium web automation capabilities while keeping you in complete control:
 
 - **100% Free** - No subscription fees or hidden costs. Just install and use your own API keys, and you only pay what you use with your own API keys.
 - **Privacy-Focused** - Everything runs in your local browser. Your credentials stay with you, never shared with any cloud service.
@@ -74,7 +74,7 @@ Looking for a powerful AI web agent without the $200/month price tag of OpenAI O
    * Click the Nanobrowser icon in your toolbar to open the sidebar
    * Click the `Settings` icon (top right)
    * Add your LLM API keys
-   * Choose which model to use for different agents (Navigator, Planner, Validator)
+   * Choose which model to use for different agents (Navigator, Planner)
 
 ## 🔧 Manually Install Latest Version
 
@@ -94,7 +94,7 @@ To get the most recent version with all the latest features:
     * Click the Nanobrowser icon in your toolbar to open the sidebar
     * Click the `Settings` icon (top right).
     * Add your LLM API keys.
-    * Choose which model to use for different agents (Navigator, Planner, Validator)
+    * Choose which model to use for different agents (Navigator, Planner)
 
 4. **Upgrading**:
     * Download the latest `nanobrowser.zip` file from the release page.
@@ -139,18 +139,17 @@ If you prefer to build Nanobrowser yourself, follow these steps:
 Nanobrowser allows you to configure different LLM models for each agent to balance performance and cost. Here are recommended configurations:
 
 ### Better Performance
-- **Planner & Validator**: Claude 3.7 Sonnet
+- **Planner**: Claude Sonnet 4
   - Better reasoning and planning capabilities
-  - More reliable task validation
-- **Navigator**: Claude 3.5 Haiku
+- **Navigator**: Claude Haiku 3.5
   - Efficient for web navigation tasks
   - Good balance of performance and cost
 
 ### Cost-Effective Configuration
-- **Planner & Validator**: Claude Haiku or GPT-4o
+- **Planner**: Claude Haiku or GPT-4o
   - Reasonable performance at lower cost
   - May require more iterations for complex tasks
-- **Navigator**: Gemini 2.0 Flash or GPT-4o-mini
+- **Navigator**: Gemini 2.5 Flash or GPT-4o-mini
   - Lightweight and cost-efficient
   - Suitable for basic navigation tasks
 
@@ -160,10 +159,11 @@ Nanobrowser allows you to configure different LLM models for each agent to balan
   - Zero API costs and complete privacy with no data leaving your machine
 
 - **Recommended Models**:
-  - **Qwen3 14B**
+  - **Qwen3-30B-A3B-Instruct-2507**
   - **Falcon3 10B**
   - **Qwen 2.5 Coder 14B**
   - **Mistral Small 24B**
+  - [Latest test results from community](https://gist.github.com/maximus2600/75d60bf3df62986e2254d5166e2524cb) 
   - We welcome community experience sharing with other local models in our [Discord](https://discord.gg/NN3ABHggMK)
 
 - **Prompt Engineering**:
