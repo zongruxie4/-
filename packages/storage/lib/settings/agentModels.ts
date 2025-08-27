@@ -1,8 +1,7 @@
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
-import { AgentNameEnum } from './types';
-import { llmProviderParameters } from './types';
+import { AgentNameEnum, llmProviderParameters } from './types';
 
 // Interface for a single model configuration
 export interface ModelConfig {

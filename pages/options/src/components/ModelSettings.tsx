@@ -636,13 +636,13 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     // Only update if we have a selected model
     if (selectedModels[agentName] && isOpenAIReasoningModel(selectedModels[agentName])) {
       try {
-        // Find provider
-        const provider = getProviderForModel(selectedModels[agentName]);
+        // Extract provider and model from the "provider>model" format
+        const [provider, modelName] = selectedModels[agentName].split('>');
 
-        if (provider) {
+        if (provider && modelName) {
           await agentModelStore.setAgentModel(agentName, {
             provider,
-            modelName: selectedModels[agentName],
+            modelName,
             parameters: modelParameters[agentName],
             reasoningEffort: value,
           });
@@ -667,30 +667,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     // Only update if we have a selected model
     if (selectedModels[agentName]) {
       try {
-        // Find provider
-        let provider: string | undefined;
-        for (const [providerKey, providerConfig] of Object.entries(providers)) {
-          if (providerConfig.type === ProviderTypeEnum.AzureOpenAI) {
-            // Check Azure deployment names
-            const deploymentNames = providerConfig.azureDeploymentNames || [];
-            if (deploymentNames.includes(selectedModels[agentName])) {
-              provider = providerKey;
-              break;
-            }
-          } else {
-            // Check standard model names for non-Azure providers
-            const modelNames =
-              providerConfig.modelNames ||
-              llmProviderModelNames[providerKey as keyof typeof llmProviderModelNames] ||
-              [];
-            if (modelNames.includes(selectedModels[agentName])) {
-              provider = providerKey;
-              break;
-            }
-          }
-        }
+        // Extract provider and model from the "provider>model" format
+        const [provider, modelName] = selectedModels[agentName].split('>');
 
-        if (provider) {
+        if (provider && modelName) {
           // For Anthropic Opus models, only pass temperature, not topP
           const parametersToSave = isAnthropicOpusModel(selectedModels[agentName])
             ? { temperature: newParameters.temperature }
@@ -698,7 +678,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
           await agentModelStore.setAgentModel(agentName, {
             provider,
-            modelName: selectedModels[agentName],
+            modelName,
             parameters: parametersToSave,
           });
         }
@@ -1079,26 +1059,6 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         providerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 100);
-  };
-
-  const getProviderForModel = (modelName: string): string => {
-    for (const [provider, config] of Object.entries(providers)) {
-      // Check Azure deployment names
-      if (config.type === ProviderTypeEnum.AzureOpenAI) {
-        const deploymentNames = config.azureDeploymentNames || [];
-        if (deploymentNames.includes(modelName)) {
-          return provider;
-        }
-      } else {
-        // Check regular model names for non-Azure providers
-        const modelNames =
-          config.modelNames || llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [];
-        if (modelNames.includes(modelName)) {
-          return provider;
-        }
-      }
-    }
-    return '';
   };
 
   // Add and remove Azure deployments
