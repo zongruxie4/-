@@ -6,13 +6,15 @@ import { t } from '@extension/i18n';
 import { GeneralSettings } from './components/GeneralSettings';
 import { ModelSettings } from './components/ModelSettings';
 import { FirewallSettings } from './components/FirewallSettings';
+import { AnalyticsSettings } from './components/AnalyticsSettings';
 
-type TabTypes = 'general' | 'models' | 'firewall' | 'help';
+type TabTypes = 'general' | 'models' | 'firewall' | 'analytics' | 'help';
 
 const TABS: { id: TabTypes; icon: string; label: string }[] = [
   { id: 'general', icon: '⚙️', label: t('options_tabs_general') },
   { id: 'models', icon: '📊', label: t('options_tabs_models') },
   { id: 'firewall', icon: '🔒', label: t('options_tabs_firewall') },
+  { id: 'analytics', icon: '📈', label: 'Analytics' },
   { id: 'help', icon: '📚', label: t('options_tabs_help') },
 ];
 
@@ -49,6 +51,8 @@ const Options = () => {
         return <ModelSettings isDarkMode={isDarkMode} />;
       case 'firewall':
         return <FirewallSettings isDarkMode={isDarkMode} />;
+      case 'analytics':
+        return <AnalyticsSettings isDarkMode={isDarkMode} />;
       default:
         return null;
     }
