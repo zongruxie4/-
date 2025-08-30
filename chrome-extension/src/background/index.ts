@@ -5,6 +5,7 @@ import {
   firewallStore,
   generalSettingsStore,
   llmProviderStore,
+  analyticsSettingsStore,
 } from '@extension/storage';
 import { t } from '@extension/i18n';
 import BrowserContext from './browser/context';
@@ -16,6 +17,7 @@ import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import { DEFAULT_AGENT_OPTIONS } from './agent/types';
 import { SpeechToTextService } from './services/speechToText';
 import { injectBuildDomTreeScripts } from './browser/dom/service';
+import { analytics } from './services/analytics';
 
 const logger = createLogger('background');
 
@@ -50,6 +52,18 @@ chrome.tabs.onRemoved.addListener(tabId => {
 });
 
 logger.info('background loaded');
+
+// Initialize analytics
+analytics.init().catch(error => {
+  logger.error('Failed to initialize analytics:', error);
+});
+
+// Listen for analytics settings changes
+analyticsSettingsStore.subscribe(() => {
+  analytics.updateSettings().catch(error => {
+    logger.error('Failed to update analytics settings:', error);
+  });
+});
 
 // Listen for simple messages (e.g., from options page)
 chrome.runtime.onMessage.addListener(() => {
