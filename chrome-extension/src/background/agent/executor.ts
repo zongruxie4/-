@@ -19,7 +19,7 @@ import {
   MaxStepsReachedError,
   MaxFailuresReachedError,
 } from './agents/errors';
-import { wrapUntrustedContent } from './messages/utils';
+import { filterExternalContent, wrapUntrustedContent } from './messages/utils';
 import { URLNotAllowedError } from '../browser/views';
 import { chatHistoryStore } from '@extension/storage/lib/chat';
 import type { AgentStepHistory } from './history';
@@ -122,17 +122,9 @@ export class Executor {
 
       // Execute planner
       const planOutput = await this.planner.execute();
-
       if (planOutput.result) {
-        // Store plan in message history
-        const observation = wrapUntrustedContent(planOutput.result.observation);
-        const plan: PlannerOutput = {
-          ...planOutput.result,
-          observation,
-        };
-        this.context.messageManager.addPlan(JSON.stringify(plan), positionForPlan);
+        this.context.messageManager.addPlan(JSON.stringify(planOutput.result), positionForPlan);
       }
-
       return planOutput;
     } catch (error) {
       logger.error('Planner execution failed:', error);
