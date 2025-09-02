@@ -13,6 +13,7 @@ import {
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
 } from './errors';
+import { filterExternalContent } from '../messages/utils';
 const logger = createLogger('PlannerAgent');
 
 // Define Zod schema for planner output
@@ -79,14 +80,30 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
         throw new Error('Failed to validate planner output');
       }
 
+      // clean the model output
+      const observation = filterExternalContent(modelOutput.observation);
+      const final_answer = filterExternalContent(modelOutput.final_answer);
+      const next_steps = filterExternalContent(modelOutput.next_steps);
+      const challenges = filterExternalContent(modelOutput.challenges);
+      const reasoning = filterExternalContent(modelOutput.reasoning);
+
+      const cleanedPlan: PlannerOutput = {
+        ...modelOutput,
+        observation,
+        challenges,
+        reasoning,
+        final_answer,
+        next_steps,
+      };
+
       // If task is done, emit the final answer; otherwise emit next steps
-      const eventMessage = modelOutput.done ? modelOutput.final_answer : modelOutput.next_steps;
+      const eventMessage = cleanedPlan.done ? cleanedPlan.final_answer : cleanedPlan.next_steps;
       this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_OK, eventMessage);
-      logger.info('Planner output', JSON.stringify(modelOutput, null, 2));
+      logger.info('Planner output', JSON.stringify(cleanedPlan, null, 2));
 
       return {
         id: this.id,
-        result: modelOutput,
+        result: cleanedPlan,
       };
     } catch (error) {
       // Check if this is an authentication error
