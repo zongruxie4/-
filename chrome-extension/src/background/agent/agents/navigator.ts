@@ -9,13 +9,16 @@ import { type BaseMessage, HumanMessage } from '@langchain/core/messages';
 import { Actors, ExecutionState } from '../event/types';
 import {
   ChatModelAuthError,
+  ChatModelBadRequestError,
   ChatModelForbiddenError,
   EXTENSION_CONFLICT_ERROR_MESSAGE,
   ExtensionConflictError,
   isAbortedError,
   isAuthenticationError,
+  isBadRequestError,
   isExtensionConflictError,
   isForbiddenError,
+  ResponseParseError,
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
 } from './errors';
@@ -109,7 +112,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         if (isAbortedError(error)) {
           throw error;
         }
-        const errorMessage = `Failed to invoke ${this.modelName} with structured output: ${error}`;
+        const errorMessage = `Failed to invoke ${this.modelName} with structured output: \n${error instanceof Error ? error.message : String(error)}`;
         throw new Error(errorMessage);
       }
 
@@ -133,7 +136,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
           action: [...toolCall.args.action],
         };
       }
-      throw new Error('Could not parse response');
+      throw new ResponseParseError('Could not parse navigator response');
     }
 
     // Fallback to parent class manual JSON extraction for models without structured output support
@@ -206,26 +209,23 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       return agentOutput;
     } catch (error) {
       this.removeLastStateMessageFromMemory();
+      const errorMessage = error instanceof Error ? error.message : String(error);
       // Check if this is an authentication error
       if (isAuthenticationError(error)) {
-        throw new ChatModelAuthError('Navigator API Authentication failed. Please verify your API key', error);
-      }
-      if (isForbiddenError(error)) {
+        throw new ChatModelAuthError(errorMessage, error);
+      } else if (isBadRequestError(error)) {
+        throw new ChatModelBadRequestError(errorMessage, error);
+      } else if (isAbortedError(error)) {
+        throw new RequestCancelledError(errorMessage);
+      } else if (isExtensionConflictError(error)) {
+        throw new ExtensionConflictError(EXTENSION_CONFLICT_ERROR_MESSAGE, error);
+      } else if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
-      }
-      if (isAbortedError(error)) {
-        throw new RequestCancelledError((error as Error).message);
-      }
-      if (error instanceof URLNotAllowedError) {
+      } else if (error instanceof URLNotAllowedError) {
         throw error;
       }
-      if (isExtensionConflictError(error)) {
-        throw new ExtensionConflictError(EXTENSION_CONFLICT_ERROR_MESSAGE, error);
-      }
 
-      const errorMessage = error instanceof Error ? error.message : String(error);
       const errorString = `Navigation failed: ${errorMessage}`;
-
       logger.error(errorString);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_FAIL, errorString);
       agentOutput.error = errorMessage;

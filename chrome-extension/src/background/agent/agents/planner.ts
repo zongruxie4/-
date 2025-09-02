@@ -6,9 +6,11 @@ import { HumanMessage } from '@langchain/core/messages';
 import { Actors, ExecutionState } from '../event/types';
 import {
   ChatModelAuthError,
+  ChatModelBadRequestError,
   ChatModelForbiddenError,
   isAbortedError,
   isAuthenticationError,
+  isBadRequestError,
   isForbiddenError,
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
@@ -106,18 +108,18 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
         result: cleanedPlan,
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       // Check if this is an authentication error
       if (isAuthenticationError(error)) {
-        throw new ChatModelAuthError('Planner API Authentication failed. Please verify your API key', error);
-      }
-      if (isForbiddenError(error)) {
+        throw new ChatModelAuthError(errorMessage, error);
+      } else if (isBadRequestError(error)) {
+        throw new ChatModelBadRequestError(errorMessage, error);
+      } else if (isAbortedError(error)) {
+        throw new RequestCancelledError(errorMessage);
+      } else if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
       }
-      if (isAbortedError(error)) {
-        throw new RequestCancelledError((error as Error).message);
-      }
 
-      const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Planning failed: ${errorMessage}`);
       this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_FAIL, `Planning failed: ${errorMessage}`);
       return {

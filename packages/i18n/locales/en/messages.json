@@ -519,7 +519,7 @@
     "message": "Task paused"
   },
   "exec_task_fail": {
-    "message": "Task failed: $ERROR_MESSAGE$",
+    "message": "Task failed: \n\n$ERROR_MESSAGE$",
     "placeholders": {
       "error_message": {
         "content": "$1",
@@ -534,7 +534,7 @@
     "message": "Replay completed"
   },
   "exec_replay_fail": {
-    "message": "Replay failed: $ERROR_MESSAGE$",
+    "message": "Replay failed: \n\n$ERROR_MESSAGE$",
     "placeholders": {
       "error_message": {
         "content": "$1",
