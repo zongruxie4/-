@@ -6,7 +6,7 @@ import type { BaseMessage } from '@langchain/core/messages';
 import { createLogger } from '@src/background/log';
 import type { Action } from '../actions/builder';
 import { convertInputMessages, extractJsonFromModelOutput, removeThinkTags } from '../messages/utils';
-import { isAbortedError } from './errors';
+import { isAbortedError, ResponseParseError } from './errors';
 import { ProviderTypeEnum } from '@extension/storage';
 
 const logger = createLogger('agent');
@@ -156,7 +156,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
           throw error;
         }
         logger.error(`[${this.modelName}] LLM call failed with error:`, error);
-        const errorMessage = `Failed to invoke ${this.modelName} with structured output: ${error}`;
+        const errorMessage = `Failed to invoke ${this.modelName} with structured output: \n${error instanceof Error ? error.message : String(error)}`;
         throw new Error(errorMessage);
       }
     }
@@ -191,7 +191,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     }
     const errorMessage = `Failed to parse response from ${this.modelName}`;
     logger.error(errorMessage);
-    throw new Error('Could not parse response');
+    throw new ResponseParseError('Could not parse response');
   }
 
   // Execute the agent and return the result
@@ -204,7 +204,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
       return this.modelOutputSchema.parse(data);
     } catch (error) {
       logger.error('validateModelOutput', error);
-      throw new Error('Could not validate model output');
+      throw new ResponseParseError('Could not validate model output');
     }
   }
 }

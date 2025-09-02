@@ -13,13 +13,13 @@ import { EventManager } from './event/manager';
 import { Actors, type EventCallback, EventType, ExecutionState } from './event/types';
 import {
   ChatModelAuthError,
+  ChatModelBadRequestError,
   ChatModelForbiddenError,
   ExtensionConflictError,
   RequestCancelledError,
   MaxStepsReachedError,
   MaxFailuresReachedError,
 } from './agents/errors';
-import { filterExternalContent, wrapUntrustedContent } from './messages/utils';
 import { URLNotAllowedError } from '../browser/views';
 import { chatHistoryStore } from '@extension/storage/lib/chat';
 import type { AgentStepHistory } from './history';
@@ -104,32 +104,6 @@ export class Executor {
 
     // need to reset previous action results that are not included in memory
     this.context.actionResults = this.context.actionResults.filter(result => result.includeInMemory);
-  }
-
-  /**
-   * Helper method to run planner and store its output
-   */
-  private async runPlanner(): Promise<AgentOutput<PlannerOutput> | null> {
-    try {
-      // Add current browser state to memory
-      let positionForPlan = 0;
-      if (this.tasks.length > 1 || this.context.nSteps > 0) {
-        await this.navigator.addStateMessageToMemory();
-        positionForPlan = this.context.messageManager.length() - 1;
-      } else {
-        positionForPlan = this.context.messageManager.length();
-      }
-
-      // Execute planner
-      const planOutput = await this.planner.execute();
-      if (planOutput.result) {
-        this.context.messageManager.addPlan(JSON.stringify(planOutput.result), positionForPlan);
-      }
-      return planOutput;
-    } catch (error) {
-      logger.error('Planner execution failed:', error);
-      return null;
-    }
   }
 
   /**
@@ -255,6 +229,48 @@ export class Executor {
     }
   }
 
+  /**
+   * Helper method to run planner and store its output
+   */
+  private async runPlanner(): Promise<AgentOutput<PlannerOutput> | null> {
+    const context = this.context;
+    try {
+      // Add current browser state to memory
+      let positionForPlan = 0;
+      if (this.tasks.length > 1 || this.context.nSteps > 0) {
+        await this.navigator.addStateMessageToMemory();
+        positionForPlan = this.context.messageManager.length() - 1;
+      } else {
+        positionForPlan = this.context.messageManager.length();
+      }
+
+      // Execute planner
+      const planOutput = await this.planner.execute();
+      if (planOutput.result) {
+        this.context.messageManager.addPlan(JSON.stringify(planOutput.result), positionForPlan);
+      }
+      return planOutput;
+    } catch (error) {
+      logger.error(`Failed to execute planner: ${error}`);
+      if (
+        error instanceof ChatModelAuthError ||
+        error instanceof ChatModelBadRequestError ||
+        error instanceof ChatModelForbiddenError ||
+        error instanceof URLNotAllowedError ||
+        error instanceof RequestCancelledError ||
+        error instanceof ExtensionConflictError
+      ) {
+        throw error;
+      }
+      context.consecutiveFailures++;
+      logger.error(`Failed to execute planner: ${error}`);
+      if (context.consecutiveFailures >= context.options.maxFailures) {
+        throw new MaxFailuresReachedError(t('exec_errors_maxFailuresReached'));
+      }
+      return null;
+    }
+  }
+
   private async navigate(): Promise<boolean> {
     const context = this.context;
     try {
@@ -280,6 +296,7 @@ export class Executor {
       logger.error(`Failed to execute step: ${error}`);
       if (
         error instanceof ChatModelAuthError ||
+        error instanceof ChatModelBadRequestError ||
         error instanceof ChatModelForbiddenError ||
         error instanceof URLNotAllowedError ||
         error instanceof RequestCancelledError ||

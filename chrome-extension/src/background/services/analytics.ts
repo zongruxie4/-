@@ -18,7 +18,9 @@ export class AnalyticsService {
 
   private static readonly ERROR_TYPE_CATEGORIES = {
     ChatModelAuthError: 'llm_auth_error',
+    ChatModelBadRequestError: 'llm_bad_request_error',
     ChatModelForbiddenError: 'llm_forbidden_error',
+    ResponseParseError: 'llm_response_parse_error',
     URLNotAllowedError: 'url_blocked_error',
     RequestCancelledError: 'request_cancelled_error',
     ExtensionConflictError: 'extension_conflict_error',
