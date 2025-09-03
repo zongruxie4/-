@@ -80,13 +80,13 @@ export class AnalyticsService {
         mask_all_element_attributes: true,
         opt_out_capturing_by_default: false, // Enabled by default per requirements
         loaded: () => {
-          // Identify user with anonymous ID
-          posthog.identify(settings.anonymousUserId);
           this.initialized = true;
           logger.info('Analytics initialized');
         },
+        bootstrap: {
+          distinctID: settings.anonymousUserId,
+        },
         // Disable features that may cause Chrome Web Store rejections
-        bootstrap: {},
         session_recording: {
           maskAllInputs: true,
           maskInputOptions: {
