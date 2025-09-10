@@ -59,7 +59,7 @@
     "message": "Parar"
   },
   "chat_buttons_replay": {
-    "message": "Repetir"
+    "message": "Reproduzir"
   },
   "chat_buttons_send": {
     "message": "Enviar"
@@ -80,10 +80,10 @@
     "message": "Nenhum histórico de chat disponível"
   },
   "chat_history_bookmark": {
-    "message": "Marcar sessão como favorita"
+    "message": "Adicionar sessão aos favoritos"
   },
   "chat_history_delete": {
-    "message": "Deletar sessão"
+    "message": "Excluir sessão"
   },
   "chat_bookmarks_header": {
     "message": "Início Rápido"
@@ -98,10 +98,10 @@
     "message": "Editar título do favorito"
   },
   "chat_bookmarks_delete": {
-    "message": "Deletar favorito"
+    "message": "Excluir favorito"
   },
   "chat_replay_starting": {
-    "message": "Iniciando repetição da tarefa:\n\n\"$TASK$\"",
+    "message": "Iniciando reprodução da tarefa:\n\n\"$TASK$\"",
     "placeholders": {
       "task": {
         "content": "$1",
@@ -110,7 +110,7 @@
     }
   },
   "chat_replay_failed": {
-    "message": "Repetição falhou: $ERROR_MESSAGE$",
+    "message": "Reprodução falhou: $ERROR_MESSAGE$",
     "placeholders": {
       "error_message": {
         "content": "$1",
@@ -122,10 +122,10 @@
     "message": "Argumentos inválidos. Por favor, use o formato: /replay <historySessionId>"
   },
   "chat_replay_disabled": {
-    "message": "A repetição está desativada nas configurações gerais. Por favor, ative \"Repetir Tarefas Históricas\" nas configurações da extensão para usar este recurso."
+    "message": "A reprodução está desativada nas configurações gerais. Por favor, ative \"Reproduzir Tarefas Históricas\" nas configurações da extensão para usar este recurso."
   },
   "chat_replay_noHistory": {
-    "message": "Nenhum histórico de ação encontrado para a sessão \"$SESSION_ID$தல்.\n\nÉ uma sessão de repetição (sessões de repetição não podem ser repetidas novamente), ou foi criada antes do recurso de repetição estar disponível.",
+    "message": "Nenhum histórico de ação encontrado para a sessão \"$SESSION_ID$\".\n\nÉ uma sessão de reprodução (sessões de reprodução não podem ser reproduzidas novamente), ou foi criada antes do recurso de reprodução estar disponível.",
     "placeholders": {
       "session_id": {
         "content": "$1",
@@ -236,10 +236,10 @@
     "message": "Ativar Visão"
   },
   "options_general_enableVision_desc": {
-    "message": "Usar capacidade de visão dos LLMs (consome mais tokens para melhores resultados)"
+    "message": "Usar capacidade de visão dos modelos de linguagem (consome mais tokens para melhores resultados)"
   },
   "options_general_displayHighlights": {
-    "message": "Exibir Destaques"
+    "message": "Mostrar Destaques"
   },
   "options_general_displayHighlights_desc": {
     "message": "Mostrar destaques visuais em elementos interativos (ex: botões, links, etc.)"
@@ -257,21 +257,11 @@
     "message": "Tempo mínimo de espera após o carregamento da página (250-5000ms)"
   },
   "options_general_replayHistoricalTasks": {
-    "message": "Repetir Tarefas Históricas (experimental)"
+    "message": "Reproduzir Tarefas Históricas (experimental)"
   },
   "options_general_replayHistoricalTasks_desc": {
-    "message": "Ativar o armazenamento e a repetição do histórico de passos do agente (experimental, pode ter problemas)"
+    "message": "Ativar o armazenamento e a reprodução do histórico de passos do agente (experimental, pode ter problemas)"
   },
-  "options_general_language": {
-    "message": "Idioma"
-  },
-  "options_general_language_desc": {
-    "message": "Selecione o idioma de exibição da interface"
-  },
-  "options_general_language_reload_message": {
-    "message": "Por favor, recarregue a extensão para que a mudança de idioma tenha efeito."
-  },
-
   "options_models_providers_header": {
     "message": "Provedores de LLM"
   },
@@ -285,7 +275,7 @@
     "message": "Salvar"
   },
   "options_models_providers_btnDelete": {
-    "message": "Deletar"
+    "message": "Excluir"
   },
   "options_models_providers_setupInstructions": {
     "message": "Insira sua chave de API e clique em Salvar para configurá-la."
@@ -498,7 +488,7 @@
     "message": "Nenhum ID de sessão de histórico fornecido"
   },
   "bg_cmd_replay_failed": {
-    "message": "Repetição falhou"
+    "message": "Reprodução falhou"
   },
   "bg_setup_noApiKeys": {
     "message": "Por favor, configure as chaves de API nas configurações primeiro"
@@ -537,13 +527,13 @@
     }
   },
   "exec_replay_cancel": {
-    "message": "Repetição cancelada"
+    "message": "Reprodução cancelada"
   },
   "exec_replay_ok": {
-    "message": "Repetição concluída"
+    "message": "Reprodução concluída"
   },
   "exec_replay_fail": {
-    "message": "Repetição falhou: \n\n$ERROR_MESSAGE$",
+    "message": "Reprodução falhou: \n\n$ERROR_MESSAGE$",
     "placeholders": {
       "error_message": {
         "content": "$1",
