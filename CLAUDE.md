@@ -15,7 +15,6 @@ Nanobrowser is an open-source AI web automation Chrome extension that runs multi
 - `pnpm install` - Install dependencies
 - `pnpm dev` - Start development mode with hot reload
 - `pnpm build` - Build production version
-- `pnpm dev:firefox` / `pnpm build:firefox` - Firefox-targeted dev/build (non-release)
 - `pnpm type-check` - Run TypeScript type checking
 - `pnpm lint` - Run ESLint with auto-fix
 - `pnpm prettier` - Format code with Prettier
@@ -115,8 +114,7 @@ Agent logic is under `chrome-extension/src/background/agent/`.
 - Content scripts inject into web pages for DOM access
 - Multi-agent coordination happens through Chrome messaging APIs
 - Distribution zips are written to `dist-zip/`
-- Build flags: set `__DEV__=true` for watch builds; `__FIREFOX__=true` switches
-  internal build target (not officially supported for release)
+- Build flags: set `__DEV__=true` for watch builds; 
 - Do not edit generated outputs: `dist/**`, `build/**`, `packages/i18n/lib/**`
 
 ## Unit Tests
@@ -274,8 +272,7 @@ Use Chrome i18n placeholder format with proper definitions:
 - Turbo manages task dependencies and caching across workspaces
 - Extension builds to `dist/` directory which is loaded as unpacked extension
 - Zipped distributions are written to `dist-zip/`
-- Chrome/Edge only — Firefox build flags exist for development but are not an
-  official release target
+- Only supports Chrome/Edge 
 - Keep diffs minimal and scoped; avoid mass refactors or reformatting unrelated files
 - Do not modify generated artifacts (`dist/**`, `build/**`, `packages/i18n/lib/**`)
   or workspace/global configs (`turbo.json`, `pnpm-workspace.yaml`, `tsconfig*`)
