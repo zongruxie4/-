@@ -1232,7 +1232,20 @@ window.buildDomTree = (
    * @param {boolean} isParentHighlighted - Whether the parent node is highlighted.
    * @returns {string | null} The ID of the node data object, or null if the node is not processed.
    */
-  function buildDomTree(node, parentIframe = null, isParentHighlighted = false) {
+  const MAX_DEPTH = 100;
+  let visitedNodes;
+
+  function buildDomTree(node, parentIframe = null, isParentHighlighted = false, depth = 0) {
+    // Initialize visited nodes tracking on first call
+    if (!visitedNodes) {
+      visitedNodes = new WeakSet();
+    }
+
+    // Prevent infinite recursion
+    if (depth > MAX_DEPTH) {
+      return null;
+    }
+
     // Fast rejection checks first
     if (
       !node ||
@@ -1242,8 +1255,12 @@ window.buildDomTree = (
       return null;
     }
 
-    if (!node || node.id === HIGHLIGHT_CONTAINER_ID) {
+    // Prevent circular references (only for valid nodes)
+    if (node.nodeType === Node.ELEMENT_NODE && visitedNodes.has(node)) {
       return null;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      visitedNodes.add(node);
     }
 
     // Special handling for root node (body)
@@ -1256,8 +1273,8 @@ window.buildDomTree = (
       };
 
       // Process children of body
-      for (const child of node.childNodes) {
-        const domElement = buildDomTree(child, parentIframe, false); // Body's children have no highlighted parent initially
+      for (const child of Array.from(node.childNodes)) {
+        const domElement = buildDomTree(child, parentIframe, false, depth + 1); // Body's children have no highlighted parent initially
         if (domElement) nodeData.children.push(domElement);
       }
 
@@ -1390,17 +1407,43 @@ window.buildDomTree = (
         const rect = getCachedBoundingRect(node);
         nodeData.attributes['computedHeight'] = String(Math.ceil(rect.height));
         nodeData.attributes['computedWidth'] = String(Math.ceil(rect.width));
-        try {
-          const iframeDoc = node.contentDocument || node.contentWindow?.document;
-          if (iframeDoc) {
-            for (const child of iframeDoc.childNodes) {
-              const domElement = buildDomTree(child, node, false);
-              if (domElement) nodeData.children.push(domElement);
+
+        // Check if iframe should be skipped (invisible tracking/ad iframes)
+        const shouldSkipIframe =
+          // Invisible iframes (1x1 pixel or similar)
+          (rect.width <= 1 && rect.height <= 1) ||
+          // Positioned off-screen
+          rect.left < -1000 ||
+          rect.top < -1000;
+
+        // Early detection for sandboxed iframes
+        const sandbox = node.getAttribute('sandbox');
+        const isSandboxed = sandbox !== null;
+        const isRestrictiveSandbox = isSandboxed && !sandbox.includes('allow-same-origin');
+
+        if (shouldSkipIframe) {
+          // Skip processing invisible/tracking iframes entirely
+          nodeData.attributes['skipped'] = 'invisible-tracking-iframe';
+        } else if (isRestrictiveSandbox) {
+          // Set error directly for sandboxed iframes we know will fail
+          nodeData.attributes['error'] = 'Cross-origin iframe access blocked by sandbox';
+        } else {
+          // Only attempt access for iframes that might succeed
+          try {
+            const iframeDoc = node.contentDocument || node.contentWindow?.document;
+            if (iframeDoc && iframeDoc.childNodes) {
+              for (const child of Array.from(iframeDoc.childNodes)) {
+                const domElement = buildDomTree(child, node, false, depth + 1);
+                if (domElement) nodeData.children.push(domElement);
+              }
+            }
+          } catch (e) {
+            nodeData.attributes['error'] = e.message;
+            // Only log unexpected errors, not predictable ones
+            if (!e.message.includes('cross-origin') && !e.message.includes('origin "null"')) {
+              console.warn('Unable to access iframe:', e);
             }
           }
-        } catch (e) {
-          nodeData.attributes['error'] = e.message;
-          console.warn('Unable to access iframe:', e);
         }
       }
       // Handle rich text editors and contenteditable elements
@@ -1412,24 +1455,24 @@ window.buildDomTree = (
         (tagName === 'body' && node.getAttribute('data-id')?.startsWith('mce_'))
       ) {
         // Process all child nodes to capture formatted text
-        for (const child of node.childNodes) {
-          const domElement = buildDomTree(child, parentIframe, nodeWasHighlighted);
+        for (const child of Array.from(node.childNodes)) {
+          const domElement = buildDomTree(child, parentIframe, nodeWasHighlighted, depth + 1);
           if (domElement) nodeData.children.push(domElement);
         }
       } else {
         // Handle shadow DOM
         if (node.shadowRoot) {
           nodeData.shadowRoot = true;
-          for (const child of node.shadowRoot.childNodes) {
-            const domElement = buildDomTree(child, parentIframe, nodeWasHighlighted);
+          for (const child of Array.from(node.shadowRoot.childNodes)) {
+            const domElement = buildDomTree(child, parentIframe, nodeWasHighlighted, depth + 1);
             if (domElement) nodeData.children.push(domElement);
           }
         }
         // Handle regular elements
-        for (const child of node.childNodes) {
+        for (const child of Array.from(node.childNodes)) {
           // Pass the highlighted status of the *current* node to its children
           const passHighlightStatusToChild = nodeWasHighlighted || isParentHighlighted;
-          const domElement = buildDomTree(child, parentIframe, passHighlightStatusToChild);
+          const domElement = buildDomTree(child, parentIframe, passHighlightStatusToChild, depth + 1);
           if (domElement) nodeData.children.push(domElement);
         }
       }
@@ -1451,6 +1494,8 @@ window.buildDomTree = (
     return id;
   }
 
+  // Reset visited nodes for new DOM tree build
+  visitedNodes = null;
   const rootId = buildDomTree(document.body);
 
   // Clear the cache before starting
