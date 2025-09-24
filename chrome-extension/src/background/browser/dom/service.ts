@@ -392,7 +392,10 @@ function _visibleIFramesFailedLoading(result: BuildDomTreeResult): Record<string
       const error = iframeNode.attributes['error'];
       const height = parseInt(iframeNode.attributes['computedHeight']);
       const width = parseInt(iframeNode.attributes['computedWidth']);
-      return error != null && height > 0 && width > 0;
+      const skipped = iframeNode.attributes['skipped'];
+
+      // Only consider iframes that have errors AND are visible AND not skipped
+      return error != null && height > 1 && width > 1 && !skipped;
     }),
   );
 }

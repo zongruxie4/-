@@ -11,18 +11,36 @@ export async function getClickableElementsHashes(domElement: DOMElementNode): Pr
 }
 
 /**
- * Get all clickable elements in the DOM tree
+ * Get all clickable elements in the DOM tree using an iterative approach
+ * to avoid "Maximum call stack size exceeded" errors on deep DOMs.
+ * This maintains the exact same pre-order traversal as the original recursive version.
  */
 export function getClickableElements(domElement: DOMElementNode): DOMElementNode[] {
   const clickableElements: DOMElementNode[] = [];
+  const stack: DOMElementNode[] = [];
 
-  for (const child of domElement.children) {
+  // Start with all direct children of the root element (in reverse order for correct processing)
+  for (let i = domElement.children.length - 1; i >= 0; i--) {
+    const child = domElement.children[i];
     if (child instanceof DOMElementNode) {
-      if (child.highlightIndex !== null) {
-        clickableElements.push(child);
-      }
+      stack.push(child);
+    }
+  }
 
-      clickableElements.push(...getClickableElements(child));
+  while (stack.length > 0) {
+    const node = stack.pop() as DOMElementNode;
+
+    // Process current node first (pre-order: node before children)
+    if (node.highlightIndex !== null) {
+      clickableElements.push(node);
+    }
+
+    // Add children to stack in reverse order so they're processed in document order
+    for (let i = node.children.length - 1; i >= 0; i--) {
+      const child = node.children[i];
+      if (child instanceof DOMElementNode) {
+        stack.push(child);
+      }
     }
   }
 
