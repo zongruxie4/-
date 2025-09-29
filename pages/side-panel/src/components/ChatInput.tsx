@@ -82,12 +82,20 @@ export default function ChatInput({
       if (text.trim() || attachedFiles.length > 0) {
         let messageContent = text;
 
-        // Append file contents to the message
+        // Security: Clearly separate user input from file content
+        // The background service will sanitize file content using guardrails
         if (attachedFiles.length > 0) {
           const fileContents = attachedFiles
-            .map(file => `\n\n--- File: ${file.name} ---\n${file.content}\n--- End of ${file.name} ---`)
+            .map(file => {
+              // Tag file content for background service to identify and sanitize
+              return `\n\n<nano_untrusted_content type="file" name="${file.name}">\n${file.content}\n</nano_untrusted_content>`;
+            })
             .join('\n');
-          messageContent = text + fileContents;
+
+          // Combine user message with tagged file content
+          messageContent = text.trim()
+            ? `${text}\n\n[Attached Files]${fileContents}`
+            : `[Attached Files Only]${fileContents}`;
         }
 
         onSendMessage(messageContent);
