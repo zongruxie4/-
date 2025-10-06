@@ -549,7 +549,7 @@ const SidePanel = () => {
     }
   };
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, displayText?: string) => {
     console.log('handleSendMessage', text);
 
     // Trim the input text first
@@ -582,8 +582,10 @@ const SidePanel = () => {
 
       // Create a new chat session for this task if not in follow-up mode
       if (!isFollowUpMode) {
+        // Use display text for session title if available, otherwise use full text
+        const titleText = displayText || text;
         const newSession = await chatHistoryStore.createSession(
-          text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+          titleText.substring(0, 50) + (titleText.length > 50 ? '...' : ''),
         );
         console.log('newSession', newSession);
 
@@ -595,7 +597,7 @@ const SidePanel = () => {
 
       const userMessage = {
         actor: Actors.USER,
-        content: text,
+        content: displayText || text, // Use display text for chat UI, full text for background service
         timestamp: Date.now(),
       };
 
