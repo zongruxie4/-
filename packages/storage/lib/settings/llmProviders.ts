@@ -3,6 +3,8 @@ import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
 import { type AgentNameEnum, llmProviderModelNames, llmProviderParameters, ProviderTypeEnum } from './types';
 
+const AZURE_API_VERSION = '2025-04-01-preview';
+
 // Interface for a single provider configuration
 export interface ProviderConfig {
   name?: string; // Display name in the options
@@ -145,7 +147,7 @@ export function getDefaultProviderConfig(providerId: string): ProviderConfig {
         baseUrl: '', // User needs to provide Azure endpoint
         // modelNames: [], // Not used for Azure configuration
         azureDeploymentNames: [], // Azure deployment names
-        azureApiVersion: '2024-02-15-preview', // Provide a common default API version
+        azureApiVersion: AZURE_API_VERSION, // Provide a common default API version
         createdAt: Date.now(),
       };
     default: // Handles CustomOpenAI
@@ -189,7 +191,7 @@ function ensureBackwardCompatibility(providerId: string, config: ProviderConfig)
     // Ensure Azure fields exist, provide defaults if missing
     if (updatedConfig.azureApiVersion === undefined) {
       // console.log(`[ensureBackwardCompatibility] Adding default azureApiVersion for ${providerId}`);
-      updatedConfig.azureApiVersion = '2024-02-15-preview';
+      updatedConfig.azureApiVersion = AZURE_API_VERSION;
     }
 
     // Initialize azureDeploymentNames array if it doesn't exist yet

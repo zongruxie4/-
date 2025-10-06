@@ -36,12 +36,7 @@ export const llmProviderModelNames = {
   [ProviderTypeEnum.Grok]: ['grok-3', 'grok-3-fast', 'grok-3-mini', 'grok-3-mini-fast'],
   [ProviderTypeEnum.Ollama]: ['qwen3:14b', 'falcon3:10b', 'qwen2.5-coder:14b', 'mistral-small:24b'],
   [ProviderTypeEnum.AzureOpenAI]: ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4o'],
-  [ProviderTypeEnum.OpenRouter]: [
-    'deepseek/deepseek-chat-v3.1',
-    'google/gemini-2.5-pro',
-    'google/gemini-2.5-flash',
-    'openai/gpt-4o-2024-11-20',
-  ],
+  [ProviderTypeEnum.OpenRouter]: ['google/gemini-2.5-pro', 'google/gemini-2.5-flash', 'openai/gpt-4o-2024-11-20'],
   [ProviderTypeEnum.Groq]: ['llama-3.3-70b-versatile'],
   [ProviderTypeEnum.Cerebras]: ['llama-3.3-70b'],
   [ProviderTypeEnum.Llama]: [
