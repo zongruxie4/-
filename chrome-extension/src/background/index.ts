@@ -89,25 +89,8 @@ chrome.runtime.onConnect.addListener(port => {
             if (!message.task) return port.postMessage({ type: 'error', error: t('bg_cmd_newTask_noTask') });
             if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
-            // Security: Apply guardrails to sanitize untrusted content
-            const { guardrails } = await import('./services/guardrails');
-            const sanitizationResult = guardrails.sanitize(message.task);
-
-            if (sanitizationResult.modified) {
-              logger.info('Task content was sanitized. Threats detected:', sanitizationResult.threats);
-              // Send sanitized content back to side panel to update the display
-              port.postMessage({
-                type: 'task_sanitized',
-                taskId: message.taskId,
-                sanitizedContent: sanitizationResult.sanitized,
-                threats: sanitizationResult.threats,
-              });
-            }
-
-            const sanitizedTask = sanitizationResult.sanitized;
-            logger.info('new_task', message.tabId, sanitizedTask);
-
-            currentExecutor = await setupExecutor(message.taskId, sanitizedTask, browserContext);
+            logger.info('new_task', message.tabId, message.task);
+            currentExecutor = await setupExecutor(message.taskId, message.task, browserContext);
             subscribeToExecutorEvents(currentExecutor);
 
             const result = await currentExecutor.execute();
@@ -119,27 +102,11 @@ chrome.runtime.onConnect.addListener(port => {
             if (!message.task) return port.postMessage({ type: 'error', error: t('bg_cmd_followUpTask_noTask') });
             if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
-            // Security: Apply guardrails to sanitize untrusted content
-            const { guardrails } = await import('./services/guardrails');
-            const sanitizationResult = guardrails.sanitize(message.task);
-
-            if (sanitizationResult.modified) {
-              logger.info('Follow-up task content was sanitized. Threats detected:', sanitizationResult.threats);
-              // Send sanitized content back to side panel to update the display
-              port.postMessage({
-                type: 'task_sanitized',
-                taskId: message.taskId,
-                sanitizedContent: sanitizationResult.sanitized,
-                threats: sanitizationResult.threats,
-              });
-            }
-
-            const sanitizedTask = sanitizationResult.sanitized;
-            logger.info('follow_up_task', message.tabId, sanitizedTask);
+            logger.info('follow_up_task', message.tabId, message.task);
 
             // If executor exists, add follow-up task
             if (currentExecutor) {
-              currentExecutor.addFollowUpTask(sanitizedTask);
+              currentExecutor.addFollowUpTask(message.task);
               // Re-subscribe to events in case the previous subscription was cleaned up
               subscribeToExecutorEvents(currentExecutor);
               const result = await currentExecutor.execute();

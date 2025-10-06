@@ -392,7 +392,10 @@ function _visibleIFramesFailedLoading(result: BuildDomTreeResult): Record<string
       const error = iframeNode.attributes['error'];
       const height = parseInt(iframeNode.attributes['computedHeight']);
       const width = parseInt(iframeNode.attributes['computedWidth']);
-      return error != null && height > 0 && width > 0;
+      const skipped = iframeNode.attributes['skipped'];
+
+      // Only consider iframes that have errors AND are visible AND not skipped
+      return error != null && height > 1 && width > 1 && !skipped;
     }),
   );
 }
@@ -584,8 +587,7 @@ async function scriptInjectedFrames(tabId: number): Promise<Map<number, boolean>
     });
     return new Map(results.map(result => [result.frameId, result.result || false]));
   } catch (err) {
-    // Silently handle the error - this often happens with cross-origin frames or frames that no longer exist
-    // Just return an empty map to indicate no frames were checked
+    console.error('Failed to check script injection status:', err);
     return new Map();
   }
 }
@@ -627,6 +629,6 @@ export async function injectBuildDomTreeScripts(tabId: number) {
       });
     }
   } catch (err) {
-    // Silently handle injection errors - these are common with dynamic frames
+    console.error('Failed to inject scripts:', err);
   }
 }

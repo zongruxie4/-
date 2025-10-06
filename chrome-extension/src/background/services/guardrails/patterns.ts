@@ -109,12 +109,6 @@ export const STRICT_PATTERNS: SecurityPattern[] = [
     replacement: '[REDACTED_CREDENTIAL]',
   },
   {
-    pattern: /(mongodb|postgres|postgresql|mysql|redis|mssql|oracle):\/\/[^\s]+/gi,
-    type: ThreatType.SENSITIVE_DATA,
-    description: 'Database connection URI detected',
-    replacement: '[REDACTED_DATABASE_URI]',
-  },
-  {
     pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, // Email
     type: ThreatType.SENSITIVE_DATA,
     description: 'Email address detected',

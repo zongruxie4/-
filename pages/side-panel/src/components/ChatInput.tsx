@@ -88,14 +88,14 @@ export default function ChatInput({
           const fileContents = attachedFiles
             .map(file => {
               // Tag file content for background service to identify and sanitize
-              return `\n\n<nano_untrusted_content type="file" name="${file.name}">\n${file.content}\n</nano_untrusted_content>`;
+              return `\n\n<nano_file_content type="file" name="${file.name}">\n${file.content}\n</nano_file_content>`;
             })
             .join('\n');
 
           // Combine user message with tagged file content
           messageContent = text.trim()
-            ? `${text}\n\n[Attached Files]${fileContents}`
-            : `[Attached Files Only]${fileContents}`;
+            ? `${text}\n\n<nano_attached_files>${fileContents}</nano_attached_files>`
+            : `<nano_attached_files>${fileContents}</nano_attached_files>`;
         }
 
         onSendMessage(messageContent);

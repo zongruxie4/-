@@ -333,29 +333,6 @@ const SidePanel = () => {
             timestamp: Date.now(),
           });
           setIsProcessingSpeech(false);
-        } else if (message && message.type === 'task_sanitized') {
-          // Update the last user message with sanitized content
-          setMessages(prev => {
-            const lastUserMessageIndex = prev.findLastIndex(msg => msg.actor === Actors.USER);
-            if (lastUserMessageIndex !== -1) {
-              const updatedMessages = [...prev];
-              updatedMessages[lastUserMessageIndex] = {
-                ...updatedMessages[lastUserMessageIndex],
-                content: message.sanitizedContent,
-              };
-              return updatedMessages;
-            }
-            return prev;
-          });
-
-          // Show a system message about sanitization if threats were detected
-          if (message.threats && message.threats.length > 0) {
-            appendMessage({
-              actor: Actors.SYSTEM,
-              content: `🛡️ Content sanitized for security (${message.threats.length} threat${message.threats.length > 1 ? 's' : ''} removed)`,
-              timestamp: Date.now(),
-            });
-          }
         } else if (message && message.type === 'heartbeat_ack') {
           console.log('Heartbeat acknowledged');
         }
