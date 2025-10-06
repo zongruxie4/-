@@ -4,7 +4,7 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { t } from '@extension/i18n';
 
 interface ChatInputProps {
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, displayText?: string) => void;
   onStopTask: () => void;
   onMicClick?: () => void;
   isRecording?: boolean;
@@ -79,8 +79,11 @@ export default function ChatInput({
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (text.trim() || attachedFiles.length > 0) {
-        let messageContent = text;
+      const trimmedText = text.trim();
+
+      if (trimmedText || attachedFiles.length > 0) {
+        let messageContent = trimmedText;
+        let displayContent = trimmedText;
 
         // Security: Clearly separate user input from file content
         // The background service will sanitize file content using guardrails
@@ -92,13 +95,17 @@ export default function ChatInput({
             })
             .join('\n');
 
-          // Combine user message with tagged file content
-          messageContent = text.trim()
-            ? `${text}\n\n<nano_attached_files>${fileContents}</nano_attached_files>`
+          // Combine user message with tagged file content (for background service)
+          messageContent = trimmedText
+            ? `${trimmedText}\n\n<nano_attached_files>${fileContents}</nano_attached_files>`
             : `<nano_attached_files>${fileContents}</nano_attached_files>`;
+
+          // Create display version with only filenames (for UI)
+          const fileList = attachedFiles.map(file => `📎 ${file.name}`).join('\n');
+          displayContent = trimmedText ? `${trimmedText}\n\n${fileList}` : fileList;
         }
 
-        onSendMessage(messageContent);
+        onSendMessage(messageContent, displayContent);
         setText('');
         setAttachedFiles([]);
       }
