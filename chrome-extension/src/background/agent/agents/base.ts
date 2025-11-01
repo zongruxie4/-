@@ -115,6 +115,16 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
       return false;
     }
 
+    // Google Gemini models return markdown-wrapped JSON even with structured output
+    // This applies to both native Google AI SDK and OpenAI-compatible endpoints
+    // Check model name for 'gemini' to catch all variants (gemini-2.5-pro, gemini-1.5-pro, etc.)
+    if (this.chatModelLibrary === 'ChatGoogleGenerativeAI' || this.modelName.toLowerCase().includes('gemini')) {
+      logger.debug(
+        `[${this.modelName}] Google Gemini models return markdown-wrapped JSON, using manual JSON extraction`,
+      );
+      return false;
+    }
+
     return true;
   }
 
@@ -149,6 +159,23 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
           logger.debug(`[${this.modelName}] Successfully parsed structured output`);
           return response.parsed;
         }
+
+        // Fallback: Try to extract JSON from raw response (handles markdown-wrapped JSON)
+        if (response.raw && typeof response.raw.content === 'string') {
+          logger.warning(`[${this.modelName}] Structured output parsing failed, attempting manual JSON extraction`);
+          try {
+            const cleanedContent = removeThinkTags(response.raw.content);
+            const extractedJson = extractJsonFromModelOutput(cleanedContent);
+            const parsed = this.validateModelOutput(extractedJson);
+            if (parsed) {
+              logger.debug(`[${this.modelName}] Successfully extracted JSON from raw response`);
+              return parsed;
+            }
+          } catch (extractError) {
+            logger.error(`[${this.modelName}] Manual JSON extraction also failed:`, extractError);
+          }
+        }
+
         logger.error('Failed to parse response', response);
         throw new Error('Could not parse response with structured output');
       } catch (error) {
@@ -161,7 +188,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
       }
     }
 
-    // Without structured output support, need to extract JSON from model output manually
+    // Fallback: Without structured output support, need to extract JSON from model output manually
     logger.debug(`[${this.modelName}] Using manual JSON extraction fallback method`);
     const convertedInputMessages = convertInputMessages(inputMessages, this.modelName);
 

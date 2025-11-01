@@ -108,7 +108,7 @@ export const cacheContentActionSchema: ActionSchema = {
   description: 'Cache what you have found so far from the current page for future use',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    content: z.string().describe('content to cache'),
+    content: z.string().default('').describe('content to cache'),
   }),
 };
 
