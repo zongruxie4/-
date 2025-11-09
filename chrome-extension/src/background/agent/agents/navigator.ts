@@ -112,8 +112,26 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         if (isAbortedError(error)) {
           throw error;
         }
-        const errorMessage = `Failed to invoke ${this.modelName} with structured output: \n${error instanceof Error ? error.message : String(error)}`;
-        throw new Error(errorMessage);
+        
+        // Try to extract JSON from markdown code blocks if parsing failed
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('is not valid JSON') && response?.raw?.content) {
+          try {
+            const content = typeof response.raw.content === 'string' ? response.raw.content : JSON.stringify(response.raw.content);
+            // Remove markdown code blocks
+            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (jsonMatch) {
+              const extractedJson = JSON.parse(jsonMatch[1].trim());
+              const validated = this.modelOutputSchema.parse(extractedJson);
+              logger.info('Successfully extracted JSON from markdown code block');
+              return validated;
+            }
+          } catch (extractError) {
+            logger.error('Failed to extract JSON from markdown:', extractError);
+          }
+        }
+        
+        throw new Error(`Failed to invoke ${this.modelName} with structured output: \n${errorMessage}`);
       }
 
       // Use type assertion to access the properties
