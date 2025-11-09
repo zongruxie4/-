@@ -112,12 +112,13 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         if (isAbortedError(error)) {
           throw error;
         }
-        
+
         // Try to extract JSON from markdown code blocks if parsing failed
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (errorMessage.includes('is not valid JSON') && response?.raw?.content) {
           try {
-            const content = typeof response.raw.content === 'string' ? response.raw.content : JSON.stringify(response.raw.content);
+            const content =
+              typeof response.raw.content === 'string' ? response.raw.content : JSON.stringify(response.raw.content);
             // Remove markdown code blocks
             const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
             if (jsonMatch) {
@@ -130,7 +131,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
             logger.error('Failed to extract JSON from markdown:', extractError);
           }
         }
-        
+
         throw new Error(`Failed to invoke ${this.modelName} with structured output: \n${errorMessage}`);
       }
 
@@ -391,7 +392,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
         const actionInstance = this.actionRegistry.getAction(actionName);
         if (actionInstance === undefined) {
-          throw new Error(`Action ${actionName} does not exist`);
+          throw new Error(`Action ${actionName} not exists`);
         }
 
         const indexArg = actionInstance.getIndexArg(actionArgs);
