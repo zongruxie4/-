@@ -391,7 +391,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
         const actionInstance = this.actionRegistry.getAction(actionName);
         if (actionInstance === undefined) {
-          throw new Error(`Action ${actionName} not exists`);
+          throw new Error(`Action ${actionName} does not exist`);
         }
 
         const indexArg = actionInstance.getIndexArg(actionArgs);
