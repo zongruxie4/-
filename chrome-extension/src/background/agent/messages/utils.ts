@@ -1,6 +1,7 @@
 import { type BaseMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
 
 import { guardrails } from '@src/background/services/guardrails';
+import { ResponseParseError } from '../agents/errors';
 
 /**
  * Tag for untrusted content
@@ -129,8 +130,7 @@ export function extractJsonFromModelOutput(content: string): Record<string, unkn
     // Parse the cleaned content
     return JSON.parse(processedContent);
   } catch (e) {
-    console.warn(`Failed to parse model output: ${content} ${e instanceof Error ? e.message : String(e)}`);
-    throw new Error('Could not parse response.');
+    throw new ResponseParseError(`Could not manually extract JSON from model output`);
   }
 }
 

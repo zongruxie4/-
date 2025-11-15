@@ -115,16 +115,6 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
       return false;
     }
 
-    // Google Gemini models return markdown-wrapped JSON even with structured output
-    // This applies to both native Google AI SDK and OpenAI-compatible endpoints
-    // Check model name for 'gemini' to catch all variants (gemini-2.5-pro, gemini-1.5-pro, etc.)
-    if (this.chatModelLibrary === 'ChatGoogleGenerativeAI' || this.modelName.toLowerCase().includes('gemini')) {
-      logger.debug(
-        `[${this.modelName}] Google Gemini models return markdown-wrapped JSON, using manual JSON extraction`,
-      );
-      return false;
-    }
-
     return true;
   }
 
@@ -142,9 +132,10 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
         name: this.modelOutputToolName,
       });
 
+      let response = undefined;
       try {
         logger.debug(`[${this.modelName}] Invoking LLM with structured output...`);
-        const response = await structuredLlm.invoke(inputMessages, {
+        response = await structuredLlm.invoke(inputMessages, {
           signal: this.context.controller.signal,
           ...this.callOptions,
         });
@@ -159,32 +150,27 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
           logger.debug(`[${this.modelName}] Successfully parsed structured output`);
           return response.parsed;
         }
-
-        // Fallback: Try to extract JSON from raw response (handles markdown-wrapped JSON)
-        if (response.raw && typeof response.raw.content === 'string') {
-          logger.warning(`[${this.modelName}] Structured output parsing failed, attempting manual JSON extraction`);
-          try {
-            const cleanedContent = removeThinkTags(response.raw.content);
-            const extractedJson = extractJsonFromModelOutput(cleanedContent);
-            const parsed = this.validateModelOutput(extractedJson);
-            if (parsed) {
-              logger.debug(`[${this.modelName}] Successfully extracted JSON from raw response`);
-              return parsed;
-            }
-          } catch (extractError) {
-            logger.error(`[${this.modelName}] Manual JSON extraction also failed:`, extractError);
-          }
-        }
-
         logger.error('Failed to parse response', response);
         throw new Error('Could not parse response with structured output');
       } catch (error) {
         if (isAbortedError(error)) {
           throw error;
         }
-        logger.error(`[${this.modelName}] LLM call failed with error:`, error);
-        const errorMessage = `Failed to invoke ${this.modelName} with structured output: \n${error instanceof Error ? error.message : String(error)}`;
-        throw new Error(errorMessage);
+
+        // Try to extract JSON from raw response manually if possible
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (
+          errorMessage.includes('is not valid JSON') &&
+          response?.raw?.content &&
+          typeof response.raw.content === 'string'
+        ) {
+          const parsed = this.manuallyParseResponse(response.raw.content);
+          if (parsed) {
+            return parsed;
+          }
+        }
+        logger.error(`[${this.modelName}] LLM call failed with error: \n${errorMessage}`);
+        throw new Error(`Failed to invoke ${this.modelName} with structured output: \n${errorMessage}`);
       }
     }
 
@@ -199,17 +185,9 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
       });
 
       if (typeof response.content === 'string') {
-        response.content = removeThinkTags(response.content);
-        try {
-          const extractedJson = extractJsonFromModelOutput(response.content);
-          const parsed = this.validateModelOutput(extractedJson);
-          if (parsed) {
-            return parsed;
-          }
-        } catch (error) {
-          logger.error(`[${this.modelName}] Failed to extract JSON from response:`, error);
-          const errorMessage = `Failed to extract JSON from response: ${error}`;
-          throw new Error(errorMessage);
+        const parsed = this.manuallyParseResponse(response.content);
+        if (parsed) {
+          return parsed;
         }
       }
     } catch (error) {
@@ -232,6 +210,18 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     } catch (error) {
       logger.error('validateModelOutput', error);
       throw new ResponseParseError('Could not validate model output');
+    }
+  }
+
+  // Helper method to manually parse the response content
+  protected manuallyParseResponse(content: string): this['ModelOutput'] | undefined {
+    const cleanedContent = removeThinkTags(content);
+    try {
+      const extractedJson = extractJsonFromModelOutput(cleanedContent);
+      return this.validateModelOutput(extractedJson);
+    } catch (error) {
+      logger.warning('manuallyParseResponse failed', error);
+      return undefined;
     }
   }
 }
