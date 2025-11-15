@@ -40,7 +40,7 @@ function isOpenAIReasoningModel(modelName: string): boolean {
   );
 }
 
-function isAnthropicOpusModel(modelName: string): boolean {
+function isAnthropicModel(modelName: string): boolean {
   // Extract the model name without provider prefix if present
   let modelNameWithoutProvider = modelName;
 
@@ -49,8 +49,8 @@ function isAnthropicOpusModel(modelName: string): boolean {
     modelNameWithoutProvider = modelName.split('>')[1];
   }
 
-  // Check if the model starts with 'claude-opus'
-  return modelNameWithoutProvider.startsWith('claude-opus');
+  // Check if the model starts with 'claude-'
+  return modelNameWithoutProvider.startsWith('claude-');
 }
 
 interface ModelSettingsProps {
@@ -603,7 +603,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         }
 
         // For Anthropic Opus models, only pass temperature, not topP
-        const parametersToSave = isAnthropicOpusModel(modelValue)
+        const parametersToSave = isAnthropicModel(modelValue)
           ? { temperature: newParameters.temperature }
           : newParameters;
 
@@ -672,7 +672,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
         if (provider && modelName) {
           // For Anthropic Opus models, only pass temperature, not topP
-          const parametersToSave = isAnthropicOpusModel(selectedModels[agentName])
+          const parametersToSave = isAnthropicModel(selectedModels[agentName])
             ? { temperature: newParameters.temperature }
             : newParameters;
 
@@ -794,7 +794,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         {/* Top P Slider - Only show for non-reasoning models */}
         {selectedModels[agentName] &&
           !isOpenAIReasoningModel(selectedModels[agentName]) &&
-          !isAnthropicOpusModel(selectedModels[agentName]) && (
+          !isAnthropicModel(selectedModels[agentName]) && (
             <div className="flex items-center">
               <label
                 htmlFor={`${agentName}-topP`}
@@ -855,7 +855,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                   handleReasoningEffortChange(agentName, e.target.value as 'minimal' | 'low' | 'medium' | 'high')
                 }
                 className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}>
-                <option value="minimal">Minimal</option>
+                <option value="minimal/none">Minimal</option>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>

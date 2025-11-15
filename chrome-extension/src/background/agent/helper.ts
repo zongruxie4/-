@@ -8,8 +8,6 @@ import { ChatCerebras } from '@langchain/cerebras';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOllama } from '@langchain/ollama';
 import { ChatDeepSeek } from '@langchain/deepseek';
-import { AIMessage } from '@langchain/core/messages';
-import type { BaseMessage } from '@langchain/core/messages';
 
 const maxTokens = 1024 * 4;
 
@@ -83,6 +81,17 @@ function isAnthropicOpusModel(modelName: string): boolean {
   return modelNameWithoutProvider.startsWith('claude-opus');
 }
 
+// check if a model is sonnet-4-5 or haiku-4-5
+function isAnthropic4_5Model(modelName: string): boolean {
+  let modelNameWithoutProvider = modelName;
+  if (modelName.startsWith('anthropic/')) {
+    modelNameWithoutProvider = modelName.substring(10);
+  }
+  return (
+    modelNameWithoutProvider.startsWith('claude-sonnet-4-5') || modelNameWithoutProvider.startsWith('claude-haiku-4-5')
+  );
+}
+
 function createOpenAIChatModel(
   providerConfig: ProviderConfig,
   modelConfig: ModelConfig,
@@ -96,7 +105,7 @@ function createOpenAIChatModel(
     configuration?: Record<string, unknown>;
     modelKwargs?: {
       max_completion_tokens: number;
-      reasoning_effort?: 'minimal' | 'low' | 'medium' | 'high';
+      reasoning_effort?: 'none' | 'minimal' | 'low' | 'medium' | 'high';
     };
     topP?: number;
     temperature?: number;
@@ -128,7 +137,12 @@ function createOpenAIChatModel(
 
     // Add reasoning_effort parameter for o-series models if specified
     if (modelConfig.reasoningEffort) {
-      args.modelKwargs.reasoning_effort = modelConfig.reasoningEffort;
+      // if it's gpt-5.1, we need to convert minimal to none, it doesn't support minimal
+      if (modelConfig.modelName.includes('gpt-5.1') && modelConfig.reasoningEffort === 'minimal') {
+        args.modelKwargs.reasoning_effort = 'none';
+      } else {
+        args.modelKwargs.reasoning_effort = modelConfig.reasoningEffort;
+      }
     }
   } else {
     args.topP = (modelConfig.parameters?.topP ?? 0.1) as number;
@@ -246,23 +260,15 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
       return createOpenAIChatModel(providerConfig, modelConfig, undefined);
     }
     case ProviderTypeEnum.Anthropic: {
-      // For Opus models, only include temperature, not topP
-      const args = isAnthropicOpusModel(modelConfig.modelName)
-        ? {
-            model: modelConfig.modelName,
-            apiKey: providerConfig.apiKey,
-            maxTokens,
-            temperature,
-            clientOptions: {},
-          }
-        : {
-            model: modelConfig.modelName,
-            apiKey: providerConfig.apiKey,
-            maxTokens,
-            temperature,
-            topP,
-            clientOptions: {},
-          };
+      // For Opus models, only support temperature, not topP
+      // For 4.5 models, only support either temperature or topP, not both, so we only use temperature to align with Opus
+      const args = {
+        model: modelConfig.modelName,
+        apiKey: providerConfig.apiKey,
+        maxTokens,
+        temperature,
+        clientOptions: {},
+      };
       return new ChatAnthropic(args);
     }
     case ProviderTypeEnum.DeepSeek: {
