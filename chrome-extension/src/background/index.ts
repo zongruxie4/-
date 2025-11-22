@@ -24,6 +24,7 @@ const logger = createLogger('background');
 const browserContext = new BrowserContext({});
 let currentExecutor: Executor | null = null;
 let currentPort: chrome.runtime.Port | null = null;
+const SIDE_PANEL_URL = chrome.runtime.getURL('side-panel/index.html');
 
 // Setup side panel behavior
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
@@ -75,6 +76,15 @@ chrome.runtime.onMessage.addListener(() => {
 // Setup connection listener for long-lived connections (e.g., side panel)
 chrome.runtime.onConnect.addListener(port => {
   if (port.name === 'side-panel-connection') {
+    const senderUrl = port.sender?.url;
+    const senderId = port.sender?.id;
+
+    if (!senderUrl || senderId !== chrome.runtime.id || senderUrl !== SIDE_PANEL_URL) {
+      logger.warning('Blocked unauthorized side-panel-connection', senderId, senderUrl);
+      port.disconnect();
+      return;
+    }
+
     currentPort = port;
 
     port.onMessage.addListener(async message => {
