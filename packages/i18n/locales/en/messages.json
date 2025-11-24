@@ -1,7 +1,7 @@
 {
   "app_metadata_description": {
     "description": "Extension description",
-    "message": "Automate web tasks with AI! NanoBrowser is an open-source Chrome extension that lets you extract data, fill forms, and more."
+    "message": "Automate web tasks with AI! NanoBrowser is an open-source browser extension that lets you extract data, fill forms, and more."
   },
   "app_metadata_name": {
     "description": "Extension name",
@@ -152,7 +152,7 @@
     "message": "Speech recognition failed"
   },
   "chat_stt_microphone_permissionDenied": {
-    "message": "Microphone access denied. Please enable microphone permissions in Chrome settings."
+    "message": "Microphone access denied. Please enable microphone permissions in browser settings."
   },
   "chat_stt_microphone_accessFailed": {
     "message": "Failed to access microphone. "

@@ -1,7 +1,7 @@
 {
   "app_metadata_description": {
     "description": "Descrição da extensão",
-    "message": "Automatize tarefas da web com IA! NanoBrowser é uma extensão de código aberto para o Chrome que permite extrair dados, preencher formulários e muito mais."
+    "message": "Automatize tarefas da web com IA! NanoBrowser é uma extensão de código aberto para o navegador que permite extrair dados, preencher formulários e muito mais."
   },
   "app_metadata_name": {
     "description": "Nome da extensão",
@@ -152,7 +152,7 @@
     "message": "Reconhecimento de fala falhou"
   },
   "chat_stt_microphone_permissionDenied": {
-    "message": "Acesso ao microfone negado. Por favor, ative as permissões de microfone nas configurações do Chrome."
+    "message": "Acesso ao microfone negado. Por favor, ative as permissões de microfone nas configurações do navegador."
   },
   "chat_stt_microphone_accessFailed": {
     "message": "Falha ao acessar o microfone. "

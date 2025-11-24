@@ -1,7 +1,7 @@
 {
   "app_metadata_description": {
     "description": "Extension description",
-    "message": "使用 AI 自動化網頁任務！Nanobrowser 是一款開放原始碼的 Chrome 擴充功能，能協助您擷取資料、填寫表單等。"
+    "message": "使用 AI 自動化網頁任務！Nanobrowser 是一款開放原始碼的瀏覽器擴充功能，能協助您擷取資料、填寫表單等。"
   },
   "app_metadata_name": {
     "description": "Extension name",
@@ -152,7 +152,7 @@
     "message": "語音辨識失敗"
   },
   "chat_stt_microphone_permissionDenied": {
-    "message": "麥克風存取遭拒。請在 Chrome 設定中啟用麥克風權限。"
+    "message": "麥克風存取遭拒。請在瀏覽器設定中啟用麥克風權限。"
   },
   "chat_stt_microphone_accessFailed": {
     "message": "無法存取麥克風。"
