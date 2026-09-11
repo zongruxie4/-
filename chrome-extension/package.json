@@ -19,7 +19,7 @@
     "@extension/i18n": "workspace:*",
     "@extension/shared": "workspace:*",
     "@extension/storage": "workspace:*",
-    "@langchain/anthropic": "0.3.33",
+    "@langchain/anthropic": "1.0.0",
     "@langchain/cerebras": "0.0.4",
     "@langchain/core": "0.3.79",
     "@langchain/deepseek": "0.1.0",
